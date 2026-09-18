@@ -6,6 +6,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 
+export function businessRoleHandoffPath(role: DemoRole) {
+  return role === "business-user" ? "/business/dashboard" : null
+}
+
 export function AppHeader() {
   const { role, setRole, councilId, setCouncilId } = useDemoSession()
   return (
@@ -42,7 +46,15 @@ export function AppHeader() {
           aria-label="Demo role"
           className="h-9 max-w-40 rounded-md border bg-background px-2 text-sm"
           value={role}
-          onChange={(e) => setRole(e.target.value as DemoRole)}
+          onChange={(event) => {
+            const nextRole = event.target.value as DemoRole
+            setRole(nextRole)
+
+            const handoffPath = businessRoleHandoffPath(nextRole)
+            if (handoffPath && typeof window !== "undefined") {
+              window.location.assign(handoffPath)
+            }
+          }}
         >
           {Object.entries(roleLabels).map(([id, label]) => (
             <option key={id} value={id}>
