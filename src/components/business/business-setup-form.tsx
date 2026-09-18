@@ -350,6 +350,7 @@ export function BusinessSetupForm({
                     id={`${id}-premises-name`}
                     name={field.name}
                     required
+                    disabled={isExiting}
                     value={field.state.value}
                     onChange={(event) => field.handleChange(event.target.value)}
                     onBlur={field.handleBlur}
@@ -380,6 +381,7 @@ export function BusinessSetupForm({
                     id={`${id}-business-type`}
                     name={field.name}
                     required
+                    disabled={isExiting}
                     value={field.state.value}
                     onChange={(event) => field.handleChange(event.target.value)}
                     onBlur={field.handleBlur}
@@ -416,6 +418,7 @@ export function BusinessSetupForm({
                 <Input
                   id={`${id}-registration-number`}
                   name={field.name}
+                  disabled={isExiting}
                   value={field.state.value}
                   onChange={(event) => field.handleChange(event.target.value)}
                   onBlur={field.handleBlur}
@@ -442,6 +445,7 @@ export function BusinessSetupForm({
                     id={`${id}-address`}
                     name={field.name}
                     required
+                    disabled={isExiting}
                     value={field.state.value}
                     onChange={(event) => field.handleChange(event.target.value)}
                     onBlur={field.handleBlur}
@@ -466,6 +470,7 @@ export function BusinessSetupForm({
                     id={`${id}-ward`}
                     name={field.name}
                     required
+                    disabled={isExiting}
                     value={field.state.value}
                     onChange={(event) => field.handleChange(event.target.value)}
                     onBlur={field.handleBlur}
@@ -493,12 +498,14 @@ export function BusinessSetupForm({
                 <Field data-invalid={!!error}>
                   <FieldLabel htmlFor={`${id}-council`}>Council</FieldLabel>
                   <Select
+                    disabled={isExiting}
                     value={field.state.value}
                     onValueChange={(value) => field.handleChange(value ?? "")}
                   >
                     <SelectTrigger
                       id={`${id}-council`}
                       name={field.name}
+                      disabled={isExiting}
                       aria-invalid={!!error}
                       aria-describedby={
                         error ? `${id}-council-error` : undefined
@@ -554,6 +561,7 @@ export function BusinessSetupForm({
             <Input
               id={`${id}-supporting-document`}
               type="file"
+              disabled={isExiting}
               accept={acceptedDocumentExtensions}
               multiple
               onChange={handleDocuments}

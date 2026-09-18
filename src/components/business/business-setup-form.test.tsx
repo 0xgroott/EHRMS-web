@@ -225,13 +225,17 @@ describe("BusinessSetupForm", () => {
 
   it("keeps saving status until the newest edit has been persisted", async () => {
     let resolveFirst!: () => void
+    let resolveSecond!: () => void
     const firstSave = new Promise<void>((resolve) => {
       resolveFirst = resolve
+    })
+    const secondSave = new Promise<void>((resolve) => {
+      resolveSecond = resolve
     })
     const onSaveDraft = vi
       .fn()
       .mockImplementationOnce(() => firstSave)
-      .mockResolvedValueOnce(undefined)
+      .mockImplementationOnce(() => secondSave)
     renderSetup({ onSaveDraft })
     const user = userEvent.setup()
 
@@ -242,6 +246,44 @@ describe("BusinessSetupForm", () => {
 
     resolveFirst()
     await waitFor(() => expect(onSaveDraft).toHaveBeenCalledTimes(2))
-    expect(screen.getByRole("status")).toHaveTextContent("Saved")
+    expect(screen.getByRole("status")).toHaveTextContent("Saving…")
+    resolveSecond()
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent("Saved")
+    )
+  })
+
+  it("disables edits during rejected completion and preserves values for retry", async () => {
+    let rejectCompletion!: (reason: Error) => void
+    const firstCompletion = new Promise<void>((_, reject) => {
+      rejectCompletion = reject
+    })
+    const onComplete = vi
+      .fn()
+      .mockImplementationOnce(() => firstCompletion)
+      .mockResolvedValueOnce(undefined)
+    renderSetup({ onComplete })
+    const user = userEvent.setup()
+    const premisesName = screen.getByLabelText("Premises name")
+
+    await user.click(screen.getByRole("button", { name: "Save and continue" }))
+    expect(
+      await screen.findByRole("button", { name: "Completing setup…" })
+    ).toBeDisabled()
+    expect(premisesName).toBeDisabled()
+    await user.type(premisesName, " Lost edit")
+    expect(premisesName).toHaveValue(validPremises.premisesName)
+
+    rejectCompletion(new Error("completion unavailable"))
+    await waitFor(() =>
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "Unable to complete setup"
+      )
+    )
+    expect(premisesName).toBeEnabled()
+
+    await user.click(screen.getByRole("button", { name: "Save and continue" }))
+    await waitFor(() => expect(onComplete).toHaveBeenCalledTimes(2))
+    expect(onComplete).toHaveBeenLastCalledWith(validPremises, [])
   })
 })
