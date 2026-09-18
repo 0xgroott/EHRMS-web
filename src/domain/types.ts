@@ -7,10 +7,7 @@ export type DemoRole =
   | "business-user"
 
 export type ComplianceStatus =
-  | "Compliant"
-  | "At Risk"
-  | "Non-compliant"
-  | "Not Found"
+  "Compliant" | "At Risk" | "Non-compliant" | "Not Found"
 
 export type CertificateStatus =
   | "Active"
@@ -83,12 +80,7 @@ export interface Premises {
 
 export interface WorkItem {
   id: string
-  kind:
-    | "application"
-    | "inspection"
-    | "premises"
-    | "certificate"
-    | "payment"
+  kind: "application" | "inspection" | "premises" | "certificate" | "payment"
   title: string
   description: string
   status: string

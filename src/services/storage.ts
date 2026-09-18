@@ -9,13 +9,21 @@ export function createStorage(storage: Storage = window.localStorage) {
       try {
         const raw = storage.getItem(STORAGE_KEY)
         if (!raw) return structuredClone(seedDatabase)
-        const parsed = JSON.parse(raw) as MockDatabase
-        return parsed.schemaVersion === 1 ? parsed : structuredClone(seedDatabase)
+        const parsed = JSON.parse(raw) as Partial<MockDatabase>
+        return parsed.schemaVersion === 1 &&
+          Array.isArray(parsed.premises) &&
+          Array.isArray(parsed.workItems)
+          ? (parsed as MockDatabase)
+          : structuredClone(seedDatabase)
       } catch {
         return structuredClone(seedDatabase)
       }
     },
-    write(database: MockDatabase) { storage.setItem(STORAGE_KEY, JSON.stringify(database)) },
-    reset() { storage.removeItem(STORAGE_KEY) },
+    write(database: MockDatabase) {
+      storage.setItem(STORAGE_KEY, JSON.stringify(database))
+    },
+    reset() {
+      storage.removeItem(STORAGE_KEY)
+    },
   }
 }

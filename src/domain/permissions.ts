@@ -20,11 +20,7 @@ const roleCapabilities: Record<DemoRole, readonly Capability[]> = {
     "councils:manage",
   ],
   eho: ["records:view", "inspection:conduct"],
-  "moh-director": [
-    "records:view",
-    "certificate:status-change",
-    "audit:view",
-  ],
+  "moh-director": ["records:view", "certificate:status-change", "audit:view"],
   "finance-officer": ["records:view", "finance:manage"],
   "business-user": ["records:view"],
 }
