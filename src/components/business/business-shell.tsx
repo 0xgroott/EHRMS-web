@@ -1,0 +1,29 @@
+import { Outlet, useLocation } from "@tanstack/react-router"
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import { BusinessHeader } from "./business-header"
+import { BusinessSidebar } from "./business-sidebar"
+
+export function BusinessShell() {
+  const pathname = useLocation({ select: (location) => location.pathname })
+  return (
+    <SidebarProvider>
+      <a
+        href="#business-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-30 focus:rounded-md focus:bg-background focus:p-3 focus:outline-2 focus:outline-ring"
+      >
+        Skip to content
+      </a>
+      <BusinessSidebar pathname={pathname} />
+      <SidebarInset className="min-w-0">
+        <BusinessHeader />
+        <div
+          id="business-content"
+          tabIndex={-1}
+          className="mx-auto w-full max-w-7xl flex-1 p-4 outline-none md:p-6 lg:p-8"
+        >
+          <Outlet />
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
+  )
+}

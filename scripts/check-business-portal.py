@@ -1,0 +1,282 @@
+"""Repeatable Slice 1 checks. Requires Python Playwright and Chromium."""
+
+import argparse
+from contextlib import contextmanager
+import os
+from pathlib import Path
+import re
+import signal
+import socket
+import subprocess
+import tempfile
+import time
+from urllib.error import URLError
+from urllib.request import urlopen
+
+from playwright.sync_api import expect, sync_playwright
+
+
+@contextmanager
+def preview_server():
+    """Own only the preview process started here; never stop a user's server."""
+    with socket.socket() as probe:
+        if probe.connect_ex(("127.0.0.1", 3019)) == 0:
+            raise RuntimeError("Port 3019 is occupied; stop that server or use --base-url")
+    root = Path(__file__).resolve().parents[1]
+    with tempfile.TemporaryFile(mode="w+") as log:
+        process = subprocess.Popen(
+            ["npm", "run", "preview", "--", "--host", "127.0.0.1",
+             "--port", "3019", "--strictPort"],
+            cwd=root, stdout=log, stderr=subprocess.STDOUT, start_new_session=True,
+        )
+        try:
+            deadline = time.monotonic() + 30
+            while time.monotonic() < deadline:
+                if process.poll() is not None:
+                    break
+                try:
+                    with urlopen("http://127.0.0.1:3019/business/sign-in", timeout=2):
+                        yield "http://127.0.0.1:3019"
+                        return
+                except (URLError, TimeoutError):
+                    time.sleep(0.2)
+            log.seek(0)
+            raise RuntimeError("Preview did not start:\n" + log.read())
+        finally:
+            if process.poll() is None:
+                os.killpg(process.pid, signal.SIGTERM)
+                try:
+                    process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    os.killpg(process.pid, signal.SIGKILL)
+                    process.wait()
+
+
+def run_checks(base_url, screenshots):
+    base_url = base_url.rstrip("/")
+    errors = []
+    summaries = []
+    navigation = {
+        "Home": "dashboard", "Food handlers": "food-handlers",
+        "Applications": "applications", "Certificates": "certificates",
+        "Inspections": "inspections", "Business profile": "profile",
+    }
+
+    def visit(page, path):
+        page.goto(base_url + path, wait_until="networkidle")
+
+    def at(page, route):
+        expect(page).to_have_url(base_url + "/business/" + route)
+        page.wait_for_load_state("networkidle")
+
+    def no_overflow(page):
+        assert page.evaluate(
+            "document.documentElement.scrollWidth <= window.innerWidth"
+        ), "Horizontal overflow at " + page.url
+
+    def passed(label):
+        summaries.append(label)
+        print("ok: " + label, flush=True)
+
+    def sign_out(page):
+        page.get_by_role("button", name="Business account", exact=True).click()
+        page.get_by_role("menuitem", name="Sign out", exact=True).click()
+        at(page, "sign-in")
+
+    def dashboard(page):
+        at(page, "dashboard")
+        expect(page.get_by_role("heading", name="Business dashboard", exact=True)).to_be_visible()
+        expect(page.get_by_text("Next required action", exact=True)).to_have_count(1)
+        for title in ("Fitness", "Fumigation", "Health Approval"):
+            expect(page.get_by_role("heading", name=title, exact=True)).to_be_visible()
+        expect(page.get_by_role("link", name="Apply for Health Approval", exact=True)).to_have_count(0)
+        no_overflow(page)
+
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch(headless=True)
+        try:
+            context = browser.new_context(viewport={"width": 1440, "height": 1000})
+            page = context.new_page()
+            page.clock.install()
+            page.on("pageerror", lambda error: errors.append("page: " + str(error)))
+            page.on("console", lambda message: errors.append("console: " + message.text)
+                    if message.type == "error" else None)
+
+            visit(page, "/business/dashboard")
+            at(page, "sign-in")
+            visit(page, "/business/verify")
+            at(page, "register")
+            visit(page, "/business/setup")
+            at(page, "register")
+            passed("signed-out route guards")
+
+            page.get_by_role("button", name="Create account", exact=True).click()
+            expect(page.get_by_text("Enter the registered business name", exact=True)).to_be_visible()
+            for label, value in {
+                "Business name": "Browser Test Kitchen", "Contact person's name": "Demo Tester",
+                "Phone number": "08039990001", "Email address": "browser-test@example.test",
+                "Password": "browser-demo-password",
+            }.items():
+                page.get_by_label(label, exact=True).fill(value)
+            page.get_by_role("checkbox").check()
+            for label, reserved, replacement in (
+                ("Email address", "ada@riverside.ng", "browser-test@example.test"),
+                ("Phone number", "08031234567", "08039990001"),
+            ):
+                page.get_by_label(label, exact=True).fill(reserved)
+                page.get_by_role("button", name="Create account", exact=True).click()
+                expect(page.get_by_label(label, exact=True)).to_have_attribute("aria-invalid", "true")
+                expect(page.get_by_text(re.compile("already registered")).first).to_be_visible()
+                page.get_by_label(label, exact=True).fill(replacement)
+            page.get_by_role("button", name="Create account", exact=True).click()
+            at(page, "verify")
+            expect(page.get_by_text("Use code 123456", exact=True)).to_be_visible()
+            expect(page.get_by_text("b***@example.test or ••••••0001", exact=True)).to_be_visible()
+            visit(page, "/business/register")
+            page.get_by_role("button", name="Continue saved registration", exact=True).click()
+            at(page, "verify")
+            profile_before = page.evaluate("JSON.parse(localStorage.getItem('ehrcms:business:v1')).profile")
+            page.get_by_role("button", name="Change contact", exact=True).click()
+            expect(page.get_by_label("Email address", exact=True)).to_have_value("browser-test@example.test")
+            for label, reserved, replacement in (
+                ("Email address", "ada@riverside.ng", "updated@example.test"),
+                ("Phone number", "08031234567", "08039990002"),
+            ):
+                page.get_by_label(label, exact=True).fill(reserved)
+                page.get_by_role("button", name="Save contact and continue", exact=True).click()
+                expect(page.get_by_label(label, exact=True)).to_have_attribute("aria-invalid", "true")
+                expect(page.get_by_text(re.compile("already registered")).first).to_be_visible()
+                page.get_by_label(label, exact=True).fill(replacement)
+            page.get_by_role("button", name="Save contact and continue", exact=True).click()
+            expect(page.get_by_text("u***@example.test or ••••••0002", exact=True)).to_be_visible()
+            profile_after = page.evaluate("JSON.parse(localStorage.getItem('ehrcms:business:v1')).profile")
+            assert profile_after == {**profile_before, "email": "updated@example.test", "phone": "08039990002"}
+            passed("duplicate contact recovery and populated editing preserve the registration")
+            visit(page, "/business/dashboard")
+            at(page, "verify")
+            visit(page, "/business/setup")
+            at(page, "verify")
+            page.get_by_label("6-digit verification code", exact=True).fill("654321")
+            page.get_by_role("button", name="Verify and continue", exact=True).click()
+            expect(page.get_by_text("Enter the demo code 123456", exact=True).first).to_be_visible()
+            at(page, "verify")
+            page.clock.fast_forward(300_000)
+            expect(page.get_by_text("This code has expired. Request a new code.", exact=True)).to_be_visible()
+            expect(page.get_by_role("button", name="Verify and continue", exact=True)).to_be_disabled()
+            page.get_by_role("button", name="Resend code", exact=True).click()
+            expect(page.get_by_text("This code has expired. Request a new code.", exact=True)).to_have_count(0)
+            passed("expired OTP recovery through resend")
+            page.get_by_label("6-digit verification code", exact=True).fill("123456")
+            page.get_by_role("button", name="Verify and continue", exact=True).click()
+            at(page, "setup")
+            visit(page, "/business/dashboard")
+            at(page, "setup")
+            passed("registration, wrong OTP recovery, verification and stage guards")
+
+            page.get_by_role("button", name="Save and continue", exact=True).click()
+            expect(page.get_by_text("Enter the premises address", exact=True)).to_be_visible()
+            expect(page.get_by_text("Choose a council", exact=True).last).to_be_visible()
+            page.get_by_label("Premises address", exact=True).fill("8 Demo Street")
+            expect(page.get_by_text("Saved", exact=True)).to_be_visible()
+            page.reload(wait_until="networkidle")
+            expect(page.get_by_label("Premises address", exact=True)).to_have_value("8 Demo Street")
+            page.get_by_label("Business type", exact=True).fill("Restaurant")
+            page.get_by_label("Ward", exact=True).fill("Diobu")
+            page.get_by_role("combobox", name="Council", exact=True).click()
+            page.get_by_role("option", name="Port Harcourt City", exact=True).click()
+            page.get_by_label(re.compile("Supporting document")).set_input_files({
+                "name": "demo-permit.pdf", "mimeType": "application/pdf", "buffer": b"demo metadata only",
+            })
+            expect(page.get_by_text("demo-permit.pdf", exact=True)).to_be_visible()
+            page.get_by_role("button", name="Save draft and exit", exact=True).click()
+            at(page, "sign-in")
+            page.get_by_role("button", name="Continue saved registration", exact=True).click()
+            at(page, "setup")
+            expect(page.get_by_label("Business type", exact=True)).to_have_value("Restaurant")
+            expect(page.get_by_text("demo-permit.pdf", exact=True)).to_be_visible()
+            page.get_by_role("button", name="Save and continue", exact=True).click()
+            dashboard(page)
+            saved = page.evaluate("JSON.parse(localStorage.getItem('ehrcms:business:v1'))")
+            assert saved["stage"] == "complete"
+            assert set(saved["profile"]["documents"][0]) == {"id", "name", "size", "category"}
+            assert "password" not in saved["profile"] and "code" not in saved["profile"]
+            visit(page, "/business/setup")
+            dashboard(page)
+            passed("setup validation, autosave reload, draft exit/resume, metadata and completion")
+            sign_out(page)
+
+            for contact in ("ada@riverside.ng", "08031234567"):
+                page.get_by_label("Email or phone number", exact=True).fill(contact)
+                page.get_by_label("Password", exact=True).fill("riverside-demo")
+                page.get_by_role("button", name="Sign in", exact=True).click()
+                dashboard(page)
+                expect(page.get_by_text("Riverside Kitchen & Foods", exact=True).first).to_be_visible()
+                sign_out(page)
+            page.get_by_role("button", name="Use demo account", exact=True).click()
+            dashboard(page)
+            passed("seeded email, phone and demo shortcut sign-in; sign out")
+
+            visit(page, "/dashboard")
+            page.get_by_label("Demo role", exact=True).select_option("business-user")
+            dashboard(page)
+            for label in ("Finance", "Users", "Council administration"):
+                expect(page.get_by_role("link", name=label, exact=True)).to_have_count(0)
+            for label, route in navigation.items():
+                page.get_by_role("link", name=label, exact=True).click()
+                at(page, route)
+                if route != "dashboard":
+                    page.get_by_role("link", name="Return to dashboard", exact=True).click()
+                    dashboard(page)
+            page.get_by_role("button", name="Notifications", exact=True).click()
+            expect(page.get_by_text("No notifications yet", exact=True)).to_be_visible()
+            page.keyboard.press("Escape")
+            expect(page.get_by_role("menu")).to_be_hidden()
+            page.get_by_role("button", name="Business account", exact=True).click()
+            page.get_by_role("menuitem", name="Business profile", exact=True).click()
+            at(page, "profile")
+            page.get_by_role("link", name="Return to dashboard", exact=True).click()
+            dashboard(page)
+            passed("staff role handoff, desktop navigation, notifications and account menu")
+            if screenshots:
+                page.screenshot(path=str(screenshots / "business-dashboard-desktop.png"), full_page=True)
+
+            page.set_viewport_size({"width": 390, "height": 844})
+            no_overflow(page)
+            for label, route in navigation.items():
+                page.get_by_role("button", name="Open business navigation", exact=True).click()
+                dialog = page.get_by_role("dialog")
+                expect(dialog).to_be_visible()
+                dialog.get_by_role("link", name=label, exact=True).click()
+                expect(dialog).to_be_hidden()
+                at(page, route)
+                no_overflow(page)
+            visit(page, "/business/dashboard")
+            dashboard(page)
+            if screenshots:
+                page.screenshot(path=str(screenshots / "business-dashboard-mobile.png"), full_page=True)
+            sign_out(page)
+            no_overflow(page)
+            visit(page, "/business/register")
+            no_overflow(page)
+            passed("390px mobile drawer, all destinations, sign out and no horizontal overflow")
+            assert not errors, "Browser errors:\n" + "\n".join(errors)
+            passed("no browser console or page errors")
+            print(f"PASS: {len(summaries)} journey groups", flush=True)
+        finally:
+            browser.close()
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("--base-url", default="http://localhost:3000")
+    group.add_argument("--start-server", action="store_true", help="Own a production preview on port 3019 (build first)")
+    parser.add_argument("--screenshots", type=Path)
+    args = parser.parse_args()
+    if args.screenshots:
+        args.screenshots.mkdir(parents=True, exist_ok=True)
+    if args.start_server:
+        with preview_server() as url:
+            run_checks(url, args.screenshots)
+    else:
+        run_checks(args.base_url, args.screenshots)

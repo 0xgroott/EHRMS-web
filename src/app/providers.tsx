@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { useState } from "react"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { BusinessSessionProvider } from "./business-session"
 import { DemoSessionProvider } from "./demo-session"
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -10,9 +11,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
   )
   return (
     <QueryClientProvider client={queryClient}>
-      <DemoSessionProvider>
-        <TooltipProvider>{children}</TooltipProvider>
-      </DemoSessionProvider>
+      <BusinessSessionProvider>
+        <DemoSessionProvider>
+          <TooltipProvider>{children}</TooltipProvider>
+        </DemoSessionProvider>
+      </BusinessSessionProvider>
     </QueryClientProvider>
   )
 }

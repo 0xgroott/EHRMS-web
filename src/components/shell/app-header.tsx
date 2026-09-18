@@ -6,6 +6,27 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 
+export function businessRoleHandoffPath(role: DemoRole) {
+  return role === "business-user" ? "/business/dashboard" : null
+}
+
+function navigateTo(path: string) {
+  if (typeof window !== "undefined") {
+    window.location.assign(path)
+  }
+}
+
+export function handleDemoRoleSelection(
+  role: DemoRole,
+  setRole: (role: DemoRole) => void,
+  navigate: (path: string) => void = navigateTo
+) {
+  setRole(role)
+
+  const handoffPath = businessRoleHandoffPath(role)
+  if (handoffPath) navigate(handoffPath)
+}
+
 export function AppHeader() {
   const { role, setRole, councilId, setCouncilId } = useDemoSession()
   return (
@@ -42,7 +63,10 @@ export function AppHeader() {
           aria-label="Demo role"
           className="h-9 max-w-40 rounded-md border bg-background px-2 text-sm"
           value={role}
-          onChange={(e) => setRole(e.target.value as DemoRole)}
+          onChange={(event) => {
+            const nextRole = event.target.value as DemoRole
+            handleDemoRoleSelection(nextRole, setRole)
+          }}
         >
           {Object.entries(roleLabels).map(([id, label]) => (
             <option key={id} value={id}>
