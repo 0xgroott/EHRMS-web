@@ -1,21 +1,33 @@
-# TanStack Start + shadcn/ui
+# EHRCMS Web
 
-This is a template for a new TanStack Start project with React, TypeScript, and shadcn/ui.
+Frontend prototype for the Environmental Health Regulatory and Compliance Management System. EHRCMS helps councils manage business premises, inspections, compliance findings, certificates, applications, and regulatory work.
 
-## Adding components
+## Current prototype
 
-To add components to your app, run the following command:
+- Role-aware operational dashboard
+- Council and demo-role switching
+- Searchable premises register
+- Premises compliance, certificate, inspection, and document details
+- Browser-persisted mock data
+- Responsive desktop and mobile shell
+
+## Run locally
 
 ```bash
-npx shadcn@latest add button
+npm install
+npm run dev
 ```
 
-This will place the ui components in the `components` directory.
+Open [http://localhost:3000](http://localhost:3000).
 
-## Using components
+## Quality checks
 
-To use the components in your app, import them as follows:
-
-```tsx
-import { Button } from "@/components/ui/button";
+```bash
+npm run lint
+npm run check
+npm test
+npm run typecheck
+npm run build
 ```
+
+Product specifications and implementation plans live in [`docs/`](docs/).
