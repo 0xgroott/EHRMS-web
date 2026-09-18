@@ -25,12 +25,18 @@ import { Route as AppSettingsRouteImport } from './routes/_app.settings'
 import { Route as AppSystemRouteImport } from './routes/_app.system'
 import { Route as AppUsersRouteImport } from './routes/_app.users'
 import { Route as BusinessIndexRouteImport } from './routes/business.index'
+import { Route as BusinessPortalRouteImport } from './routes/business._portal'
 import { Route as BusinessRegisterRouteImport } from './routes/business.register'
 import { Route as BusinessSetupRouteImport } from './routes/business.setup'
 import { Route as BusinessSignInRouteImport } from './routes/business.sign-in'
 import { Route as BusinessVerifyRouteImport } from './routes/business.verify'
 import { Route as AppPremisesIndexRouteImport } from './routes/_app.premises.index'
 import { Route as AppPremisesPremisesIdRouteImport } from './routes/_app.premises.$premisesId'
+import { Route as BusinessPortalApplicationsRouteImport } from './routes/business._portal.applications'
+import { Route as BusinessPortalCertificatesRouteImport } from './routes/business._portal.certificates'
+import { Route as BusinessPortalFoodHandlersRouteImport } from './routes/business._portal.food-handlers'
+import { Route as BusinessPortalInspectionsRouteImport } from './routes/business._portal.inspections'
+import { Route as BusinessPortalProfileRouteImport } from './routes/business._portal.profile'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -111,6 +117,10 @@ const BusinessIndexRoute = BusinessIndexRouteImport.update({
   path: '/',
   getParentRoute: () => BusinessRoute,
 } as any)
+const BusinessPortalRoute = BusinessPortalRouteImport.update({
+  id: '/_portal',
+  getParentRoute: () => BusinessRoute,
+} as any)
 const BusinessRegisterRoute = BusinessRegisterRouteImport.update({
   id: '/register',
   path: '/register',
@@ -141,6 +151,35 @@ const AppPremisesPremisesIdRoute = AppPremisesPremisesIdRouteImport.update({
   path: '/premises/$premisesId',
   getParentRoute: () => AppRoute,
 } as any)
+const BusinessPortalApplicationsRoute =
+  BusinessPortalApplicationsRouteImport.update({
+    id: '/applications',
+    path: '/applications',
+    getParentRoute: () => BusinessPortalRoute,
+  } as any)
+const BusinessPortalCertificatesRoute =
+  BusinessPortalCertificatesRouteImport.update({
+    id: '/certificates',
+    path: '/certificates',
+    getParentRoute: () => BusinessPortalRoute,
+  } as any)
+const BusinessPortalFoodHandlersRoute =
+  BusinessPortalFoodHandlersRouteImport.update({
+    id: '/food-handlers',
+    path: '/food-handlers',
+    getParentRoute: () => BusinessPortalRoute,
+  } as any)
+const BusinessPortalInspectionsRoute =
+  BusinessPortalInspectionsRouteImport.update({
+    id: '/inspections',
+    path: '/inspections',
+    getParentRoute: () => BusinessPortalRoute,
+  } as any)
+const BusinessPortalProfileRoute = BusinessPortalProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => BusinessPortalRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -163,6 +202,11 @@ export interface FileRoutesByFullPath {
   '/business/verify': typeof BusinessVerifyRoute
   '/business/': typeof BusinessIndexRoute
   '/premises/$premisesId': typeof AppPremisesPremisesIdRoute
+  '/business/applications': typeof BusinessPortalApplicationsRoute
+  '/business/certificates': typeof BusinessPortalCertificatesRoute
+  '/business/food-handlers': typeof BusinessPortalFoodHandlersRoute
+  '/business/inspections': typeof BusinessPortalInspectionsRoute
+  '/business/profile': typeof BusinessPortalProfileRoute
   '/premises/': typeof AppPremisesIndexRoute
 }
 export interface FileRoutesByTo {
@@ -179,12 +223,17 @@ export interface FileRoutesByTo {
   '/settings': typeof AppSettingsRoute
   '/system': typeof AppSystemRoute
   '/users': typeof AppUsersRoute
+  '/business': typeof BusinessIndexRoute
   '/business/register': typeof BusinessRegisterRoute
   '/business/setup': typeof BusinessSetupRoute
   '/business/sign-in': typeof BusinessSignInRoute
   '/business/verify': typeof BusinessVerifyRoute
-  '/business': typeof BusinessIndexRoute
   '/premises/$premisesId': typeof AppPremisesPremisesIdRoute
+  '/business/applications': typeof BusinessPortalApplicationsRoute
+  '/business/certificates': typeof BusinessPortalCertificatesRoute
+  '/business/food-handlers': typeof BusinessPortalFoodHandlersRoute
+  '/business/inspections': typeof BusinessPortalInspectionsRoute
+  '/business/profile': typeof BusinessPortalProfileRoute
   '/premises': typeof AppPremisesIndexRoute
 }
 export interface FileRoutesById {
@@ -204,12 +253,18 @@ export interface FileRoutesById {
   '/_app/settings': typeof AppSettingsRoute
   '/_app/system': typeof AppSystemRoute
   '/_app/users': typeof AppUsersRoute
+  '/business/_portal': typeof BusinessPortalRouteWithChildren
   '/business/register': typeof BusinessRegisterRoute
   '/business/setup': typeof BusinessSetupRoute
   '/business/sign-in': typeof BusinessSignInRoute
   '/business/verify': typeof BusinessVerifyRoute
   '/business/': typeof BusinessIndexRoute
   '/_app/premises/$premisesId': typeof AppPremisesPremisesIdRoute
+  '/business/_portal/applications': typeof BusinessPortalApplicationsRoute
+  '/business/_portal/certificates': typeof BusinessPortalCertificatesRoute
+  '/business/_portal/food-handlers': typeof BusinessPortalFoodHandlersRoute
+  '/business/_portal/inspections': typeof BusinessPortalInspectionsRoute
+  '/business/_portal/profile': typeof BusinessPortalProfileRoute
   '/_app/premises/': typeof AppPremisesIndexRoute
 }
 export interface FileRouteTypes {
@@ -235,6 +290,11 @@ export interface FileRouteTypes {
     | '/business/verify'
     | '/business/'
     | '/premises/$premisesId'
+    | '/business/applications'
+    | '/business/certificates'
+    | '/business/food-handlers'
+    | '/business/inspections'
+    | '/business/profile'
     | '/premises/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -251,12 +311,17 @@ export interface FileRouteTypes {
     | '/settings'
     | '/system'
     | '/users'
+    | '/business'
     | '/business/register'
     | '/business/setup'
     | '/business/sign-in'
     | '/business/verify'
-    | '/business'
     | '/premises/$premisesId'
+    | '/business/applications'
+    | '/business/certificates'
+    | '/business/food-handlers'
+    | '/business/inspections'
+    | '/business/profile'
     | '/premises'
   id:
     | '__root__'
@@ -275,12 +340,18 @@ export interface FileRouteTypes {
     | '/_app/settings'
     | '/_app/system'
     | '/_app/users'
+    | '/business/_portal'
     | '/business/register'
     | '/business/setup'
     | '/business/sign-in'
     | '/business/verify'
     | '/business/'
     | '/_app/premises/$premisesId'
+    | '/business/_portal/applications'
+    | '/business/_portal/certificates'
+    | '/business/_portal/food-handlers'
+    | '/business/_portal/inspections'
+    | '/business/_portal/profile'
     | '/_app/premises/'
   fileRoutesById: FileRoutesById
 }
@@ -404,6 +475,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BusinessIndexRouteImport
       parentRoute: typeof BusinessRoute
     }
+    '/business/_portal': {
+      id: '/business/_portal'
+      path: ''
+      fullPath: '/business'
+      preLoaderRoute: typeof BusinessPortalRouteImport
+      parentRoute: typeof BusinessRoute
+    }
     '/business/register': {
       id: '/business/register'
       path: '/register'
@@ -446,6 +524,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPremisesPremisesIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/business/_portal/applications': {
+      id: '/business/_portal/applications'
+      path: '/applications'
+      fullPath: '/business/applications'
+      preLoaderRoute: typeof BusinessPortalApplicationsRouteImport
+      parentRoute: typeof BusinessPortalRoute
+    }
+    '/business/_portal/certificates': {
+      id: '/business/_portal/certificates'
+      path: '/certificates'
+      fullPath: '/business/certificates'
+      preLoaderRoute: typeof BusinessPortalCertificatesRouteImport
+      parentRoute: typeof BusinessPortalRoute
+    }
+    '/business/_portal/food-handlers': {
+      id: '/business/_portal/food-handlers'
+      path: '/food-handlers'
+      fullPath: '/business/food-handlers'
+      preLoaderRoute: typeof BusinessPortalFoodHandlersRouteImport
+      parentRoute: typeof BusinessPortalRoute
+    }
+    '/business/_portal/inspections': {
+      id: '/business/_portal/inspections'
+      path: '/inspections'
+      fullPath: '/business/inspections'
+      preLoaderRoute: typeof BusinessPortalInspectionsRouteImport
+      parentRoute: typeof BusinessPortalRoute
+    }
+    '/business/_portal/profile': {
+      id: '/business/_portal/profile'
+      path: '/profile'
+      fullPath: '/business/profile'
+      preLoaderRoute: typeof BusinessPortalProfileRouteImport
+      parentRoute: typeof BusinessPortalRoute
+    }
   }
 }
 
@@ -485,7 +598,28 @@ const AppRouteChildren: AppRouteChildren = {
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
+interface BusinessPortalRouteChildren {
+  BusinessPortalApplicationsRoute: typeof BusinessPortalApplicationsRoute
+  BusinessPortalCertificatesRoute: typeof BusinessPortalCertificatesRoute
+  BusinessPortalFoodHandlersRoute: typeof BusinessPortalFoodHandlersRoute
+  BusinessPortalInspectionsRoute: typeof BusinessPortalInspectionsRoute
+  BusinessPortalProfileRoute: typeof BusinessPortalProfileRoute
+}
+
+const BusinessPortalRouteChildren: BusinessPortalRouteChildren = {
+  BusinessPortalApplicationsRoute: BusinessPortalApplicationsRoute,
+  BusinessPortalCertificatesRoute: BusinessPortalCertificatesRoute,
+  BusinessPortalFoodHandlersRoute: BusinessPortalFoodHandlersRoute,
+  BusinessPortalInspectionsRoute: BusinessPortalInspectionsRoute,
+  BusinessPortalProfileRoute: BusinessPortalProfileRoute,
+}
+
+const BusinessPortalRouteWithChildren = BusinessPortalRoute._addFileChildren(
+  BusinessPortalRouteChildren,
+)
+
 interface BusinessRouteChildren {
+  BusinessPortalRoute: typeof BusinessPortalRouteWithChildren
   BusinessRegisterRoute: typeof BusinessRegisterRoute
   BusinessSetupRoute: typeof BusinessSetupRoute
   BusinessSignInRoute: typeof BusinessSignInRoute
@@ -494,6 +628,7 @@ interface BusinessRouteChildren {
 }
 
 const BusinessRouteChildren: BusinessRouteChildren = {
+  BusinessPortalRoute: BusinessPortalRouteWithChildren,
   BusinessRegisterRoute: BusinessRegisterRoute,
   BusinessSetupRoute: BusinessSetupRoute,
   BusinessSignInRoute: BusinessSignInRoute,

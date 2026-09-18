@@ -54,7 +54,7 @@ export function BusinessSetup() {
       globalThis.location.assign("/business/verify")
       return
     }
-    if (session.state.stage === "complete") {
+    if (session.state.stage === "complete" && profile.premises) {
       redirecting.current = true
       globalThis.location.assign("/business/dashboard")
     }
@@ -64,7 +64,8 @@ export function BusinessSetup() {
     !session.isHydrated ||
     profile === null ||
     !profile.verified ||
-    session.state.stage !== "setup"
+    (session.state.stage !== "setup" &&
+      !(session.state.stage === "complete" && !profile.premises))
   ) {
     return (
       <main className="flex min-h-svh items-center justify-center p-6">

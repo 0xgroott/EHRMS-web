@@ -5,6 +5,7 @@ import { Providers } from "@/app/providers"
 import { createBusinessRepository } from "@/services/business-repository"
 import { createBusinessStorage } from "@/services/business-storage"
 import { BusinessSetup } from "@/routes/business.setup"
+import { returningBusinessState } from "@/data/business-seeds"
 
 const account = {
   businessName: "Riverside Kitchen",
@@ -45,6 +46,19 @@ describe("BusinessSetup route", () => {
   afterEach(() => {
     vi.restoreAllMocks()
     vi.unstubAllGlobals()
+  })
+
+  it("recovers a completed state with missing premises without redirecting back to dashboard", async () => {
+    const state = structuredClone(returningBusinessState)
+    if (state.profile) delete state.profile.premises
+    createBusinessStorage(localStorage).write(state)
+    render(
+      <Providers>
+        <BusinessSetup />
+      </Providers>
+    )
+    expect(await screen.findByLabelText("Premises address")).toHaveValue("")
+    expect(assign).not.toHaveBeenCalled()
   })
 
   it("waits for hydration and redirects a missing registration to account entry", async () => {
