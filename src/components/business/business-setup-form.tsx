@@ -107,7 +107,10 @@ export function BusinessSetupForm({
   const [isExiting, setIsExiting] = useState(false)
   const latestDraft = useRef({ values: initialValues, documents })
   const autosaveTimer = useRef<number | undefined>(undefined)
-  const autosaveRequest = useRef(0)
+  const autosaveRevision = useRef(0)
+  const activeSave = useRef<Promise<boolean> | null>(null)
+  const completionPending = useRef(false)
+  const completionFinished = useRef(false)
 
   const form = useForm({
     defaultValues: {
@@ -121,16 +124,27 @@ export function BusinessSetupForm({
       },
     },
     onSubmit: async ({ value }) => {
-      if (isExiting) return
+      if (completionPending.current || completionFinished.current) return
+      completionPending.current = true
+      if (autosaveTimer.current !== undefined) {
+        window.clearTimeout(autosaveTimer.current)
+        autosaveTimer.current = undefined
+      }
       setActionError(undefined)
       setIsExiting(true)
       try {
-        const result = await onComplete(value, documents)
+        await activeSave.current
+        const result = await onComplete(value, latestDraft.current.documents)
         const error = errorMessage(result)
-        if (error) setActionError(error)
+        if (error) {
+          setActionError(error)
+        } else {
+          completionFinished.current = true
+        }
       } catch {
         setActionError("Unable to complete setup. Please try again.")
       } finally {
+        if (!completionFinished.current) completionPending.current = false
         setIsExiting(false)
       }
     },
@@ -139,13 +153,26 @@ export function BusinessSetupForm({
   const saveDraft = useCallback(
     async (
       values: BusinessPremisesInput,
-      nextDocuments: BusinessDocument[]
+      nextDocuments: BusinessDocument[],
+      revision: number,
+      allowDuringCompletion = false
     ) => {
-      const request = ++autosaveRequest.current
+      const previous = activeSave.current
+      if (previous) await previous
+      if (completionPending.current && !allowDuringCompletion) return false
+      if (revision !== autosaveRevision.current && !allowDuringCompletion) {
+        return false
+      }
+
       setAutosaveState("saving")
       try {
         const result = await onSaveDraft(values, nextDocuments)
-        if (request !== autosaveRequest.current) return false
+        if (
+          !allowDuringCompletion &&
+          (completionPending.current || revision !== autosaveRevision.current)
+        ) {
+          return false
+        }
         const error = errorMessage(result)
         if (error) {
           setAutosaveState("error")
@@ -156,7 +183,12 @@ export function BusinessSetupForm({
         setAutosaveState("saved")
         return true
       } catch {
-        if (request !== autosaveRequest.current) return false
+        if (
+          !allowDuringCompletion &&
+          (completionPending.current || revision !== autosaveRevision.current)
+        ) {
+          return false
+        }
         setAutosaveState("error")
         setActionError("Couldn't save your draft.")
         return false
@@ -167,14 +199,20 @@ export function BusinessSetupForm({
 
   const scheduleAutosave = useCallback(
     (values: BusinessPremisesInput, nextDocuments: BusinessDocument[]) => {
+      if (completionPending.current || completionFinished.current) return
       latestDraft.current = { values, documents: nextDocuments }
+      const revision = ++autosaveRevision.current
       if (autosaveTimer.current !== undefined) {
         window.clearTimeout(autosaveTimer.current)
       }
       setAutosaveState("saving")
       autosaveTimer.current = window.setTimeout(() => {
         autosaveTimer.current = undefined
-        void saveDraft(values, nextDocuments)
+        const operation = saveDraft(values, nextDocuments, revision)
+        activeSave.current = operation
+        void operation.finally(() => {
+          if (activeSave.current === operation) activeSave.current = null
+        })
       }, 500)
     },
     [saveDraft]
@@ -185,28 +223,54 @@ export function BusinessSetupForm({
       if (autosaveTimer.current !== undefined) {
         window.clearTimeout(autosaveTimer.current)
       }
-      autosaveRequest.current += 1
+      autosaveRevision.current += 1
     },
     []
   )
 
   async function handleSaveAndExit() {
-    if (isExiting) return
+    if (completionPending.current || completionFinished.current) return
+    completionPending.current = true
     if (autosaveTimer.current !== undefined) {
       window.clearTimeout(autosaveTimer.current)
       autosaveTimer.current = undefined
     }
     setIsExiting(true)
-    const saved = await saveDraft(
-      latestDraft.current.values,
-      latestDraft.current.documents
-    )
-    if (saved) onExit()
-    setIsExiting(false)
+    try {
+      const revision = autosaveRevision.current
+      const operation = saveDraft(
+        latestDraft.current.values,
+        latestDraft.current.documents,
+        revision,
+        true
+      )
+      activeSave.current = operation
+      void operation.finally(() => {
+        if (activeSave.current === operation) activeSave.current = null
+      })
+      const saved = await operation
+      if (saved) {
+        completionFinished.current = true
+        onExit()
+      }
+    } finally {
+      if (!completionFinished.current) completionPending.current = false
+      setIsExiting(false)
+    }
   }
 
   async function handleRetry() {
-    await saveDraft(latestDraft.current.values, latestDraft.current.documents)
+    if (completionPending.current || completionFinished.current) return
+    const operation = saveDraft(
+      latestDraft.current.values,
+      latestDraft.current.documents,
+      autosaveRevision.current
+    )
+    activeSave.current = operation
+    void operation.finally(() => {
+      if (activeSave.current === operation) activeSave.current = null
+    })
+    await operation
   }
 
   function handleDocuments(event: React.ChangeEvent<HTMLInputElement>) {

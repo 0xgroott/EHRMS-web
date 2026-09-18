@@ -178,4 +178,70 @@ describe("BusinessSetupForm", () => {
     await waitFor(() => expect(onSaveDraft).toHaveBeenCalledTimes(1))
     expect(onExit).toHaveBeenCalledExactlyOnceWith()
   })
+
+  it("cancels a pending autosave when setup is submitted", async () => {
+    const onSaveDraft = vi.fn().mockResolvedValue(undefined)
+    const onComplete = vi.fn().mockResolvedValue(undefined)
+    renderSetup({ onSaveDraft, onComplete })
+    const user = userEvent.setup()
+
+    await user.type(screen.getByLabelText("Premises name"), " Updated")
+    await user.click(screen.getByRole("button", { name: "Save and continue" }))
+    await waitFor(() => expect(onComplete).toHaveBeenCalledTimes(1))
+
+    await new Promise((resolve) => window.setTimeout(resolve, 650))
+    expect(onSaveDraft).not.toHaveBeenCalled()
+  })
+
+  it("waits for an active draft save before completing and never writes after completion", async () => {
+    let resolveDraft!: () => void
+    const draftPending = new Promise<void>((resolve) => {
+      resolveDraft = resolve
+    })
+    const events: string[] = []
+    const onSaveDraft = vi.fn().mockImplementation(() => {
+      events.push("draft-start")
+      return draftPending.then(() => {
+        events.push("draft-finished")
+      })
+    })
+    const onComplete = vi.fn().mockImplementation(async () => {
+      events.push("complete")
+    })
+    renderSetup({ onSaveDraft, onComplete })
+    const user = userEvent.setup()
+
+    await user.type(screen.getByLabelText("Ward"), " Updated")
+    await waitFor(() => expect(onSaveDraft).toHaveBeenCalledTimes(1))
+    await user.click(screen.getByRole("button", { name: "Save and continue" }))
+    expect(onComplete).not.toHaveBeenCalled()
+
+    resolveDraft()
+    await waitFor(() => expect(onComplete).toHaveBeenCalledTimes(1))
+    expect(events).toEqual(["draft-start", "draft-finished", "complete"])
+    await new Promise((resolve) => window.setTimeout(resolve, 650))
+    expect(onSaveDraft).toHaveBeenCalledTimes(1)
+  })
+
+  it("keeps saving status until the newest edit has been persisted", async () => {
+    let resolveFirst!: () => void
+    const firstSave = new Promise<void>((resolve) => {
+      resolveFirst = resolve
+    })
+    const onSaveDraft = vi
+      .fn()
+      .mockImplementationOnce(() => firstSave)
+      .mockResolvedValueOnce(undefined)
+    renderSetup({ onSaveDraft })
+    const user = userEvent.setup()
+
+    await user.type(screen.getByLabelText("Ward"), " first")
+    await waitFor(() => expect(onSaveDraft).toHaveBeenCalledTimes(1))
+    await user.type(screen.getByLabelText("Ward"), " second")
+    expect(screen.getByRole("status")).toHaveTextContent("Saving…")
+
+    resolveFirst()
+    await waitFor(() => expect(onSaveDraft).toHaveBeenCalledTimes(2))
+    expect(screen.getByRole("status")).toHaveTextContent("Saved")
+  })
 })
