@@ -34,6 +34,7 @@ import { Route as AppPremisesIndexRouteImport } from './routes/_app.premises.ind
 import { Route as AppPremisesPremisesIdRouteImport } from './routes/_app.premises.$premisesId'
 import { Route as BusinessPortalApplicationsRouteImport } from './routes/business._portal.applications'
 import { Route as BusinessPortalCertificatesRouteImport } from './routes/business._portal.certificates'
+import { Route as BusinessPortalDashboardRouteImport } from './routes/business._portal.dashboard'
 import { Route as BusinessPortalFoodHandlersRouteImport } from './routes/business._portal.food-handlers'
 import { Route as BusinessPortalInspectionsRouteImport } from './routes/business._portal.inspections'
 import { Route as BusinessPortalProfileRouteImport } from './routes/business._portal.profile'
@@ -163,6 +164,11 @@ const BusinessPortalCertificatesRoute =
     path: '/certificates',
     getParentRoute: () => BusinessPortalRoute,
   } as any)
+const BusinessPortalDashboardRoute = BusinessPortalDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => BusinessPortalRoute,
+} as any)
 const BusinessPortalFoodHandlersRoute =
   BusinessPortalFoodHandlersRouteImport.update({
     id: '/food-handlers',
@@ -204,6 +210,7 @@ export interface FileRoutesByFullPath {
   '/premises/$premisesId': typeof AppPremisesPremisesIdRoute
   '/business/applications': typeof BusinessPortalApplicationsRoute
   '/business/certificates': typeof BusinessPortalCertificatesRoute
+  '/business/dashboard': typeof BusinessPortalDashboardRoute
   '/business/food-handlers': typeof BusinessPortalFoodHandlersRoute
   '/business/inspections': typeof BusinessPortalInspectionsRoute
   '/business/profile': typeof BusinessPortalProfileRoute
@@ -231,6 +238,7 @@ export interface FileRoutesByTo {
   '/premises/$premisesId': typeof AppPremisesPremisesIdRoute
   '/business/applications': typeof BusinessPortalApplicationsRoute
   '/business/certificates': typeof BusinessPortalCertificatesRoute
+  '/business/dashboard': typeof BusinessPortalDashboardRoute
   '/business/food-handlers': typeof BusinessPortalFoodHandlersRoute
   '/business/inspections': typeof BusinessPortalInspectionsRoute
   '/business/profile': typeof BusinessPortalProfileRoute
@@ -262,6 +270,7 @@ export interface FileRoutesById {
   '/_app/premises/$premisesId': typeof AppPremisesPremisesIdRoute
   '/business/_portal/applications': typeof BusinessPortalApplicationsRoute
   '/business/_portal/certificates': typeof BusinessPortalCertificatesRoute
+  '/business/_portal/dashboard': typeof BusinessPortalDashboardRoute
   '/business/_portal/food-handlers': typeof BusinessPortalFoodHandlersRoute
   '/business/_portal/inspections': typeof BusinessPortalInspectionsRoute
   '/business/_portal/profile': typeof BusinessPortalProfileRoute
@@ -292,6 +301,7 @@ export interface FileRouteTypes {
     | '/premises/$premisesId'
     | '/business/applications'
     | '/business/certificates'
+    | '/business/dashboard'
     | '/business/food-handlers'
     | '/business/inspections'
     | '/business/profile'
@@ -319,6 +329,7 @@ export interface FileRouteTypes {
     | '/premises/$premisesId'
     | '/business/applications'
     | '/business/certificates'
+    | '/business/dashboard'
     | '/business/food-handlers'
     | '/business/inspections'
     | '/business/profile'
@@ -349,6 +360,7 @@ export interface FileRouteTypes {
     | '/_app/premises/$premisesId'
     | '/business/_portal/applications'
     | '/business/_portal/certificates'
+    | '/business/_portal/dashboard'
     | '/business/_portal/food-handlers'
     | '/business/_portal/inspections'
     | '/business/_portal/profile'
@@ -538,6 +550,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BusinessPortalCertificatesRouteImport
       parentRoute: typeof BusinessPortalRoute
     }
+    '/business/_portal/dashboard': {
+      id: '/business/_portal/dashboard'
+      path: '/dashboard'
+      fullPath: '/business/dashboard'
+      preLoaderRoute: typeof BusinessPortalDashboardRouteImport
+      parentRoute: typeof BusinessPortalRoute
+    }
     '/business/_portal/food-handlers': {
       id: '/business/_portal/food-handlers'
       path: '/food-handlers'
@@ -601,6 +620,7 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 interface BusinessPortalRouteChildren {
   BusinessPortalApplicationsRoute: typeof BusinessPortalApplicationsRoute
   BusinessPortalCertificatesRoute: typeof BusinessPortalCertificatesRoute
+  BusinessPortalDashboardRoute: typeof BusinessPortalDashboardRoute
   BusinessPortalFoodHandlersRoute: typeof BusinessPortalFoodHandlersRoute
   BusinessPortalInspectionsRoute: typeof BusinessPortalInspectionsRoute
   BusinessPortalProfileRoute: typeof BusinessPortalProfileRoute
@@ -609,6 +629,7 @@ interface BusinessPortalRouteChildren {
 const BusinessPortalRouteChildren: BusinessPortalRouteChildren = {
   BusinessPortalApplicationsRoute: BusinessPortalApplicationsRoute,
   BusinessPortalCertificatesRoute: BusinessPortalCertificatesRoute,
+  BusinessPortalDashboardRoute: BusinessPortalDashboardRoute,
   BusinessPortalFoodHandlersRoute: BusinessPortalFoodHandlersRoute,
   BusinessPortalInspectionsRoute: BusinessPortalInspectionsRoute,
   BusinessPortalProfileRoute: BusinessPortalProfileRoute,
