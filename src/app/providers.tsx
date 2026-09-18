@@ -1,0 +1,9 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { useState } from "react"
+import { TooltipProvider } from "@/components/ui/tooltip"
+import { DemoSessionProvider } from "./demo-session"
+
+export function Providers({ children }: { children: React.ReactNode }) {
+  const [queryClient] = useState(() => new QueryClient({ defaultOptions: { queries: { staleTime: 30_000 } } }))
+  return <QueryClientProvider client={queryClient}><DemoSessionProvider><TooltipProvider>{children}</TooltipProvider></DemoSessionProvider></QueryClientProvider>
+}

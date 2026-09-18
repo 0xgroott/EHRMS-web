@@ -10,33 +10,213 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppRouteImport } from './routes/_app'
+import { Route as AppApplicationsRouteImport } from './routes/_app.applications'
+import { Route as AppAuditRouteImport } from './routes/_app.audit'
+import { Route as AppCertificatesRouteImport } from './routes/_app.certificates'
+import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
+import { Route as AppFinanceRouteImport } from './routes/_app.finance'
+import { Route as AppInspectionsRouteImport } from './routes/_app.inspections'
+import { Route as AppNoticesRouteImport } from './routes/_app.notices'
+import { Route as AppProvidersRouteImport } from './routes/_app.providers'
+import { Route as AppReportsRouteImport } from './routes/_app.reports'
+import { Route as AppSettingsRouteImport } from './routes/_app.settings'
+import { Route as AppSystemRouteImport } from './routes/_app.system'
+import { Route as AppUsersRouteImport } from './routes/_app.users'
+import { Route as AppPremisesIndexRouteImport } from './routes/_app.premises.index'
+import { Route as AppPremisesPremisesIdRouteImport } from './routes/_app.premises.$premisesId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppRoute = AppRouteImport.update({
+  id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppApplicationsRoute = AppApplicationsRouteImport.update({
+  id: '/applications',
+  path: '/applications',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAuditRoute = AppAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCertificatesRoute = AppCertificatesRouteImport.update({
+  id: '/certificates',
+  path: '/certificates',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDashboardRoute = AppDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppFinanceRoute = AppFinanceRouteImport.update({
+  id: '/finance',
+  path: '/finance',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppInspectionsRoute = AppInspectionsRouteImport.update({
+  id: '/inspections',
+  path: '/inspections',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppNoticesRoute = AppNoticesRouteImport.update({
+  id: '/notices',
+  path: '/notices',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProvidersRoute = AppProvidersRouteImport.update({
+  id: '/providers',
+  path: '/providers',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppReportsRoute = AppReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSettingsRoute = AppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSystemRoute = AppSystemRouteImport.update({
+  id: '/system',
+  path: '/system',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppUsersRoute = AppUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPremisesIndexRoute = AppPremisesIndexRouteImport.update({
+  id: '/premises/',
+  path: '/premises/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPremisesPremisesIdRoute = AppPremisesPremisesIdRouteImport.update({
+  id: '/premises/$premisesId',
+  path: '/premises/$premisesId',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/applications': typeof AppApplicationsRoute
+  '/audit': typeof AppAuditRoute
+  '/certificates': typeof AppCertificatesRoute
+  '/dashboard': typeof AppDashboardRoute
+  '/finance': typeof AppFinanceRoute
+  '/inspections': typeof AppInspectionsRoute
+  '/notices': typeof AppNoticesRoute
+  '/providers': typeof AppProvidersRoute
+  '/reports': typeof AppReportsRoute
+  '/settings': typeof AppSettingsRoute
+  '/system': typeof AppSystemRoute
+  '/users': typeof AppUsersRoute
+  '/premises/$premisesId': typeof AppPremisesPremisesIdRoute
+  '/premises/': typeof AppPremisesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/applications': typeof AppApplicationsRoute
+  '/audit': typeof AppAuditRoute
+  '/certificates': typeof AppCertificatesRoute
+  '/dashboard': typeof AppDashboardRoute
+  '/finance': typeof AppFinanceRoute
+  '/inspections': typeof AppInspectionsRoute
+  '/notices': typeof AppNoticesRoute
+  '/providers': typeof AppProvidersRoute
+  '/reports': typeof AppReportsRoute
+  '/settings': typeof AppSettingsRoute
+  '/system': typeof AppSystemRoute
+  '/users': typeof AppUsersRoute
+  '/premises/$premisesId': typeof AppPremisesPremisesIdRoute
+  '/premises': typeof AppPremisesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_app': typeof AppRouteWithChildren
+  '/_app/applications': typeof AppApplicationsRoute
+  '/_app/audit': typeof AppAuditRoute
+  '/_app/certificates': typeof AppCertificatesRoute
+  '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/finance': typeof AppFinanceRoute
+  '/_app/inspections': typeof AppInspectionsRoute
+  '/_app/notices': typeof AppNoticesRoute
+  '/_app/providers': typeof AppProvidersRoute
+  '/_app/reports': typeof AppReportsRoute
+  '/_app/settings': typeof AppSettingsRoute
+  '/_app/system': typeof AppSystemRoute
+  '/_app/users': typeof AppUsersRoute
+  '/_app/premises/$premisesId': typeof AppPremisesPremisesIdRoute
+  '/_app/premises/': typeof AppPremisesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/applications'
+    | '/audit'
+    | '/certificates'
+    | '/dashboard'
+    | '/finance'
+    | '/inspections'
+    | '/notices'
+    | '/providers'
+    | '/reports'
+    | '/settings'
+    | '/system'
+    | '/users'
+    | '/premises/$premisesId'
+    | '/premises/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/applications'
+    | '/audit'
+    | '/certificates'
+    | '/dashboard'
+    | '/finance'
+    | '/inspections'
+    | '/notices'
+    | '/providers'
+    | '/reports'
+    | '/settings'
+    | '/system'
+    | '/users'
+    | '/premises/$premisesId'
+    | '/premises'
+  id:
+    | '__root__'
+    | '/'
+    | '/_app'
+    | '/_app/applications'
+    | '/_app/audit'
+    | '/_app/certificates'
+    | '/_app/dashboard'
+    | '/_app/finance'
+    | '/_app/inspections'
+    | '/_app/notices'
+    | '/_app/providers'
+    | '/_app/reports'
+    | '/_app/settings'
+    | '/_app/system'
+    | '/_app/users'
+    | '/_app/premises/$premisesId'
+    | '/_app/premises/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AppRoute: typeof AppRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +228,153 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app': {
+      id: '/_app'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_app/applications': {
+      id: '/_app/applications'
+      path: '/applications'
+      fullPath: '/applications'
+      preLoaderRoute: typeof AppApplicationsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/audit': {
+      id: '/_app/audit'
+      path: '/audit'
+      fullPath: '/audit'
+      preLoaderRoute: typeof AppAuditRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/certificates': {
+      id: '/_app/certificates'
+      path: '/certificates'
+      fullPath: '/certificates'
+      preLoaderRoute: typeof AppCertificatesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/dashboard': {
+      id: '/_app/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AppDashboardRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/finance': {
+      id: '/_app/finance'
+      path: '/finance'
+      fullPath: '/finance'
+      preLoaderRoute: typeof AppFinanceRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/inspections': {
+      id: '/_app/inspections'
+      path: '/inspections'
+      fullPath: '/inspections'
+      preLoaderRoute: typeof AppInspectionsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/notices': {
+      id: '/_app/notices'
+      path: '/notices'
+      fullPath: '/notices'
+      preLoaderRoute: typeof AppNoticesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/providers': {
+      id: '/_app/providers'
+      path: '/providers'
+      fullPath: '/providers'
+      preLoaderRoute: typeof AppProvidersRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/reports': {
+      id: '/_app/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof AppReportsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/settings': {
+      id: '/_app/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AppSettingsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/system': {
+      id: '/_app/system'
+      path: '/system'
+      fullPath: '/system'
+      preLoaderRoute: typeof AppSystemRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/users': {
+      id: '/_app/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof AppUsersRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/premises/': {
+      id: '/_app/premises/'
+      path: '/premises'
+      fullPath: '/premises/'
+      preLoaderRoute: typeof AppPremisesIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/premises/$premisesId': {
+      id: '/_app/premises/$premisesId'
+      path: '/premises/$premisesId'
+      fullPath: '/premises/$premisesId'
+      preLoaderRoute: typeof AppPremisesPremisesIdRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
+interface AppRouteChildren {
+  AppApplicationsRoute: typeof AppApplicationsRoute
+  AppAuditRoute: typeof AppAuditRoute
+  AppCertificatesRoute: typeof AppCertificatesRoute
+  AppDashboardRoute: typeof AppDashboardRoute
+  AppFinanceRoute: typeof AppFinanceRoute
+  AppInspectionsRoute: typeof AppInspectionsRoute
+  AppNoticesRoute: typeof AppNoticesRoute
+  AppProvidersRoute: typeof AppProvidersRoute
+  AppReportsRoute: typeof AppReportsRoute
+  AppSettingsRoute: typeof AppSettingsRoute
+  AppSystemRoute: typeof AppSystemRoute
+  AppUsersRoute: typeof AppUsersRoute
+  AppPremisesPremisesIdRoute: typeof AppPremisesPremisesIdRoute
+  AppPremisesIndexRoute: typeof AppPremisesIndexRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppApplicationsRoute: AppApplicationsRoute,
+  AppAuditRoute: AppAuditRoute,
+  AppCertificatesRoute: AppCertificatesRoute,
+  AppDashboardRoute: AppDashboardRoute,
+  AppFinanceRoute: AppFinanceRoute,
+  AppInspectionsRoute: AppInspectionsRoute,
+  AppNoticesRoute: AppNoticesRoute,
+  AppProvidersRoute: AppProvidersRoute,
+  AppReportsRoute: AppReportsRoute,
+  AppSettingsRoute: AppSettingsRoute,
+  AppSystemRoute: AppSystemRoute,
+  AppUsersRoute: AppUsersRoute,
+  AppPremisesPremisesIdRoute: AppPremisesPremisesIdRoute,
+  AppPremisesIndexRoute: AppPremisesIndexRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AppRoute: AppRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
