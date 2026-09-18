@@ -88,6 +88,10 @@ function isBusinessPortalState(value: unknown): value is BusinessPortalState {
 
   return (
     value.schemaVersion === 1 &&
+    (value.verificationExpiresAt === undefined ||
+      (typeof value.verificationExpiresAt === "number" &&
+        Number.isFinite(value.verificationExpiresAt) &&
+        value.verificationExpiresAt >= 0)) &&
     isStage(value.stage) &&
     Array.isArray(value.alerts) &&
     value.alerts.every(isAlert) &&
@@ -103,9 +107,13 @@ export function createBusinessStorage(storage: Storage = window.localStorage) {
         if (!raw) return structuredClone(emptyBusinessState)
 
         const value: unknown = JSON.parse(raw)
-        return isBusinessPortalState(value)
-          ? value
-          : structuredClone(emptyBusinessState)
+        if (!isBusinessPortalState(value))
+          return structuredClone(emptyBusinessState)
+        // Old v1 drafts retain their details but need a fresh demo code.
+        return value.stage === "verification" &&
+          value.verificationExpiresAt === undefined
+          ? { ...value, verificationExpiresAt: 0 }
+          : value
       } catch {
         return structuredClone(emptyBusinessState)
       }

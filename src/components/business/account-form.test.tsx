@@ -2,6 +2,8 @@ import { act, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 import { AccountForm } from "./account-form"
+import { createBusinessRepository } from "@/services/business-repository"
+import { createBusinessStorage } from "@/services/business-storage"
 import type { BusinessAccountInput } from "@/domain/business-types"
 
 // jsdom does not provide the PointerEvent constructor used by Base UI.
@@ -67,6 +69,44 @@ describe("AccountForm", () => {
     )
     expect(onSubmit).not.toHaveBeenCalled()
   })
+
+  it.each([
+    ["Email address", "ada@riverside.ng", "new@example.test", "email"],
+    ["Phone number", "08031234567", "08098765433", "phone"],
+  ])(
+    "shows duplicate %s inline and permits correction",
+    async (label, duplicate, replacement, field) => {
+      localStorage.clear()
+      const repository = createBusinessRepository(createBusinessStorage())
+      render(
+        <AccountForm
+          signInLink={null}
+          onSubmit={(input) => {
+            const result = repository.createAccount(input)
+            if (!result.ok) return { fieldErrors: result.errors }
+          }}
+        />
+      )
+      const user = await fillAccount({
+        ...account,
+        email: "unique@example.test",
+        phone: "08098765432",
+        [field]: duplicate,
+      })
+      await user.click(screen.getByRole("button", { name: "Create account" }))
+      const input = screen.getByLabelText(label)
+      await waitFor(() =>
+        expect(input).toHaveAccessibleDescription(/already registered/)
+      )
+      expect(repository.getState().profile).toBeNull()
+      await user.clear(input)
+      await user.type(input, replacement)
+      await user.click(screen.getByRole("button", { name: "Create account" }))
+      await waitFor(() =>
+        expect(repository.getState().stage).toBe("verification")
+      )
+    }
+  )
 
   it("retains invalid entries for correction", async () => {
     const onSubmit = renderAccount()

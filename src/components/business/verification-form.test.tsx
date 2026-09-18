@@ -43,6 +43,44 @@ describe("VerificationForm", () => {
     expect(input).toHaveAttribute("maxlength", "6")
   })
 
+  it("shows expiry independently of cooldown and recovers after resend", async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date("2026-09-18T12:00:00Z"))
+    const expiresAt = Date.now() + 300_000
+    const onVerify = vi.fn()
+    const onResend = vi
+      .fn()
+      .mockImplementation(() => ({ expiresAt: Date.now() + 300_000 }))
+    renderVerification({ expiresAt, onVerify, onResend })
+    act(() => vi.advanceTimersByTime(60_000))
+    expect(
+      screen.queryByText("This code has expired. Request a new code.")
+    ).not.toBeInTheDocument()
+    act(() => {
+      vi.setSystemTime(Date.now() + 240_000)
+      vi.advanceTimersByTime(1000)
+    })
+    expect(
+      screen.getByText("This code has expired. Request a new code.")
+    ).toBeVisible()
+    expect(
+      screen.getByRole("button", { name: "Verify and continue" })
+    ).toBeDisabled()
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Resend code" }))
+    })
+    expect(
+      screen.queryByText("This code has expired. Request a new code.")
+    ).not.toBeInTheDocument()
+    enterCode("123456")
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", { name: "Verify and continue" })
+      )
+    })
+    expect(onVerify).toHaveBeenCalledWith("123456")
+  })
+
   it("shows a wrong-code error without clearing the entered code", async () => {
     const onVerify = vi
       .fn()
@@ -113,6 +151,20 @@ describe("VerificationForm", () => {
     act(() => vi.advanceTimersByTime(60_000))
 
     expect(screen.getByText("You can request a new code now.")).toBeVisible()
+    expect(screen.getByRole("button", { name: "Resend code" })).toBeEnabled()
+  })
+
+  it("makes resend available when an expired tab resumes after timers were suspended", () => {
+    vi.useFakeTimers()
+    const issuedAt = Date.now()
+    renderVerification({ expiresAt: issuedAt + 300_000 })
+    act(() => {
+      vi.setSystemTime(issuedAt + 300_000)
+      vi.advanceTimersByTime(1000)
+    })
+    expect(
+      screen.getByText("This code has expired. Request a new code.")
+    ).toBeVisible()
     expect(screen.getByRole("button", { name: "Resend code" })).toBeEnabled()
   })
 

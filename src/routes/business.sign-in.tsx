@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router"
 import { useBusinessSession } from "@/app/business-session"
 import { OnboardingShell } from "@/components/business/onboarding-shell"
 import { SignInForm } from "@/components/business/sign-in-form"
+import { SavedRegistration } from "@/components/business/saved-registration"
 import { Button } from "@/components/ui/button"
 
 export const Route = createFileRoute("/business/sign-in")({
@@ -15,6 +16,7 @@ function BusinessSignIn() {
       title="Sign in to your business"
       description="Continue managing your applications, certificates and inspections."
     >
+      <SavedRegistration />
       <SignInForm
         onSubmit={({ contact, password }) => {
           const result = session.signInDemo(contact, password)

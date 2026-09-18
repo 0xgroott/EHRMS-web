@@ -15,7 +15,7 @@ import {
 } from "@/data/business-seeds"
 import { createBusinessStorage } from "@/services/business-storage"
 import { BusinessShell } from "./business-shell"
-import { BusinessPortalAccess } from "@/routes/business._portal"
+import { BusinessPortalAccess } from "./business-portal-access"
 import { UpcomingModule } from "./upcoming-module"
 
 const destinations = [

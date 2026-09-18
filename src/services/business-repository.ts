@@ -19,13 +19,17 @@ import {
 import type { createBusinessStorage } from "./business-storage"
 
 type BusinessStorageAdapter = ReturnType<typeof createBusinessStorage>
-type ContactInput = Pick<BusinessAccountInput, "email" | "phone">
-type BusinessRepositoryErrors =
-  | ValidationErrors<BusinessAccountInput>
-  | ValidationErrors<BusinessPremisesInput>
-  | ValidationErrors<ContactInput>
-  | { credentials: string }
-  | { state: string }
+export type ContactInput = Pick<BusinessAccountInput, "email" | "phone">
+type BusinessRepositoryErrors = Partial<
+  Record<
+    | keyof BusinessAccountInput
+    | keyof BusinessPremisesInput
+    | "code"
+    | "credentials"
+    | "state",
+    string
+  >
+>
 
 export type BusinessRepositoryResult =
   | { ok: true; state: BusinessPortalState }
@@ -47,6 +51,24 @@ function success(state: BusinessPortalState): BusinessRepositoryResult {
   return { ok: true, state }
 }
 
+export const VERIFICATION_LIFETIME_MS = 5 * 60 * 1000
+
+function duplicateContactErrors(
+  input: ContactInput
+): ValidationErrors<ContactInput> {
+  const errors: ValidationErrors<ContactInput> = {}
+  if (input.email.trim().toLowerCase() === DEMO_BUSINESS_CREDENTIALS.email) {
+    errors.email =
+      "This email is already registered. Use another email or sign in."
+  }
+  const phone = input.phone.replace(/\D/g, "").replace(/^234/, "0")
+  if (phone === DEMO_BUSINESS_CREDENTIALS.phone) {
+    errors.phone =
+      "This phone number is already registered. Use another number or sign in."
+  }
+  return errors
+}
+
 function withProfile(
   state: BusinessPortalState,
   profile: BusinessProfile,
@@ -55,7 +77,10 @@ function withProfile(
   return { ...state, stage, profile }
 }
 
-export function createBusinessRepository(storage: BusinessStorageAdapter) {
+export function createBusinessRepository(
+  storage: BusinessStorageAdapter,
+  now: () => number = Date.now
+) {
   function write(state: BusinessPortalState): BusinessRepositoryResult {
     storage.write(state)
     return success(state)
@@ -77,7 +102,10 @@ export function createBusinessRepository(storage: BusinessStorageAdapter) {
       return write(structuredClone(returningBusinessState))
     },
     createAccount(input: BusinessAccountInput): BusinessRepositoryResult {
-      const errors = validateAccount(input)
+      const errors = {
+        ...validateAccount(input),
+        ...duplicateContactErrors(input),
+      }
       if (hasErrors(errors)) return failure(errors)
 
       const profile: BusinessProfile = {
@@ -91,13 +119,14 @@ export function createBusinessRepository(storage: BusinessStorageAdapter) {
         documents: [],
       }
 
-      return write(
-        withProfile(
+      return write({
+        ...withProfile(
           structuredClone(emptyBusinessState),
           profile,
           "verification"
-        )
-      )
+        ),
+        verificationExpiresAt: now() + VERIFICATION_LIFETIME_MS,
+      })
     },
     verifyContact(code: string): BusinessRepositoryResult {
       const errors = validateOtp(code)
@@ -105,10 +134,28 @@ export function createBusinessRepository(storage: BusinessStorageAdapter) {
 
       const state = storage.read()
       if (!state.profile) return failure({ state: "Create an account first" })
+      if (state.stage !== "verification")
+        return failure({ state: "There is no contact awaiting verification" })
+      if (
+        !state.verificationExpiresAt ||
+        now() >= state.verificationExpiresAt
+      ) {
+        return failure({ code: "This code has expired. Request a new code." })
+      }
 
       return write(
         withProfile(state, { ...state.profile, verified: true }, "setup")
       )
+    },
+    resendVerification(): BusinessRepositoryResult {
+      const state = storage.read()
+      if (!state.profile || state.stage !== "verification") {
+        return failure({ state: "There is no contact awaiting verification" })
+      }
+      return write({
+        ...state,
+        verificationExpiresAt: now() + VERIFICATION_LIFETIME_MS,
+      })
     },
     updateContact(input: ContactInput): BusinessRepositoryResult {
       const state = storage.read()
@@ -122,11 +169,12 @@ export function createBusinessRepository(storage: BusinessStorageAdapter) {
       const errors = {
         email: accountErrors.email,
         phone: accountErrors.phone,
+        ...duplicateContactErrors(input),
       }
       if (hasErrors(errors)) return failure(errors)
 
-      return write(
-        withProfile(
+      return write({
+        ...withProfile(
           state,
           {
             ...state.profile,
@@ -135,8 +183,9 @@ export function createBusinessRepository(storage: BusinessStorageAdapter) {
             verified: false,
           },
           "verification"
-        )
-      )
+        ),
+        verificationExpiresAt: now() + VERIFICATION_LIFETIME_MS,
+      })
     },
     savePremisesDraft(
       premises: BusinessPremisesInput,

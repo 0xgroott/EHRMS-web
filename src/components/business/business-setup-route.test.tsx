@@ -4,14 +4,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { Providers } from "@/app/providers"
 import { createBusinessRepository } from "@/services/business-repository"
 import { createBusinessStorage } from "@/services/business-storage"
-import { BusinessSetup } from "@/routes/business.setup"
+import { BusinessSetup } from "./business-setup-page"
 import { returningBusinessState } from "@/data/business-seeds"
 
 const account = {
   businessName: "Riverside Kitchen",
   contactName: "Ada Okafor",
-  phone: "08031234567",
-  email: "ada@riverside.ng",
+  phone: "08098765432",
+  email: "ada@example.test",
   password: "not-stored-password",
   acceptedTerms: true,
 }

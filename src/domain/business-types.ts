@@ -49,6 +49,8 @@ export interface BusinessAlert {
 
 export interface BusinessPortalState {
   schemaVersion: 1
+  /** Expiry timestamp only; the demo code itself is never persisted. */
+  verificationExpiresAt?: number
   stage: BusinessOnboardingStage
   profile: BusinessProfile | null
   alerts: BusinessAlert[]

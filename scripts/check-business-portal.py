@@ -97,6 +97,7 @@ def run_checks(base_url, screenshots):
         try:
             context = browser.new_context(viewport={"width": 1440, "height": 1000})
             page = context.new_page()
+            page.clock.install()
             page.on("pageerror", lambda error: errors.append("page: " + str(error)))
             page.on("console", lambda message: errors.append("console: " + message.text)
                     if message.type == "error" else None)
@@ -118,10 +119,39 @@ def run_checks(base_url, screenshots):
             }.items():
                 page.get_by_label(label, exact=True).fill(value)
             page.get_by_role("checkbox").check()
+            for label, reserved, replacement in (
+                ("Email address", "ada@riverside.ng", "browser-test@example.test"),
+                ("Phone number", "08031234567", "08039990001"),
+            ):
+                page.get_by_label(label, exact=True).fill(reserved)
+                page.get_by_role("button", name="Create account", exact=True).click()
+                expect(page.get_by_label(label, exact=True)).to_have_attribute("aria-invalid", "true")
+                expect(page.get_by_text(re.compile("already registered")).first).to_be_visible()
+                page.get_by_label(label, exact=True).fill(replacement)
             page.get_by_role("button", name="Create account", exact=True).click()
             at(page, "verify")
             expect(page.get_by_text("Use code 123456", exact=True)).to_be_visible()
-            expect(page.get_by_text("b***@example.test", exact=True)).to_be_visible()
+            expect(page.get_by_text("b***@example.test or ••••••0001", exact=True)).to_be_visible()
+            visit(page, "/business/register")
+            page.get_by_role("button", name="Continue saved registration", exact=True).click()
+            at(page, "verify")
+            profile_before = page.evaluate("JSON.parse(localStorage.getItem('ehrcms:business:v1')).profile")
+            page.get_by_role("button", name="Change contact", exact=True).click()
+            expect(page.get_by_label("Email address", exact=True)).to_have_value("browser-test@example.test")
+            for label, reserved, replacement in (
+                ("Email address", "ada@riverside.ng", "updated@example.test"),
+                ("Phone number", "08031234567", "08039990002"),
+            ):
+                page.get_by_label(label, exact=True).fill(reserved)
+                page.get_by_role("button", name="Save contact and continue", exact=True).click()
+                expect(page.get_by_label(label, exact=True)).to_have_attribute("aria-invalid", "true")
+                expect(page.get_by_text(re.compile("already registered")).first).to_be_visible()
+                page.get_by_label(label, exact=True).fill(replacement)
+            page.get_by_role("button", name="Save contact and continue", exact=True).click()
+            expect(page.get_by_text("u***@example.test or ••••••0002", exact=True)).to_be_visible()
+            profile_after = page.evaluate("JSON.parse(localStorage.getItem('ehrcms:business:v1')).profile")
+            assert profile_after == {**profile_before, "email": "updated@example.test", "phone": "08039990002"}
+            passed("duplicate contact recovery and populated editing preserve the registration")
             visit(page, "/business/dashboard")
             at(page, "verify")
             visit(page, "/business/setup")
@@ -130,6 +160,12 @@ def run_checks(base_url, screenshots):
             page.get_by_role("button", name="Verify and continue", exact=True).click()
             expect(page.get_by_text("Enter the demo code 123456", exact=True).first).to_be_visible()
             at(page, "verify")
+            page.clock.fast_forward(300_000)
+            expect(page.get_by_text("This code has expired. Request a new code.", exact=True)).to_be_visible()
+            expect(page.get_by_role("button", name="Verify and continue", exact=True)).to_be_disabled()
+            page.get_by_role("button", name="Resend code", exact=True).click()
+            expect(page.get_by_text("This code has expired. Request a new code.", exact=True)).to_have_count(0)
+            passed("expired OTP recovery through resend")
             page.get_by_label("6-digit verification code", exact=True).fill("123456")
             page.get_by_role("button", name="Verify and continue", exact=True).click()
             at(page, "setup")
@@ -154,7 +190,8 @@ def run_checks(base_url, screenshots):
             expect(page.get_by_text("demo-permit.pdf", exact=True)).to_be_visible()
             page.get_by_role("button", name="Save draft and exit", exact=True).click()
             at(page, "sign-in")
-            visit(page, "/business/setup")
+            page.get_by_role("button", name="Continue saved registration", exact=True).click()
+            at(page, "setup")
             expect(page.get_by_label("Business type", exact=True)).to_have_value("Restaurant")
             expect(page.get_by_text("demo-permit.pdf", exact=True)).to_be_visible()
             page.get_by_role("button", name="Save and continue", exact=True).click()

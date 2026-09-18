@@ -14,7 +14,7 @@ const validAccount = {
   businessName: "Riverside Kitchen",
   contactName: "Ada Okafor",
   phone: "08098765432",
-  email: "ada@riverside.ng",
+  email: "ada@example.test",
   password: "not-stored-password",
   acceptedTerms: true,
 }
@@ -188,7 +188,7 @@ describe("business repository", () => {
 
     const result = repository.updateContact({
       email: "new-contact@riverside.ng",
-      phone: "+234 803 123 4567",
+      phone: "+234 809 876 5433",
     })
 
     expect(result).toMatchObject({
@@ -197,7 +197,7 @@ describe("business repository", () => {
         stage: "verification",
         profile: {
           email: "new-contact@riverside.ng",
-          phone: "+234 803 123 4567",
+          phone: "+234 809 876 5433",
           verified: false,
         },
       },

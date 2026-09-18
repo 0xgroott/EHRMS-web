@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { useBusinessSession } from "@/app/business-session"
 import { AccountForm } from "@/components/business/account-form"
+import { SavedRegistration } from "@/components/business/saved-registration"
 import { OnboardingShell } from "@/components/business/onboarding-shell"
 import { Button } from "@/components/ui/button"
 import { createBusinessRepository } from "@/services/business-repository"
@@ -18,6 +19,7 @@ function BusinessRegister() {
       description="Start with your business and contact details. All fields are required."
       step={1}
     >
+      <SavedRegistration />
       <AccountForm
         onSubmit={async (input) => {
           const result = createBusinessRepository(
@@ -25,6 +27,7 @@ function BusinessRegister() {
           ).createAccount(input)
           if (!result.ok)
             return {
+              fieldErrors: result.errors,
               error:
                 Object.values(result.errors).find(Boolean) ??
                 "Unable to create your account. Please try again.",

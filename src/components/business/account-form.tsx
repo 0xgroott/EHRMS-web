@@ -1,7 +1,10 @@
 import { useForm } from "@tanstack/react-form"
 import { useId, useState } from "react"
 import type { ReactNode } from "react"
-import type { BusinessAccountInput } from "@/domain/business-types"
+import type {
+  BusinessAccountInput,
+  ValidationErrors,
+} from "@/domain/business-types"
 import { validateAccount } from "@/domain/business-validation"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -16,10 +19,14 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 
+type AccountActionResult = void | {
+  error?: string
+  fieldErrors?: ValidationErrors<BusinessAccountInput>
+}
 type AccountFormProps = {
   onSubmit: (
     input: BusinessAccountInput
-  ) => void | { error?: string } | Promise<void | { error?: string }>
+  ) => AccountActionResult | Promise<AccountActionResult>
   signInLink: ReactNode
 }
 
@@ -63,6 +70,9 @@ const fields = [
 export function AccountForm({ onSubmit, signInLink }: AccountFormProps) {
   const id = useId()
   const [error, setError] = useState<string>()
+  const [fieldErrors, setFieldErrors] = useState<
+    ValidationErrors<BusinessAccountInput>
+  >({})
   const form = useForm({
     defaultValues,
     validators: {
@@ -73,9 +83,11 @@ export function AccountForm({ onSubmit, signInLink }: AccountFormProps) {
     },
     onSubmit: async ({ value }) => {
       setError(undefined)
+      setFieldErrors({})
       try {
         const result = await onSubmit(value)
         setError(result?.error)
+        setFieldErrors(result?.fieldErrors ?? {})
       } catch {
         setError("Unable to create your account. Please try again.")
       }
@@ -95,7 +107,7 @@ export function AccountForm({ onSubmit, signInLink }: AccountFormProps) {
         {fields.map(({ name, label, type, autoComplete }) => (
           <form.Field key={name} name={name}>
             {(field) => {
-              const message = field.state.meta.errors[0]
+              const message = fieldErrors[name] ?? field.state.meta.errors[0]
               const inputId = `${id}-${name}`
               const description =
                 [
@@ -114,7 +126,14 @@ export function AccountForm({ onSubmit, signInLink }: AccountFormProps) {
                     autoComplete={autoComplete}
                     required
                     value={field.state.value}
-                    onChange={(event) => field.handleChange(event.target.value)}
+                    onChange={(event) => {
+                      field.handleChange(event.target.value)
+                      setFieldErrors((current) => ({
+                        ...current,
+                        [name]: undefined,
+                      }))
+                      setError(undefined)
+                    }}
                     onBlur={field.handleBlur}
                     aria-invalid={!!message}
                     aria-describedby={description}

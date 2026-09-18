@@ -9,13 +9,17 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 
-export type VerificationActionResult = void | { error?: string }
+export type VerificationActionResult = void | {
+  error?: string
+  expiresAt?: number
+}
 export type VerificationAction = (
   value?: string
 ) => VerificationActionResult | Promise<VerificationActionResult>
 
 export type VerificationFormProps = {
   maskedDestination: string
+  expiresAt?: number
   onVerify: (
     code: string
   ) => VerificationActionResult | Promise<VerificationActionResult>
@@ -28,21 +32,34 @@ const MAX_RESENDS = 3
 
 export function VerificationForm({
   maskedDestination,
+  expiresAt,
   onVerify,
   onResend,
   onChangeContact,
 }: VerificationFormProps) {
   const id = useId()
   const [code, setCode] = useState("")
-  const [seconds, setSeconds] = useState(RESEND_SECONDS)
+  const [resendAvailableAt, setResendAvailableAt] = useState(() =>
+    expiresAt !== undefined && expiresAt <= Date.now()
+      ? 0
+      : Date.now() + RESEND_SECONDS * 1000
+  )
   const [resendAttempts, setResendAttempts] = useState(0)
   const [pendingAction, setPendingAction] = useState<"verify" | "resend">()
   const [error, setError] = useState<string>()
   const [feedback, setFeedback] = useState<string>()
+  const [expiry, setExpiry] = useState(expiresAt)
+  const [now, setNow] = useState(Date.now)
+  const seconds = Math.max(0, Math.ceil((resendAvailableAt - now) / 1000))
+  const expired = expiry !== undefined && now >= expiry
+
+  useEffect(() => {
+    setExpiry(expiresAt)
+  }, [expiresAt])
 
   useEffect(() => {
     const timer = window.setInterval(() => {
-      setSeconds((current) => Math.max(0, current - 1))
+      setNow(Date.now())
     }, 1000)
     return () => window.clearInterval(timer)
   }, [])
@@ -54,7 +71,7 @@ export function VerificationForm({
 
   async function handleVerify(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (pendingAction) return
+    if (pendingAction || expired) return
     setError(undefined)
     setFeedback(undefined)
     if (code.length !== 6) {
@@ -85,7 +102,10 @@ export function VerificationForm({
         return
       }
       setResendAttempts((current) => current + 1)
-      setSeconds(RESEND_SECONDS)
+      setResendAvailableAt(Date.now() + RESEND_SECONDS * 1000)
+      if (result?.expiresAt !== undefined) setExpiry(result.expiresAt)
+      setNow(Date.now())
+      setCode("")
       setFeedback("A new verification code has been sent.")
     } catch {
       setError("Unable to send a new code. Please try again.")
@@ -128,7 +148,7 @@ export function VerificationForm({
             className="min-h-11 tracking-[0.35em]"
           />
           <FieldDescription id={`${id}-hint`}>
-            The code expires soon. Keep this window open while you verify.
+            This demo code expires five minutes after it is issued.
           </FieldDescription>
           {(error || codeError) && (
             <p
@@ -141,6 +161,13 @@ export function VerificationForm({
           )}
         </Field>
       </FieldGroup>
+      {expired && (
+        <Alert variant="destructive">
+          <AlertDescription>
+            This code has expired. Request a new code.
+          </AlertDescription>
+        </Alert>
+      )}
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
@@ -148,7 +175,7 @@ export function VerificationForm({
       )}
       <Button
         type="submit"
-        disabled={pendingAction !== undefined}
+        disabled={pendingAction !== undefined || expired}
         className="min-h-11 w-full"
       >
         {pendingAction === "verify" ? "Verifying…" : "Verify and continue"}
