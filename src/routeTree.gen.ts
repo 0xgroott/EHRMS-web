@@ -27,6 +27,7 @@ import { Route as AppUsersRouteImport } from './routes/_app.users'
 import { Route as BusinessIndexRouteImport } from './routes/business.index'
 import { Route as BusinessRegisterRouteImport } from './routes/business.register'
 import { Route as BusinessSignInRouteImport } from './routes/business.sign-in'
+import { Route as BusinessVerifyRouteImport } from './routes/business.verify'
 import { Route as AppPremisesIndexRouteImport } from './routes/_app.premises.index'
 import { Route as AppPremisesPremisesIdRouteImport } from './routes/_app.premises.$premisesId'
 
@@ -119,6 +120,11 @@ const BusinessSignInRoute = BusinessSignInRouteImport.update({
   path: '/sign-in',
   getParentRoute: () => BusinessRoute,
 } as any)
+const BusinessVerifyRoute = BusinessVerifyRouteImport.update({
+  id: '/verify',
+  path: '/verify',
+  getParentRoute: () => BusinessRoute,
+} as any)
 const AppPremisesIndexRoute = AppPremisesIndexRouteImport.update({
   id: '/premises/',
   path: '/premises/',
@@ -147,6 +153,7 @@ export interface FileRoutesByFullPath {
   '/users': typeof AppUsersRoute
   '/business/register': typeof BusinessRegisterRoute
   '/business/sign-in': typeof BusinessSignInRoute
+  '/business/verify': typeof BusinessVerifyRoute
   '/business/': typeof BusinessIndexRoute
   '/premises/$premisesId': typeof AppPremisesPremisesIdRoute
   '/premises/': typeof AppPremisesIndexRoute
@@ -167,6 +174,7 @@ export interface FileRoutesByTo {
   '/users': typeof AppUsersRoute
   '/business/register': typeof BusinessRegisterRoute
   '/business/sign-in': typeof BusinessSignInRoute
+  '/business/verify': typeof BusinessVerifyRoute
   '/business': typeof BusinessIndexRoute
   '/premises/$premisesId': typeof AppPremisesPremisesIdRoute
   '/premises': typeof AppPremisesIndexRoute
@@ -190,6 +198,7 @@ export interface FileRoutesById {
   '/_app/users': typeof AppUsersRoute
   '/business/register': typeof BusinessRegisterRoute
   '/business/sign-in': typeof BusinessSignInRoute
+  '/business/verify': typeof BusinessVerifyRoute
   '/business/': typeof BusinessIndexRoute
   '/_app/premises/$premisesId': typeof AppPremisesPremisesIdRoute
   '/_app/premises/': typeof AppPremisesIndexRoute
@@ -213,6 +222,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/business/register'
     | '/business/sign-in'
+    | '/business/verify'
     | '/business/'
     | '/premises/$premisesId'
     | '/premises/'
@@ -233,6 +243,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/business/register'
     | '/business/sign-in'
+    | '/business/verify'
     | '/business'
     | '/premises/$premisesId'
     | '/premises'
@@ -255,6 +266,7 @@ export interface FileRouteTypes {
     | '/_app/users'
     | '/business/register'
     | '/business/sign-in'
+    | '/business/verify'
     | '/business/'
     | '/_app/premises/$premisesId'
     | '/_app/premises/'
@@ -394,6 +406,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BusinessSignInRouteImport
       parentRoute: typeof BusinessRoute
     }
+    '/business/verify': {
+      id: '/business/verify'
+      path: '/verify'
+      fullPath: '/business/verify'
+      preLoaderRoute: typeof BusinessVerifyRouteImport
+      parentRoute: typeof BusinessRoute
+    }
     '/_app/premises/': {
       id: '/_app/premises/'
       path: '/premises'
@@ -450,12 +469,14 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 interface BusinessRouteChildren {
   BusinessRegisterRoute: typeof BusinessRegisterRoute
   BusinessSignInRoute: typeof BusinessSignInRoute
+  BusinessVerifyRoute: typeof BusinessVerifyRoute
   BusinessIndexRoute: typeof BusinessIndexRoute
 }
 
 const BusinessRouteChildren: BusinessRouteChildren = {
   BusinessRegisterRoute: BusinessRegisterRoute,
   BusinessSignInRoute: BusinessSignInRoute,
+  BusinessVerifyRoute: BusinessVerifyRoute,
   BusinessIndexRoute: BusinessIndexRoute,
 }
 
