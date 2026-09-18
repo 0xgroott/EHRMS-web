@@ -127,7 +127,12 @@ export function createBusinessRepository(storage: BusinessStorageAdapter) {
       return write(
         withProfile(
           state,
-          { ...state.profile, email: input.email, phone: input.phone },
+          {
+            ...state.profile,
+            email: input.email,
+            phone: input.phone,
+            verified: false,
+          },
           "verification"
         )
       )
@@ -138,6 +143,9 @@ export function createBusinessRepository(storage: BusinessStorageAdapter) {
     ): BusinessRepositoryResult {
       const state = storage.read()
       if (!state.profile) return failure({ state: "Create an account first" })
+      if (!state.profile.verified) {
+        return failure({ state: "Verify your contact before saving premises" })
+      }
 
       return write(
         withProfile(
@@ -162,6 +170,9 @@ export function createBusinessRepository(storage: BusinessStorageAdapter) {
 
       const state = storage.read()
       if (!state.profile) return failure({ state: "Create an account first" })
+      if (!state.profile.verified) {
+        return failure({ state: "Verify your contact before completing setup" })
+      }
 
       return write(
         withProfile(

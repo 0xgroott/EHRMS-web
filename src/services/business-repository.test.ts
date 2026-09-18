@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it } from "vitest"
-import { emptyBusinessState } from "@/data/business-seeds"
+import {
+  emptyBusinessState,
+  returningBusinessState,
+} from "@/data/business-seeds"
 import {
   businessQueryKeys,
   businessStateOptions,
@@ -33,6 +36,51 @@ describe("business repository", () => {
     localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({ ...emptyBusinessState, schemaVersion: 2 })
+    )
+
+    expect(createBusinessStorage(localStorage).read()).toEqual(
+      emptyBusinessState
+    )
+  })
+
+  it("falls back to the empty seed for a malformed document entry", () => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        ...returningBusinessState,
+        profile: { ...returningBusinessState.profile, documents: [null] },
+      })
+    )
+
+    expect(createBusinessStorage(localStorage).read()).toEqual(
+      emptyBusinessState
+    )
+  })
+
+  it("falls back to the empty seed for a malformed alert entry", () => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ ...returningBusinessState, alerts: [null] })
+    )
+
+    expect(createBusinessStorage(localStorage).read()).toEqual(
+      emptyBusinessState
+    )
+  })
+
+  it("falls back to the empty seed for malformed nested premises", () => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        ...returningBusinessState,
+        profile: {
+          ...returningBusinessState.profile,
+          premises: {
+            ...returningBusinessState.profile?.premises,
+            councilId: null,
+          },
+        },
+      })
     )
 
     expect(createBusinessStorage(localStorage).read()).toEqual(
@@ -132,6 +180,7 @@ describe("business repository", () => {
       createBusinessStorage(localStorage)
     )
     repository.createAccount(validAccount)
+    repository.verifyContact("123456")
 
     const result = repository.updateContact({
       email: "new-contact@riverside.ng",
@@ -145,6 +194,7 @@ describe("business repository", () => {
         profile: {
           email: "new-contact@riverside.ng",
           phone: "+234 803 123 4567",
+          verified: false,
         },
       },
     })
@@ -175,6 +225,50 @@ describe("business repository", () => {
         profile: { premises, documents: [{ id: "DOC-1" }] },
       },
     })
+  })
+
+  it("rejects premises drafts before contact verification", () => {
+    const repository = createBusinessRepository(
+      createBusinessStorage(localStorage)
+    )
+    repository.createAccount(validAccount)
+
+    const before = repository.getState()
+    const result = repository.savePremisesDraft({
+      premisesName: "Riverside Kitchen",
+      businessType: "Restaurant",
+      address: "12 Abonnema Wharf Road",
+      ward: "Diobu",
+      councilId: "phc",
+    })
+
+    expect(result).toMatchObject({
+      ok: false,
+      errors: { state: expect.any(String) },
+    })
+    expect(repository.getState()).toEqual(before)
+  })
+
+  it("rejects setup completion before contact verification", () => {
+    const repository = createBusinessRepository(
+      createBusinessStorage(localStorage)
+    )
+    repository.createAccount(validAccount)
+
+    const before = repository.getState()
+    const result = repository.completeSetup({
+      premisesName: "Riverside Kitchen",
+      businessType: "Restaurant",
+      address: "12 Abonnema Wharf Road",
+      ward: "Diobu",
+      councilId: "phc",
+    })
+
+    expect(result).toMatchObject({
+      ok: false,
+      errors: { state: expect.any(String) },
+    })
+    expect(repository.getState()).toEqual(before)
   })
 
   it("validates premises before completing setup", () => {
