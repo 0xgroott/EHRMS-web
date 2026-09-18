@@ -1,12 +1,29 @@
-import { render, screen, waitFor } from "@testing-library/react"
+import { act, render, screen, waitFor } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import userEvent from "@testing-library/user-event"
 import { renderToString } from "react-dom/server"
 import { beforeEach, expect, it, vi } from "vitest"
-import { emptyBusinessState } from "@/data/business-seeds"
+import {
+  emptyBusinessState,
+  returningBusinessState,
+} from "@/data/business-seeds"
 import { createBusinessRepository } from "@/services/business-repository"
 import { createBusinessStorage } from "@/services/business-storage"
 import { BusinessSessionProvider, useBusinessSession } from "./business-session"
+
+const { businessStateQuery } = vi.hoisted(() => ({
+  businessStateQuery: vi.fn(),
+}))
+
+vi.mock("@/services/business-query-options", () => ({
+  businessQueryKeys: { state: ["business", "state"] },
+  businessStateOptions: () => ({
+    queryKey: ["business", "state"],
+    queryFn: businessStateQuery,
+  }),
+}))
+
+let latestSession: ReturnType<typeof useBusinessSession> | null = null
 
 function Harness() {
   const session = useBusinessSession()
@@ -25,6 +42,19 @@ function Harness() {
   )
 }
 
+function SessionProbe() {
+  latestSession = useBusinessSession()
+  return <span data-testid="probe-stage">{latestSession.state.stage}</span>
+}
+
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((complete) => {
+    resolve = complete
+  })
+  return { promise, resolve }
+}
+
 function renderSession(children: React.ReactNode) {
   return render(
     <QueryClientProvider client={new QueryClient()}>
@@ -35,6 +65,11 @@ function renderSession(children: React.ReactNode) {
 
 beforeEach(() => {
   localStorage.clear()
+  latestSession = null
+  businessStateQuery.mockReset()
+  businessStateQuery.mockImplementation(() =>
+    createBusinessRepository(createBusinessStorage(localStorage)).getState()
+  )
 })
 
 it("starts signed out with an empty business state", () => {
@@ -86,6 +121,76 @@ it("refreshes from the business repository state", async () => {
     expect(screen.getByTestId("authenticated")).toHaveTextContent("false")
   })
   expect(screen.getByTestId("stage")).toHaveTextContent("account")
+})
+
+it("keeps a sign-out newer than an in-flight refresh in context and cache", async () => {
+  createBusinessRepository(createBusinessStorage(localStorage)).signInDemo(
+    "ada@riverside.ng",
+    "riverside-demo"
+  )
+  const queryClient = new QueryClient()
+  render(
+    <QueryClientProvider client={queryClient}>
+      <BusinessSessionProvider>
+        <SessionProbe />
+      </BusinessSessionProvider>
+    </QueryClientProvider>
+  )
+
+  await waitFor(() => {
+    expect(latestSession?.isHydrated).toBe(true)
+  })
+  const staleState = deferred<typeof returningBusinessState>()
+  businessStateQuery.mockImplementationOnce(() => staleState.promise)
+
+  const refreshPromise = latestSession?.refresh()
+  await waitFor(() => {
+    expect(businessStateQuery).toHaveBeenCalledTimes(2)
+  })
+  act(() => latestSession?.signOut())
+  staleState.resolve(structuredClone(returningBusinessState))
+  await act(async () => {
+    await refreshPromise
+  })
+
+  expect(latestSession?.isAuthenticated).toBe(false)
+  expect(latestSession?.state).toEqual(emptyBusinessState)
+  expect(queryClient.getQueryData(["business", "state"])).toEqual(
+    emptyBusinessState
+  )
+})
+
+it("keeps a demo sign-in newer than an in-flight refresh in context and cache", async () => {
+  const queryClient = new QueryClient()
+  render(
+    <QueryClientProvider client={queryClient}>
+      <BusinessSessionProvider>
+        <SessionProbe />
+      </BusinessSessionProvider>
+    </QueryClientProvider>
+  )
+
+  await waitFor(() => {
+    expect(latestSession?.isHydrated).toBe(true)
+  })
+  const staleState = deferred<typeof emptyBusinessState>()
+  businessStateQuery.mockImplementationOnce(() => staleState.promise)
+
+  const refreshPromise = latestSession?.refresh()
+  await waitFor(() => {
+    expect(businessStateQuery).toHaveBeenCalledTimes(2)
+  })
+  act(() => latestSession?.signInDemo())
+  staleState.resolve(structuredClone(emptyBusinessState))
+  await act(async () => {
+    await refreshPromise
+  })
+
+  expect(latestSession?.isAuthenticated).toBe(true)
+  expect(latestSession?.state).toEqual(returningBusinessState)
+  expect(queryClient.getQueryData(["business", "state"])).toEqual(
+    returningBusinessState
+  )
 })
 
 it("does not read storage while importing or server rendering", async () => {

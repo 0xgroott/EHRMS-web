@@ -5,6 +5,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react"
 import {
@@ -56,24 +57,54 @@ export function BusinessSessionProvider({
   const [state, setState] = useState<BusinessPortalState>(emptyState)
   const [isHydrated, setIsHydrated] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const operation = useRef(0)
+  const isMounted = useRef(false)
+
+  const discardStaleRefreshes = useCallback(() => {
+    operation.current += 1
+    void queryClient.cancelQueries({
+      queryKey: businessQueryKeys.state,
+      exact: true,
+    })
+  }, [queryClient])
 
   const refresh = useCallback(async () => {
+    const refreshOperation = operation.current
+
     try {
       const nextState = await queryClient.fetchQuery({
         ...businessStateOptions(),
         staleTime: 0,
       })
+      if (!isMounted.current || refreshOperation !== operation.current) {
+        return null
+      }
       setState(nextState)
       setError(null)
       return nextState
     } catch {
-      setError("Unable to load the business session")
+      if (isMounted.current && refreshOperation === operation.current) {
+        setError("Unable to load the business session")
+      }
       return null
     }
   }, [queryClient])
 
   useEffect(() => {
-    void refresh().finally(() => setIsHydrated(true))
+    isMounted.current = true
+    return () => {
+      isMounted.current = false
+    }
+  }, [])
+
+  useEffect(() => {
+    let active = true
+    void refresh().finally(() => {
+      if (active) setIsHydrated(true)
+    })
+    return () => {
+      active = false
+    }
   }, [refresh])
 
   const signInDemo = useCallback(
@@ -82,6 +113,7 @@ export function BusinessSessionProvider({
       password: string = DEMO_BUSINESS_CREDENTIALS.password
     ) => {
       try {
+        discardStaleRefreshes()
         const result = createBusinessRepository(
           createBusinessStorage()
         ).signInDemo(contact, password)
@@ -102,11 +134,12 @@ export function BusinessSessionProvider({
         return result
       }
     },
-    [queryClient]
+    [discardStaleRefreshes, queryClient]
   )
 
   const signOut = useCallback(() => {
     try {
+      discardStaleRefreshes()
       createBusinessRepository(createBusinessStorage()).reset()
       const nextState = emptyState()
       setState(nextState)
@@ -115,7 +148,7 @@ export function BusinessSessionProvider({
     } catch {
       setError("Unable to clear the business session")
     }
-  }, [queryClient])
+  }, [discardStaleRefreshes, queryClient])
 
   const value = useMemo(
     () => ({

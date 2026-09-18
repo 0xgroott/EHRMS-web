@@ -10,6 +10,23 @@ export function businessRoleHandoffPath(role: DemoRole) {
   return role === "business-user" ? "/business/dashboard" : null
 }
 
+function navigateTo(path: string) {
+  if (typeof window !== "undefined") {
+    window.location.assign(path)
+  }
+}
+
+export function handleDemoRoleSelection(
+  role: DemoRole,
+  setRole: (role: DemoRole) => void,
+  navigate: (path: string) => void = navigateTo
+) {
+  setRole(role)
+
+  const handoffPath = businessRoleHandoffPath(role)
+  if (handoffPath) navigate(handoffPath)
+}
+
 export function AppHeader() {
   const { role, setRole, councilId, setCouncilId } = useDemoSession()
   return (
@@ -48,12 +65,7 @@ export function AppHeader() {
           value={role}
           onChange={(event) => {
             const nextRole = event.target.value as DemoRole
-            setRole(nextRole)
-
-            const handoffPath = businessRoleHandoffPath(nextRole)
-            if (handoffPath && typeof window !== "undefined") {
-              window.location.assign(handoffPath)
-            }
+            handleDemoRoleSelection(nextRole, setRole)
           }}
         >
           {Object.entries(roleLabels).map(([id, label]) => (
