@@ -67,7 +67,8 @@ export function createBusinessRepository(storage: BusinessStorageAdapter) {
     },
     signInDemo(contact: string, password: string): BusinessRepositoryResult {
       if (
-        contact !== DEMO_BUSINESS_CREDENTIALS.contact ||
+        (contact !== DEMO_BUSINESS_CREDENTIALS.email &&
+          contact !== DEMO_BUSINESS_CREDENTIALS.phone) ||
         password !== DEMO_BUSINESS_CREDENTIALS.password
       ) {
         return failure({ credentials: "Email or password is incorrect" })

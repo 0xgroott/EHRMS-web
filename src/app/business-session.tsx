@@ -109,7 +109,7 @@ export function BusinessSessionProvider({
 
   const signInDemo = useCallback(
     (
-      contact: string = DEMO_BUSINESS_CREDENTIALS.contact,
+      contact: string = DEMO_BUSINESS_CREDENTIALS.email,
       password: string = DEMO_BUSINESS_CREDENTIALS.password
     ) => {
       try {

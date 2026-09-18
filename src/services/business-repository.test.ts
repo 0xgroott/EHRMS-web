@@ -159,21 +159,25 @@ describe("business repository", () => {
     expect(repository.getState()).toEqual(emptyBusinessState)
   })
 
-  it("signs in the seeded returning business only with valid credentials", () => {
-    const repository = createBusinessRepository(
-      createBusinessStorage(localStorage)
-    )
+  it.each(["ada@riverside.ng", "08031234567"])(
+    "signs in the seeded returning business using %s only with a valid password",
+    (contact) => {
+      const repository = createBusinessRepository(
+        createBusinessStorage(localStorage)
+      )
 
-    expect(
-      repository.signInDemo("ada@riverside.ng", "incorrect-password")
-    ).toMatchObject({ ok: false, errors: { credentials: expect.any(String) } })
-    expect(
-      repository.signInDemo("ada@riverside.ng", "riverside-demo")
-    ).toMatchObject({
-      ok: true,
-      state: { stage: "complete", profile: { id: "BUS-001" } },
-    })
-  })
+      expect(
+        repository.signInDemo(contact, "incorrect-password")
+      ).toMatchObject({
+        ok: false,
+        errors: { credentials: expect.any(String) },
+      })
+      expect(repository.signInDemo(contact, "riverside-demo")).toMatchObject({
+        ok: true,
+        state: { stage: "complete", profile: { id: "BUS-001" } },
+      })
+    }
+  )
 
   it("updates contact details while retaining verification stage", () => {
     const repository = createBusinessRepository(

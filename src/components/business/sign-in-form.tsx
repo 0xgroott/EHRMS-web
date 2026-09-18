@@ -135,7 +135,7 @@ export function SignInForm({ onSubmit, createAccountLink }: SignInFormProps) {
               disabled={isSubmitting}
               className="min-h-11 w-full"
               onClick={() => {
-                form.setFieldValue("contact", DEMO_BUSINESS_CREDENTIALS.contact)
+                form.setFieldValue("contact", DEMO_BUSINESS_CREDENTIALS.email)
                 form.setFieldValue(
                   "password",
                   DEMO_BUSINESS_CREDENTIALS.password

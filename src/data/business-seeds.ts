@@ -8,7 +8,8 @@ export const emptyBusinessState: BusinessPortalState = {
 }
 
 export const DEMO_BUSINESS_CREDENTIALS = {
-  contact: "ada@riverside.ng",
+  email: "ada@riverside.ng",
+  phone: "08031234567",
   password: "riverside-demo",
 } as const
 
