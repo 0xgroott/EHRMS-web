@@ -35,8 +35,15 @@ export function BusinessSetup() {
   const profile = session.state.profile
   const redirecting = useRef(false)
   const completing = useRef(false)
+  const completed = useRef(false)
   useEffect(() => {
-    if (!session.isHydrated || redirecting.current) return
+    if (
+      !session.isHydrated ||
+      redirecting.current ||
+      completing.current ||
+      completed.current
+    )
+      return
     if (!profile) {
       redirecting.current = true
       globalThis.location.assign("/business/register")
@@ -87,6 +94,8 @@ export function BusinessSetup() {
       <BusinessSetupForm
         initialValues={initialValues}
         initialDocuments={profile.documents}
+        contactEmail={profile.email}
+        contactPhone={profile.phone}
         onSaveDraft={async (premises, documents) => {
           const result = createBusinessRepository(
             createBusinessStorage()
@@ -96,18 +105,26 @@ export function BusinessSetup() {
           await session.refresh()
         }}
         onComplete={async (premises, documents) => {
-          if (completing.current) return
-          completing.current = true
-          const result = createBusinessRepository(
-            createBusinessStorage()
-          ).completeSetup(premises, documents)
-          const error = resultError(result)
-          if (error) {
-            completing.current = false
-            return { error }
+          if (completing.current || completed.current) {
+            return { error: "Setup is already being completed." }
           }
-          await session.refresh()
-          globalThis.location.assign("/business/dashboard")
+          completing.current = true
+          try {
+            const result = createBusinessRepository(
+              createBusinessStorage()
+            ).completeSetup(premises, documents)
+            const error = resultError(result)
+            if (error) return { error }
+            await session.refresh()
+            completed.current = true
+            globalThis.location.assign("/business/dashboard")
+          } catch {
+            return {
+              error: "Unable to complete setup. Please try again.",
+            }
+          } finally {
+            completing.current = false
+          }
         }}
         onExit={() => globalThis.location.assign("/business/sign-in")}
       />

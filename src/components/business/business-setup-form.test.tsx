@@ -33,6 +33,8 @@ function renderSetup(
   const props: React.ComponentProps<typeof BusinessSetupForm> = {
     initialValues: validPremises,
     initialDocuments: [],
+    contactEmail: "ada@riverside.ng",
+    contactPhone: "08031234567",
     onSaveDraft: vi.fn().mockResolvedValue(undefined),
     onComplete: vi.fn().mockResolvedValue(undefined),
     onExit: vi.fn(),

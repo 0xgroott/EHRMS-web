@@ -40,6 +40,8 @@ export type SetupAction = (
 type BusinessSetupFormProps = {
   initialValues: BusinessPremisesInput
   initialDocuments: BusinessDocument[]
+  contactEmail: string
+  contactPhone: string
   onSaveDraft: SetupAction
   onComplete: SetupAction
   onExit: () => void
@@ -89,6 +91,8 @@ function AutosaveObserver({
 export function BusinessSetupForm({
   initialValues,
   initialDocuments,
+  contactEmail,
+  contactPhone,
   onSaveDraft,
   onComplete,
   onExit,
@@ -457,6 +461,25 @@ export function BusinessSetupForm({
               )
             }}
           </form.Field>
+          <div
+            aria-label="Account contact details"
+            className="flex flex-col gap-2 rounded-md border bg-muted/30 p-4 text-sm"
+          >
+            <p className="font-medium">Account contact details</p>
+            <dl className="grid gap-2 sm:grid-cols-2">
+              <div>
+                <dt className="text-muted-foreground">Email</dt>
+                <dd>{contactEmail}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Phone</dt>
+                <dd>{contactPhone}</dd>
+              </div>
+            </dl>
+            <p className="text-muted-foreground">
+              These details come from your verified account contact.
+            </p>
+          </div>
           <Field>
             <FieldLabel htmlFor={`${id}-supporting-document`}>
               Supporting document{" "}
