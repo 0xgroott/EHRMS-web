@@ -12,6 +12,7 @@ Frontend prototype for the Environmental Health Regulatory and Compliance Manage
 - Responsive desktop and mobile shell
 - Business account registration, demo contact verification, and autosaving premises setup
 - Business dashboard with certificate status, next action, and compact navigation
+- Food-handler management and a simulated Fitness Certificate journey
 
 ## Business portal demo
 
@@ -39,8 +40,16 @@ Browser storage retains account/premises details and document metadata, never
 passwords, OTP values, or document contents. Signing out clears the business demo
 state; signing in with the seeded account replaces it. Use fictional data.
 
-Food handlers, applications, certificates, inspections, and business profile have
-working navigation to upcoming-slice screens. Their workflows are not implemented yet.
+From the dashboard, open **Food handlers** to add or edit a handler. An incomplete
+handler can be saved, but cannot be selected for a Fitness application. Start an
+application, choose eligible handlers and a demo facility, review, and make a
+simulated payment. The tracker then lets you simulate the facility's Fit result
+and the council's certificate issuance. Open the issued demo certificate from
+the tracker or Certificates page; refresh to see the saved state persist.
+No real payment, medical assessment, or certificate issuance takes place.
+
+Fitness applications and certificates are available in the business portal.
+Fumigation, inspections, and business profile remain upcoming-slice screens.
 
 ## Run locally
 
@@ -85,10 +94,11 @@ python3 scripts/check-business-portal.py --base-url http://localhost:3000
 ```
 
 Checks cover onboarding, duplicate-contact recovery, contact editing, OTP expiry/resend,
-draft persistence and visible resume, email/phone sign-in,
-stage guards, staff-role handoff, desktop menus, mobile navigation at 390 px, horizontal
-overflow, and browser errors. Each run uses fresh browser contexts without touching
-your browser's saved data. Optional `--screenshots /tmp/ehrcms-browser-checks` captures
-desktop and mobile dashboards. Any failed assertion exits nonzero.
+draft persistence and visible resume, email/phone sign-in, stage guards, staff-role
+handoff, desktop menus, mobile navigation at 390 px, the Fitness application and
+issuance demo, issued-state persistence, horizontal overflow, and browser errors.
+Each run uses fresh browser contexts without touching your browser's saved data.
+Optional `--screenshots /tmp/ehrcms-browser-checks` captures desktop and mobile
+dashboards. Any failed assertion exits nonzero.
 
 Product specifications and implementation plans live in [`docs/`](docs/).

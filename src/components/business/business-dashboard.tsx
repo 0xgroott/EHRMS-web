@@ -1,5 +1,6 @@
 import { ArrowRight, BellRing, CheckCircle2 } from "lucide-react"
 import type { BusinessPortalState } from "@/domain/business-types"
+import type { FitnessState } from "@/features/fitness/fitness-types"
 import {
   getBusinessNextAction,
   getUrgentBusinessAlerts,
@@ -87,7 +88,13 @@ function Deadline({ value }: { value: string }) {
   )
 }
 
-export function BusinessDashboard({ state }: { state: BusinessPortalState }) {
+export function BusinessDashboard({
+  state,
+  fitness = { handlers: [], application: null },
+}: {
+  state: BusinessPortalState
+  fitness?: FitnessState
+}) {
   const { profile } = state
   const profileComplete = Boolean(
     profile?.verified &&
@@ -96,24 +103,52 @@ export function BusinessDashboard({ state }: { state: BusinessPortalState }) {
     Object.keys(validatePremises(profile.premises)).length === 0
   )
   const urgentAlerts = getUrgentBusinessAlerts(state.alerts)
-  // Slice 1 has no food-handler, application or issued-certificate records yet.
-  // Keep their empty state explicit until those workflows own persisted summaries.
+  const fitnessApplication = fitness.application
+  const fitnessIssued = fitnessApplication?.stage === "issued"
+  const fitnessInProgress = Boolean(fitnessApplication && !fitnessIssued)
+  const fitnessActionHref =
+    fitnessApplication?.stage === "draft" ||
+    fitnessApplication?.stage === "review"
+      ? "/business/fitness/apply"
+      : "/business/fitness/tracker"
   const action = getBusinessNextAction({
     profileComplete,
     alerts: state.alerts,
-    foodHandlerCount: 0,
-    fitness: "not-started",
+    foodHandlerCount: fitness.handlers.length,
+    fitness: fitnessIssued
+      ? "active"
+      : fitnessInProgress
+        ? "in-progress"
+        : "not-started",
+    fitnessActionHref,
     fumigation: "not-started",
     missingHealthApprovalRequirement: true,
   })
   const statuses = [
     {
       title: "Fitness",
-      status: "Not started",
-      description:
-        "Covers the food handlers at your premises. Add their records before beginning an assessment.",
-      href: "/business/food-handlers",
-      label: "Manage food handlers",
+      status: fitnessIssued
+        ? "Issued demo certificate"
+        : fitnessInProgress
+          ? fitnessApplication?.stage === "awaiting-facility"
+            ? "Awaiting facility result"
+            : "Application in progress"
+          : "Not started",
+      description: fitnessIssued
+        ? "Your selected food handlers are covered by an issued demo Fitness Certificate."
+        : fitnessInProgress
+          ? "Track the assessment and simulated external decision for your selected food handlers."
+          : "Covers the food handlers at your premises. Add their records before beginning an assessment.",
+      href: fitnessIssued
+        ? "/business/fitness/certificate"
+        : fitnessInProgress
+          ? fitnessActionHref
+          : "/business/food-handlers",
+      label: fitnessIssued
+        ? "View Fitness certificate"
+        : fitnessInProgress
+          ? "Track Fitness application"
+          : "Manage food handlers",
     },
     {
       title: "Fumigation",
@@ -233,12 +268,38 @@ export function BusinessDashboard({ state }: { state: BusinessPortalState }) {
       </section>
       <div className="grid min-w-0 gap-8 lg:grid-cols-2">
         <div className="flex min-w-0 flex-col gap-2">
-          <EmptySection
-            id="active-applications"
-            title="Active applications"
-            emptyTitle="No active applications"
-            description="Begin with Fitness for your food handlers and Fumigation for your premises. Application progress will appear here."
-          />
+          {fitnessInProgress ? (
+            <section aria-labelledby="active-applications" className="min-w-0">
+              <h2 id="active-applications" className="mb-3 font-semibold">
+                Active applications
+              </h2>
+              <Card size="sm">
+                <CardHeader>
+                  <CardTitle>Fitness application</CardTitle>
+                  <CardDescription>
+                    {fitnessApplication?.handlerIds.length} food handler(s) ·{" "}
+                    {fitnessApplication?.stage === "awaiting-facility"
+                      ? "Awaiting facility result"
+                      : fitnessApplication?.stage === "result-received"
+                        ? "Facility result received"
+                        : "Draft in progress"}
+                  </CardDescription>
+                </CardHeader>
+                <CardFooter>
+                  <QuietLink href={fitnessActionHref}>
+                    Track Fitness application
+                  </QuietLink>
+                </CardFooter>
+              </Card>
+            </section>
+          ) : (
+            <EmptySection
+              id="active-applications"
+              title="Active applications"
+              emptyTitle="No active applications"
+              description="Begin with Fitness for your food handlers and Fumigation for your premises. Application progress will appear here."
+            />
+          )}
           <QuietLink href="/business/applications">View applications</QuietLink>
         </div>
         <section aria-labelledby="reminders" className="min-w-0">
@@ -283,18 +344,60 @@ export function BusinessDashboard({ state }: { state: BusinessPortalState }) {
             </Empty>
           )}
         </section>
-        <EmptySection
-          id="recent-receipts"
-          title="Recent receipts"
-          emptyTitle="No receipts yet"
-          description="Receipts will appear after payments for certificate services. No payment is needed for account setup."
-        />
-        <EmptySection
-          id="recent-certificates"
-          title="Recent certificates"
-          emptyTitle="No certificates yet"
-          description="Issued certificates will appear here after assessment and approval. Completing your profile does not issue a certificate."
-        />
+        {fitnessApplication?.paymentReference ? (
+          <section aria-labelledby="recent-receipts" className="min-w-0">
+            <h2 id="recent-receipts" className="mb-3 font-semibold">
+              Recent receipts
+            </h2>
+            <Card size="sm">
+              <CardHeader>
+                <CardTitle>Demo Fitness payment</CardTitle>
+                <CardDescription>
+                  {fitnessApplication.paymentReference} · No money moved
+                </CardDescription>
+              </CardHeader>
+              <CardFooter>
+                <QuietLink href="/business/fitness/tracker">
+                  View Fitness application
+                </QuietLink>
+              </CardFooter>
+            </Card>
+          </section>
+        ) : (
+          <EmptySection
+            id="recent-receipts"
+            title="Recent receipts"
+            emptyTitle="No receipts yet"
+            description="Receipts will appear after payments for certificate services. No payment is needed for account setup."
+          />
+        )}
+        {fitnessApplication?.certificate ? (
+          <section aria-labelledby="recent-certificates" className="min-w-0">
+            <h2 id="recent-certificates" className="mb-3 font-semibold">
+              Recent certificates
+            </h2>
+            <Card size="sm">
+              <CardHeader>
+                <CardTitle>Issued demo Fitness Certificate</CardTitle>
+                <CardDescription>
+                  {fitnessApplication.certificate.id}
+                </CardDescription>
+              </CardHeader>
+              <CardFooter>
+                <QuietLink href="/business/fitness/certificate">
+                  View Fitness certificate
+                </QuietLink>
+              </CardFooter>
+            </Card>
+          </section>
+        ) : (
+          <EmptySection
+            id="recent-certificates"
+            title="Recent certificates"
+            emptyTitle="No certificates yet"
+            description="Issued certificates will appear here after assessment and approval. Completing your profile does not issue a certificate."
+          />
+        )}
       </div>
       <nav
         aria-label="Business dashboard shortcuts"

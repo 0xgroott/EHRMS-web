@@ -1,12 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { UpcomingModule } from "@/components/business/upcoming-module"
+import { BusinessApplicationsPage } from "@/features/fitness/fitness-application-page"
 
 export const Route = createFileRoute("/business/_portal/applications")({
-  component: () => (
-    <UpcomingModule
-      title="Applications"
-      description="Prepare, submit, and track your certificate applications."
-      delivery="Slice 2 · Fitness applications; Slice 3 · Fumigation applications"
-    />
-  ),
+  component: BusinessApplicationsPage,
 })
