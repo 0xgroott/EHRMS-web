@@ -9,6 +9,7 @@ export interface BusinessNextActionInput {
   fitness: CertificateProgress
   fitnessActionHref?: string
   fumigation: CertificateProgress
+  fumigationActionHref?: string
   missingHealthApprovalRequirement: boolean
 }
 
@@ -102,8 +103,17 @@ export function getBusinessNextAction(
           : "Start your Fumigation application",
       description:
         "Choose a provider to arrange fumigation for your registered premises.",
-      href: "/business/applications",
-      label: "View Fumigation applications",
+      href: "/business/fumigation/apply",
+      label: "Start Fumigation application",
+    }
+  if (input.fumigation === "in-progress")
+    return {
+      id: "track-fumigation",
+      title: "Track your Fumigation application",
+      description:
+        "Review the provider report, EHO confirmation, and council decision for your premises.",
+      href: input.fumigationActionHref ?? "/business/fumigation/tracker",
+      label: "Track Fumigation application",
     }
   if (input.missingHealthApprovalRequirement)
     return {

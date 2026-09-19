@@ -12,13 +12,14 @@ Frontend prototype for the Environmental Health Regulatory and Compliance Manage
 - Responsive desktop and mobile shell
 - Business account registration, demo contact verification, and autosaving premises setup
 - Business dashboard with certificate status, next action, and compact navigation
-- Food-handler management and a simulated Fitness Certificate journey
+- Food-handler management and Fitness Certificate journey
+- Premises fumigation application through provider selection, payment confirmation, report, EHO review, and certificate view
 
 ## Business portal demo
 
 Open [/business/sign-in](http://localhost:3000/business/sign-in). Use either
 `ada@riverside.ng` or `08031234567` with password `riverside-demo`, or select
-**Use demo account**. Both sign-in methods open the seeded Riverside Kitchen dashboard.
+**Preview as business user**. Both sign-in methods open the seeded Riverside Kitchen dashboard.
 
 To try first-time onboarding, open [/business/register](http://localhost:3000/business/register)
 and use a different email and phone. The visible verification code is `123456`.
@@ -42,14 +43,19 @@ state; signing in with the seeded account replaces it. Use fictional data.
 
 From the dashboard, open **Food handlers** to add or edit a handler. An incomplete
 handler can be saved, but cannot be selected for a Fitness application. Start an
-application, choose eligible handlers and a demo facility, review, and make a
+application, choose eligible handlers and a facility, review, and confirm a
 simulated payment. The tracker then lets you simulate the facility's Fit result
-and the council's certificate issuance. Open the issued demo certificate from
+and the council's certificate issuance. Open the issued certificate from
 the tracker or Certificates page; refresh to see the saved state persist.
 No real payment, medical assessment, or certificate issuance takes place.
 
-Fitness applications and certificates are available in the business portal.
-Fumigation, inspections, and business profile remain upcoming-slice screens.
+From the dashboard or Applications, start a Fumigation application. Confirm the premises
+and service month, choose a licensed provider, review the total, and confirm the
+simulated payment. The tracker has separate labelled controls to demonstrate
+the provider report, EHO confirmation, and council decision. The issued
+Fumigation Certificate can be viewed from the tracker or Certificates page and
+persists on reload. No real payment, service, EHO confirmation, or council
+issuance takes place. Health Approval and inspections remain later workflows.
 
 ## Run locally
 
@@ -95,8 +101,8 @@ python3 scripts/check-business-portal.py --base-url http://localhost:3000
 
 Checks cover onboarding, duplicate-contact recovery, contact editing, OTP expiry/resend,
 draft persistence and visible resume, email/phone sign-in, stage guards, staff-role
-handoff, desktop menus, mobile navigation at 390 px, the Fitness application and
-issuance demo, issued-state persistence, horizontal overflow, and browser errors.
+handoff, desktop menus, mobile navigation at 390 px, the Fitness and Fumigation
+application journeys, issued-state persistence, horizontal overflow, and browser errors.
 Each run uses fresh browser contexts without touching your browser's saved data.
 Optional `--screenshots /tmp/ehrcms-browser-checks` captures desktop and mobile
 dashboards. Any failed assertion exits nonzero.

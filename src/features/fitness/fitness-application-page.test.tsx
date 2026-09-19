@@ -56,7 +56,7 @@ it("blocks an empty selection and explains an incomplete handler", async () => {
     "Select at least one eligible food handler"
   )
   expect(
-    screen.queryByRole("button", { name: "Confirm demo payment" })
+    screen.queryByRole("button", { name: "Confirm payment" })
   ).not.toBeInTheDocument()
 })
 
@@ -79,11 +79,9 @@ it("takes eligible people through review and simulated payment, then separate ex
   expect(screen.getByText("Riverside Kitchen")).toBeVisible()
   expect(screen.getByText("Ada Okafor")).toBeVisible()
   expect(screen.getByText("₦12,500")).toBeVisible()
-  await user.click(
-    screen.getByRole("button", { name: "Proceed to demo payment" })
-  )
-  expect(screen.getByText(/No money moves/)).toBeVisible()
-  await user.click(screen.getByRole("button", { name: "Confirm demo payment" }))
+  await user.click(screen.getByRole("button", { name: "Proceed to payment" }))
+  expect(screen.getByText(/No money will move/)).toBeVisible()
+  await user.click(screen.getByRole("button", { name: "Confirm payment" }))
   expect(onPaid).toHaveBeenCalledOnce()
   expect(
     createFitnessStore().read("BUS-001").application?.certificate
@@ -94,7 +92,7 @@ it("takes eligible people through review and simulated payment, then separate ex
     screen.getByRole("heading", { name: "Awaiting facility result" })
   ).toBeVisible()
   const controls = screen.getByRole("region", {
-    name: "Demo controls — simulated external actions",
+    name: "Facility and council actions",
   })
   expect(
     within(controls).getByRole("button", { name: "Simulate council issuance" })
@@ -111,12 +109,12 @@ it("takes eligible people through review and simulated payment, then separate ex
     within(controls).getByRole("button", { name: "Simulate council issuance" })
   )
   expect(
-    screen.getByRole("link", { name: "View demo certificate" })
+    screen.getByRole("link", { name: "View Fitness Certificate" })
   ).toHaveAttribute("href", "/business/fitness/certificate")
   view.unmount()
   mount(<FitnessCertificatePage />)
   expect(
-    screen.getByRole("heading", { name: "Demo Fitness Certificate" })
+    screen.getByRole("heading", { name: "Fitness Certificate" })
   ).toBeVisible()
   expect(screen.getByText("Ada Okafor")).toBeVisible()
   expect(screen.getByText("Port Harcourt City")).toBeVisible()

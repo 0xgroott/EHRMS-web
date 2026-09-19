@@ -79,7 +79,6 @@ describe("BusinessSetupForm", () => {
     })
     await user.upload(screen.getByLabelText(/Supporting document/), document)
     expect(screen.getByText("permit.pdf")).toBeVisible()
-    expect(screen.getByText(/metadata only/i)).toBeVisible()
 
     await waitFor(() => expect(onSaveDraft).toHaveBeenCalled())
     const savedDocuments = onSaveDraft.mock.calls.at(

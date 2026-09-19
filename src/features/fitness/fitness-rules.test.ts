@@ -54,7 +54,7 @@ describe("fitness rules", () => {
 
     expect(confirmDemoPayment(result.value, [handler])).toEqual({
       ok: false,
-      error: "Choose an approved facility before demo payment",
+      error: "Choose an approved facility before payment",
     })
   })
 
@@ -98,7 +98,7 @@ describe("fitness rules", () => {
       confirmDemoPayment(review, [{ ...handler, consent: false }])
     ).toEqual({
       ok: false,
-      error: "Selected handlers must remain eligible before demo payment",
+      error: "Selected handlers must remain eligible before payment",
     })
     expect(review.stage).toBe("review")
   })
@@ -106,8 +106,7 @@ describe("fitness rules", () => {
   it("rejects certificate issuance before the facility result", () => {
     expect(issueDemoCertificate(awaitingFacility, "phc")).toEqual({
       ok: false,
-      error:
-        "A fit facility result is required before issuing a demo certificate",
+      error: "A fit facility result is required before issuing a certificate",
     })
   })
 

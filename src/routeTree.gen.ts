@@ -43,6 +43,9 @@ import { Route as BusinessPortalFitnessCertificateRouteImport } from './routes/b
 import { Route as BusinessPortalFitnessTrackerRouteImport } from './routes/business._portal.fitness.tracker'
 import { Route as BusinessPortalFoodHandlerHandlerIdRouteImport } from './routes/business._portal.food-handler.$handlerId'
 import { Route as BusinessPortalFoodHandlerNewRouteImport } from './routes/business._portal.food-handler.new'
+import { Route as BusinessPortalFumigationApplyRouteImport } from './routes/business._portal.fumigation.apply'
+import { Route as BusinessPortalFumigationCertificateRouteImport } from './routes/business._portal.fumigation.certificate'
+import { Route as BusinessPortalFumigationTrackerRouteImport } from './routes/business._portal.fumigation.tracker'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -221,6 +224,24 @@ const BusinessPortalFoodHandlerNewRoute =
     path: '/food-handler/new',
     getParentRoute: () => BusinessPortalRoute,
   } as any)
+const BusinessPortalFumigationApplyRoute =
+  BusinessPortalFumigationApplyRouteImport.update({
+    id: '/fumigation/apply',
+    path: '/fumigation/apply',
+    getParentRoute: () => BusinessPortalRoute,
+  } as any)
+const BusinessPortalFumigationCertificateRoute =
+  BusinessPortalFumigationCertificateRouteImport.update({
+    id: '/fumigation/certificate',
+    path: '/fumigation/certificate',
+    getParentRoute: () => BusinessPortalRoute,
+  } as any)
+const BusinessPortalFumigationTrackerRoute =
+  BusinessPortalFumigationTrackerRouteImport.update({
+    id: '/fumigation/tracker',
+    path: '/fumigation/tracker',
+    getParentRoute: () => BusinessPortalRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -255,6 +276,9 @@ export interface FileRoutesByFullPath {
   '/business/fitness/tracker': typeof BusinessPortalFitnessTrackerRoute
   '/business/food-handler/$handlerId': typeof BusinessPortalFoodHandlerHandlerIdRoute
   '/business/food-handler/new': typeof BusinessPortalFoodHandlerNewRoute
+  '/business/fumigation/apply': typeof BusinessPortalFumigationApplyRoute
+  '/business/fumigation/certificate': typeof BusinessPortalFumigationCertificateRoute
+  '/business/fumigation/tracker': typeof BusinessPortalFumigationTrackerRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -288,6 +312,9 @@ export interface FileRoutesByTo {
   '/business/fitness/tracker': typeof BusinessPortalFitnessTrackerRoute
   '/business/food-handler/$handlerId': typeof BusinessPortalFoodHandlerHandlerIdRoute
   '/business/food-handler/new': typeof BusinessPortalFoodHandlerNewRoute
+  '/business/fumigation/apply': typeof BusinessPortalFumigationApplyRoute
+  '/business/fumigation/certificate': typeof BusinessPortalFumigationCertificateRoute
+  '/business/fumigation/tracker': typeof BusinessPortalFumigationTrackerRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -325,6 +352,9 @@ export interface FileRoutesById {
   '/business/_portal/fitness/tracker': typeof BusinessPortalFitnessTrackerRoute
   '/business/_portal/food-handler/$handlerId': typeof BusinessPortalFoodHandlerHandlerIdRoute
   '/business/_portal/food-handler/new': typeof BusinessPortalFoodHandlerNewRoute
+  '/business/_portal/fumigation/apply': typeof BusinessPortalFumigationApplyRoute
+  '/business/_portal/fumigation/certificate': typeof BusinessPortalFumigationCertificateRoute
+  '/business/_portal/fumigation/tracker': typeof BusinessPortalFumigationTrackerRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -361,6 +391,9 @@ export interface FileRouteTypes {
     | '/business/fitness/tracker'
     | '/business/food-handler/$handlerId'
     | '/business/food-handler/new'
+    | '/business/fumigation/apply'
+    | '/business/fumigation/certificate'
+    | '/business/fumigation/tracker'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -394,6 +427,9 @@ export interface FileRouteTypes {
     | '/business/fitness/tracker'
     | '/business/food-handler/$handlerId'
     | '/business/food-handler/new'
+    | '/business/fumigation/apply'
+    | '/business/fumigation/certificate'
+    | '/business/fumigation/tracker'
   id:
     | '__root__'
     | '/'
@@ -430,6 +466,9 @@ export interface FileRouteTypes {
     | '/business/_portal/fitness/tracker'
     | '/business/_portal/food-handler/$handlerId'
     | '/business/_portal/food-handler/new'
+    | '/business/_portal/fumigation/apply'
+    | '/business/_portal/fumigation/certificate'
+    | '/business/_portal/fumigation/tracker'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -678,6 +717,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BusinessPortalFoodHandlerNewRouteImport
       parentRoute: typeof BusinessPortalRoute
     }
+    '/business/_portal/fumigation/apply': {
+      id: '/business/_portal/fumigation/apply'
+      path: '/fumigation/apply'
+      fullPath: '/business/fumigation/apply'
+      preLoaderRoute: typeof BusinessPortalFumigationApplyRouteImport
+      parentRoute: typeof BusinessPortalRoute
+    }
+    '/business/_portal/fumigation/certificate': {
+      id: '/business/_portal/fumigation/certificate'
+      path: '/fumigation/certificate'
+      fullPath: '/business/fumigation/certificate'
+      preLoaderRoute: typeof BusinessPortalFumigationCertificateRouteImport
+      parentRoute: typeof BusinessPortalRoute
+    }
+    '/business/_portal/fumigation/tracker': {
+      id: '/business/_portal/fumigation/tracker'
+      path: '/fumigation/tracker'
+      fullPath: '/business/fumigation/tracker'
+      preLoaderRoute: typeof BusinessPortalFumigationTrackerRouteImport
+      parentRoute: typeof BusinessPortalRoute
+    }
   }
 }
 
@@ -729,6 +789,9 @@ interface BusinessPortalRouteChildren {
   BusinessPortalFitnessTrackerRoute: typeof BusinessPortalFitnessTrackerRoute
   BusinessPortalFoodHandlerHandlerIdRoute: typeof BusinessPortalFoodHandlerHandlerIdRoute
   BusinessPortalFoodHandlerNewRoute: typeof BusinessPortalFoodHandlerNewRoute
+  BusinessPortalFumigationApplyRoute: typeof BusinessPortalFumigationApplyRoute
+  BusinessPortalFumigationCertificateRoute: typeof BusinessPortalFumigationCertificateRoute
+  BusinessPortalFumigationTrackerRoute: typeof BusinessPortalFumigationTrackerRoute
 }
 
 const BusinessPortalRouteChildren: BusinessPortalRouteChildren = {
@@ -744,6 +807,10 @@ const BusinessPortalRouteChildren: BusinessPortalRouteChildren = {
   BusinessPortalFoodHandlerHandlerIdRoute:
     BusinessPortalFoodHandlerHandlerIdRoute,
   BusinessPortalFoodHandlerNewRoute: BusinessPortalFoodHandlerNewRoute,
+  BusinessPortalFumigationApplyRoute: BusinessPortalFumigationApplyRoute,
+  BusinessPortalFumigationCertificateRoute:
+    BusinessPortalFumigationCertificateRoute,
+  BusinessPortalFumigationTrackerRoute: BusinessPortalFumigationTrackerRoute,
 }
 
 const BusinessPortalRouteWithChildren = BusinessPortalRoute._addFileChildren(

@@ -5,6 +5,8 @@ import { BusinessApplicationsPage } from "./fitness-application-page"
 import { BusinessCertificatesPage } from "./fitness-certificate-page"
 import { FitnessProvider } from "./fitness-context"
 import { createFitnessStore } from "./fitness-store"
+import { FumigationProvider } from "@/features/fumigation/fumigation-context"
+import { createFumigationStore } from "@/features/fumigation/fumigation-store"
 
 vi.mock("@/app/business-session", () => ({
   useBusinessSession: () => ({
@@ -14,7 +16,7 @@ vi.mock("@/app/business-session", () => ({
 }))
 beforeEach(() => localStorage.clear())
 
-it("shows an active Fitness summary and an honest Fumigation placeholder", async () => {
+it("shows an active Fitness summary and Fumigation start action", async () => {
   createFitnessStore().write("BUS-001", {
     handlers: [],
     application: {
@@ -28,17 +30,21 @@ it("shows an active Fitness summary and an honest Fumigation placeholder", async
   })
   render(
     <FitnessProvider>
-      <BusinessApplicationsPage />
+      <FumigationProvider>
+        <BusinessApplicationsPage />
+      </FumigationProvider>
     </FitnessProvider>
   )
   expect(await screen.findByText("Awaiting facility result")).toBeVisible()
   expect(
     screen.getByRole("link", { name: "Track Fitness application" })
   ).toHaveAttribute("href", "/business/fitness/tracker")
-  expect(screen.getByText(/Fumigation applications are coming/)).toBeVisible()
+  expect(
+    screen.getByRole("link", { name: "Start Fumigation application" })
+  ).toHaveAttribute("href", "/business/fumigation/apply")
 })
 
-it("shows an issued demo Fitness certificate in certificates navigation", async () => {
+it("shows issued Fitness and Fumigation certificates in certificates navigation", async () => {
   createFitnessStore().write("BUS-001", {
     handlers: [],
     application: {
@@ -54,14 +60,38 @@ it("shows an issued demo Fitness certificate in certificates navigation", async 
       },
     },
   })
+  createFumigationStore().write("BUS-001", {
+    application: {
+      id: "fumigation-application-1",
+      requestedPeriod: "2026-10",
+      declaration: true,
+      stage: "issued",
+      providerId: "clearfield-environmental",
+      totalNgn: 45000,
+      paymentReference: "FUM-PAY-1",
+      workDate: "2026-10-03",
+      certificate: {
+        id: "FUM-CERT-1",
+        councilId: "phc",
+        workDate: "2026-10-03",
+        issuedAt: "2026-10-04T00:00:00Z",
+        expiresAt: "2027-10-04T00:00:00Z",
+      },
+    },
+  })
   render(
     <FitnessProvider>
-      <BusinessCertificatesPage />
+      <FumigationProvider>
+        <BusinessCertificatesPage />
+      </FumigationProvider>
     </FitnessProvider>
   )
-  expect(await screen.findByText("DEMO-CERT")).toBeVisible()
+  expect(await screen.findByText("FIT-CERT")).toBeVisible()
   expect(
-    screen.getByRole("link", { name: "View demo certificate" })
+    screen.getByRole("link", { name: "View Fitness Certificate" })
   ).toHaveAttribute("href", "/business/fitness/certificate")
-  expect(screen.getByText(/Fumigation certificates are coming/)).toBeVisible()
+  expect(screen.getByText("FUM-CERT-1")).toBeVisible()
+  expect(
+    screen.getByRole("link", { name: "View Fumigation Certificate" })
+  ).toHaveAttribute("href", "/business/fumigation/certificate")
 })

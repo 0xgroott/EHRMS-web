@@ -41,8 +41,8 @@ export function SavedRegistration() {
         Continue registering {session.state.profile.businessName}
       </p>
       <p className="text-sm text-muted-foreground">
-        Demo draft saved in this browser. Continue without a password on this
-        device.
+        Your registration is saved in this browser. Continue without a password
+        on this device.
       </p>
       <Button
         type="button"

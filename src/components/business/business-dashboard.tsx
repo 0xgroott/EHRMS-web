@@ -1,6 +1,9 @@
 import { ArrowRight, BellRing, CheckCircle2 } from "lucide-react"
 import type { BusinessPortalState } from "@/domain/business-types"
 import type { FitnessState } from "@/features/fitness/fitness-types"
+import type { FumigationState } from "@/features/fumigation/fumigation-types"
+import { fumigationStageLabel } from "@/features/fumigation/fumigation-shared"
+import { formatFitnessReference } from "@/features/fitness/fitness-tracker-page"
 import {
   getBusinessNextAction,
   getUrgentBusinessAlerts,
@@ -91,9 +94,11 @@ function Deadline({ value }: { value: string }) {
 export function BusinessDashboard({
   state,
   fitness = { handlers: [], application: null },
+  fumigation = { application: null },
 }: {
   state: BusinessPortalState
   fitness?: FitnessState
+  fumigation?: FumigationState
 }) {
   const { profile } = state
   const profileComplete = Boolean(
@@ -106,6 +111,16 @@ export function BusinessDashboard({
   const fitnessApplication = fitness.application
   const fitnessIssued = fitnessApplication?.stage === "issued"
   const fitnessInProgress = Boolean(fitnessApplication && !fitnessIssued)
+  const fumigationApplication = fumigation.application
+  const fumigationIssued = fumigationApplication?.stage === "issued"
+  const fumigationInProgress = Boolean(
+    fumigationApplication && !fumigationIssued
+  )
+  const fumigationActionHref =
+    fumigationApplication?.stage === "draft" ||
+    fumigationApplication?.stage === "review"
+      ? "/business/fumigation/apply"
+      : "/business/fumigation/tracker"
   const fitnessActionHref =
     fitnessApplication?.stage === "draft" ||
     fitnessApplication?.stage === "review"
@@ -121,23 +136,28 @@ export function BusinessDashboard({
         ? "in-progress"
         : "not-started",
     fitnessActionHref,
-    fumigation: "not-started",
+    fumigation: fumigationIssued
+      ? "active"
+      : fumigationInProgress
+        ? "in-progress"
+        : "not-started",
+    fumigationActionHref,
     missingHealthApprovalRequirement: true,
   })
   const statuses = [
     {
       title: "Fitness",
       status: fitnessIssued
-        ? "Issued demo certificate"
+        ? "Issued"
         : fitnessInProgress
           ? fitnessApplication?.stage === "awaiting-facility"
             ? "Awaiting facility result"
             : "Application in progress"
           : "Not started",
       description: fitnessIssued
-        ? "Your selected food handlers are covered by an issued demo Fitness Certificate."
+        ? "Your selected food handlers are covered by a Fitness Certificate."
         : fitnessInProgress
-          ? "Track the assessment and simulated external decision for your selected food handlers."
+          ? "Track the assessment and council decision for your selected food handlers."
           : "Covers the food handlers at your premises. Add their records before beginning an assessment.",
       href: fitnessIssued
         ? "/business/fitness/certificate"
@@ -152,11 +172,21 @@ export function BusinessDashboard({
     },
     {
       title: "Fumigation",
-      status: "Not started",
+      status: fumigationApplication
+        ? fumigationStageLabel[fumigationApplication.stage]
+        : "Not started",
       description:
         "Covers fumigation of your premises by an approved provider.",
-      href: "/business/applications",
-      label: "View Fumigation applications",
+      href: fumigationIssued
+        ? "/business/fumigation/certificate"
+        : fumigationInProgress
+          ? fumigationActionHref
+          : "/business/fumigation/apply",
+      label: fumigationIssued
+        ? "View Fumigation Certificate"
+        : fumigationInProgress
+          ? "Track Fumigation application"
+          : "Start Fumigation application",
     },
     {
       title: "Health Approval",
@@ -268,29 +298,51 @@ export function BusinessDashboard({
       </section>
       <div className="grid min-w-0 gap-8 lg:grid-cols-2">
         <div className="flex min-w-0 flex-col gap-2">
-          {fitnessInProgress ? (
+          {fitnessInProgress || fumigationInProgress ? (
             <section aria-labelledby="active-applications" className="min-w-0">
               <h2 id="active-applications" className="mb-3 font-semibold">
                 Active applications
               </h2>
-              <Card size="sm">
-                <CardHeader>
-                  <CardTitle>Fitness application</CardTitle>
-                  <CardDescription>
-                    {fitnessApplication?.handlerIds.length} food handler(s) ·{" "}
-                    {fitnessApplication?.stage === "awaiting-facility"
-                      ? "Awaiting facility result"
-                      : fitnessApplication?.stage === "result-received"
-                        ? "Facility result received"
-                        : "Draft in progress"}
-                  </CardDescription>
-                </CardHeader>
-                <CardFooter>
-                  <QuietLink href={fitnessActionHref}>
-                    Track Fitness application
-                  </QuietLink>
-                </CardFooter>
-              </Card>
+              <div className="space-y-3">
+                {fitnessInProgress && (
+                  <Card size="sm">
+                    <CardHeader>
+                      <CardTitle>Fitness application</CardTitle>
+                      <CardDescription>
+                        {fitnessApplication?.handlerIds.length} food handler(s)
+                        ·{" "}
+                        {fitnessApplication?.stage === "awaiting-facility"
+                          ? "Awaiting facility result"
+                          : fitnessApplication?.stage === "result-received"
+                            ? "Facility result received"
+                            : "Draft in progress"}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardFooter>
+                      <QuietLink href={fitnessActionHref}>
+                        Track Fitness application
+                      </QuietLink>
+                    </CardFooter>
+                  </Card>
+                )}
+                {fumigationInProgress && (
+                  <Card size="sm">
+                    <CardHeader>
+                      <CardTitle>Fumigation application</CardTitle>
+                      <CardDescription>
+                        {fumigationApplication
+                          ? fumigationStageLabel[fumigationApplication.stage]
+                          : ""}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardFooter>
+                      <QuietLink href={fumigationActionHref}>
+                        Track Fumigation application
+                      </QuietLink>
+                    </CardFooter>
+                  </Card>
+                )}
+              </div>
             </section>
           ) : (
             <EmptySection
@@ -344,21 +396,36 @@ export function BusinessDashboard({
             </Empty>
           )}
         </section>
-        {fitnessApplication?.paymentReference ? (
+        {fumigationApplication?.paymentReference ||
+        fitnessApplication?.paymentReference ? (
           <section aria-labelledby="recent-receipts" className="min-w-0">
             <h2 id="recent-receipts" className="mb-3 font-semibold">
               Recent receipts
             </h2>
             <Card size="sm">
               <CardHeader>
-                <CardTitle>Demo Fitness payment</CardTitle>
+                <CardTitle>
+                  {fumigationApplication?.paymentReference
+                    ? "Fumigation service"
+                    : "Fitness assessment"}
+                </CardTitle>
                 <CardDescription>
-                  {fitnessApplication.paymentReference} · No money moved
+                  {fumigationApplication?.paymentReference ??
+                    formatFitnessReference(
+                      fitnessApplication?.paymentReference ?? ""
+                    )}{" "}
+                  · No money moved
                 </CardDescription>
               </CardHeader>
               <CardFooter>
-                <QuietLink href="/business/fitness/tracker">
-                  View Fitness application
+                <QuietLink
+                  href={
+                    fumigationApplication?.paymentReference
+                      ? "/business/fumigation/tracker"
+                      : "/business/fitness/tracker"
+                  }
+                >
+                  View application
                 </QuietLink>
               </CardFooter>
             </Card>
@@ -371,21 +438,35 @@ export function BusinessDashboard({
             description="Receipts will appear after payments for certificate services. No payment is needed for account setup."
           />
         )}
-        {fitnessApplication?.certificate ? (
+        {fumigationApplication?.certificate ||
+        fitnessApplication?.certificate ? (
           <section aria-labelledby="recent-certificates" className="min-w-0">
             <h2 id="recent-certificates" className="mb-3 font-semibold">
               Recent certificates
             </h2>
             <Card size="sm">
               <CardHeader>
-                <CardTitle>Issued demo Fitness Certificate</CardTitle>
+                <CardTitle>
+                  {fumigationApplication?.certificate
+                    ? "Fumigation Certificate"
+                    : "Fitness Certificate"}
+                </CardTitle>
                 <CardDescription>
-                  {fitnessApplication.certificate.id}
+                  {fumigationApplication?.certificate?.id ??
+                    formatFitnessReference(
+                      fitnessApplication?.certificate?.id ?? ""
+                    )}
                 </CardDescription>
               </CardHeader>
               <CardFooter>
-                <QuietLink href="/business/fitness/certificate">
-                  View Fitness certificate
+                <QuietLink
+                  href={
+                    fumigationApplication?.certificate
+                      ? "/business/fumigation/certificate"
+                      : "/business/fitness/certificate"
+                  }
+                >
+                  View certificate
                 </QuietLink>
               </CardFooter>
             </Card>

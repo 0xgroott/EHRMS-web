@@ -24,7 +24,7 @@ export function validateAccount(
 }
 
 export function validateOtp(code: string) {
-  return code === "123456" ? {} : { code: "Enter the demo code 123456" }
+  return code === "123456" ? {} : { code: "Enter code 123456" }
 }
 
 export function validatePremises(

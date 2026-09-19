@@ -1,4 +1,4 @@
-import { defineConfig } from "vitest/config"
+import { configDefaults, defineConfig } from "vitest/config"
 import { devtools } from "@tanstack/devtools-vite"
 import { tanstackStart } from "@tanstack/react-start/plugin/vite"
 import viteReact from "@vitejs/plugin-react"
@@ -8,6 +8,7 @@ const config = defineConfig({
   resolve: { tsconfigPaths: true },
   plugins: [devtools(), tailwindcss(), tanstackStart(), viteReact()],
   test: {
+    exclude: ["**/.worktrees/**", ...configDefaults.exclude],
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],
     globals: true,

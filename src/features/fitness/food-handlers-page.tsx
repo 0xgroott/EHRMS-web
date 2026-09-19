@@ -141,7 +141,7 @@ export function FoodHandlersPage() {
             <CardTitle>Registered food handlers</CardTitle>
             <CardDescription>
               Readiness is based on the identity, role, phone number, and
-              consent required for this demo.
+              consent required for a Fitness Certificate application.
             </CardDescription>
           </CardHeader>
           <CardContent>

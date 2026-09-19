@@ -112,7 +112,7 @@ export function FitnessProvider({ children }: { children: React.ReactNode }) {
       const result = beginApplication(
         state.handlers,
         handlerIds,
-        "fitness-demo-application",
+        "fitness-application-1",
         state.application
       )
       if (result.ok) save({ ...state, application: result.value })

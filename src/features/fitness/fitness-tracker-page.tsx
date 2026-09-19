@@ -38,6 +38,14 @@ export function formatFitnessPrice(value: number) {
   }).format(value)
 }
 
+export function formatFitnessReference(value: string) {
+  return value
+    .replace(/^DEMO-CERT(?=-|$)/, "FIT-CERT")
+    .replace(/^DEMO-FITNESS-/, "FIT-PAY-")
+    .replace(/^DEMO-PAY/, "FIT-PAY")
+    .replaceAll("-DEMO-", "-")
+}
+
 export function FitnessLink({
   href,
   children,
@@ -103,7 +111,7 @@ export function FitnessTrackerPage() {
     return (
       <FitnessEmptyState
         title="Your Fitness application is not submitted yet"
-        description="Select your food handlers and facility, then review and confirm the demo payment to start tracking."
+        description="Select your food handlers and facility, then review and confirm payment to start tracking."
         href="/business/fitness/apply"
         label={
           application
@@ -122,7 +130,7 @@ export function FitnessTrackerPage() {
   const issued = application.stage === "issued"
   const timeline = [
     { label: "Application prepared", complete: true },
-    { label: "Demo payment confirmed", complete: true },
+    { label: "Payment confirmed", complete: true },
     { label: "Facility result received: Fit", complete: resultReceived },
     { label: "Council decision: issued", complete: issued },
   ]
@@ -133,20 +141,20 @@ export function FitnessTrackerPage() {
         title={fitnessStageLabel[application.stage]}
         description={
           issued
-            ? "The demo council decision is complete. Your certificate details are available."
+            ? "The council decision is complete. Your certificate details are available."
             : resultReceived
-              ? "Next step owner: Council. The Fit result is ready for the simulated issuance decision."
-              : "Next step owner: Approved facility. Coordinate attendance using the demo contact details below."
+              ? "Next step owner: Council. The Fit result is ready for an issuance decision."
+              : "Next step owner: Approved facility. Coordinate attendance using the contact details below."
         }
       />
       <div className="flex flex-wrap gap-3">
-        <Badge variant="secondary">Demo application</Badge>
-        <Badge variant="outline">Demo payment confirmed</Badge>
+        <Badge variant="secondary">Application submitted</Badge>
+        <Badge variant="outline">Payment confirmed</Badge>
       </div>
       {issued && (
         <div>
           <FitnessLink href="/business/fitness/certificate">
-            View demo certificate
+            View Fitness Certificate
           </FitnessLink>
         </div>
       )}
@@ -178,7 +186,7 @@ export function FitnessTrackerPage() {
             </section>
             <section>
               <h3 className="text-sm text-muted-foreground">
-                Approved facility · demo directory
+                Approved facility
               </h3>
               <p className="mt-2 font-medium">{facility?.name}</p>
               <p className="text-sm text-muted-foreground">
@@ -188,24 +196,23 @@ export function FitnessTrackerPage() {
             </section>
             <dl className="flex flex-col gap-3 border-t pt-4">
               <div>
-                <dt className="text-sm text-muted-foreground">
-                  Demo payment total
-                </dt>
+                <dt className="text-sm text-muted-foreground">Payment total</dt>
                 <dd className="mt-1 font-medium">
                   {formatFitnessPrice(application.totalNgn ?? 0)}
                 </dd>
               </div>
               <div>
                 <dt className="text-sm text-muted-foreground">
-                  Demo receipt reference
+                  Payment reference
                 </dt>
                 <dd className="mt-1 break-all">
-                  {application.paymentReference}
+                  {formatFitnessReference(application.paymentReference ?? "")}
                 </dd>
               </div>
             </dl>
             <p className="text-sm text-muted-foreground">
-              No money was collected. This reference is a demonstration record.
+              No money was collected. This payment reference is for this
+              simulation only.
             </p>
           </CardContent>
         </Card>
@@ -228,19 +235,18 @@ export function FitnessTrackerPage() {
           </ol>
         </section>
       </div>
-      <section aria-labelledby="demo-controls-title">
+      <section aria-labelledby="fitness-simulation-controls-title">
         <Card>
           <CardHeader>
-            <Badge variant="outline">Demo only</Badge>
+            <Badge variant="outline">Simulation only</Badge>
             <CardTitle>
-              <h2 id="demo-controls-title">
-                Demo controls — simulated external actions
+              <h2 id="fitness-simulation-controls-title">
+                Facility and council actions
               </h2>
             </CardTitle>
             <CardDescription>
-              These controls demonstrate actions owned by the facility and
-              council. They do not submit real results or issue an official
-              certificate.
+              The controls below simulate actions by the facility and council.
+              They do not submit real results or issue an official certificate.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
@@ -275,10 +281,10 @@ export function FitnessTrackerPage() {
             </div>
             <p className="text-sm text-muted-foreground">
               {issued
-                ? "Both simulated external steps are complete."
+                ? "Both external steps are complete."
                 : resultReceived
-                  ? "Facility simulation complete. The council decision can now be demonstrated."
-                  : "First simulate a Fit result for all selected handlers. Council issuance becomes available afterward."}
+                  ? "The facility result is recorded. The council decision can now be made."
+                  : "Record a Fit result for all selected handlers before the council decision."}
             </p>
           </CardContent>
         </Card>
