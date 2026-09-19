@@ -57,7 +57,7 @@ describe("business dashboard", () => {
     ).not.toBeInTheDocument()
     expect(
       screen.getByRole("link", { name: "View Health Approval requirements" })
-    ).toHaveAttribute("href", "/business/certificates")
+    ).toHaveAttribute("href", "/business/health-approval")
   })
   it("shows honest empty applications, receipts, certificates and reminders", () => {
     render(<BusinessDashboard state={returningBusinessState} />)
@@ -219,5 +219,49 @@ describe("business dashboard", () => {
     expect(
       screen.getAllByRole("link", { name: /view fitness certificate/i }).length
     ).toBeGreaterThan(0)
+  })
+  it("opens Health Approval eligibility after both certificates are issued", () => {
+    render(
+      <BusinessDashboard
+        state={returningBusinessState}
+        fitness={{
+          handlers: [handler],
+          application: {
+            id: "fitness-application-1",
+            handlerIds: [handler.id],
+            stage: "issued",
+            certificate: {
+              id: "FIT-CERT-1",
+              handlerIds: [handler.id],
+              councilId: "phc",
+              issuedAt: "2026-09-19T00:00:00Z",
+              expiresAt: "2027-09-19T00:00:00Z",
+            },
+          },
+        }}
+        fumigation={{
+          application: {
+            id: "fumigation-application-1",
+            requestedPeriod: "2026-09",
+            declaration: true,
+            stage: "issued",
+            certificate: {
+              id: "FUM-CERT-1",
+              councilId: "phc",
+              workDate: "2026-09-19",
+              issuedAt: "2026-09-19T00:00:00Z",
+              expiresAt: "2027-09-19T00:00:00Z",
+            },
+          },
+        }}
+      />
+    )
+    const nextAction = screen.getByRole("region", {
+      name: "Next required action",
+    })
+    expect(
+      within(nextAction).getByRole("link", { name: "View Health Approval" })
+    ).toHaveAttribute("href", "/business/health-approval")
+    expect(screen.getByText("Inspection pending")).toBeInTheDocument()
   })
 })

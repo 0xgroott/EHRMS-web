@@ -14,6 +14,7 @@ Frontend prototype for the Environmental Health Regulatory and Compliance Manage
 - Business dashboard with certificate status, next action, and compact navigation
 - Food-handler management and Fitness Certificate journey
 - Premises fumigation application through provider selection, payment confirmation, report, EHO review, and certificate view
+- Health Approval eligibility, inspection notices, corrective actions, follow-up, and council outcome
 
 ## Business portal demo
 
@@ -55,7 +56,17 @@ simulated payment. The tracker has separate labelled controls to demonstrate
 the provider report, EHO confirmation, and council decision. The issued
 Fumigation Certificate can be viewed from the tracker or Certificates page and
 persists on reload. No real payment, service, EHO confirmation, or council
-issuance takes place. Health Approval and inspections remain later workflows.
+issuance takes place.
+
+Health Approval appears when both Fitness and Fumigation Certificates are issued;
+there is no separate application. Open **Health Approval** from the dashboard
+or Certificates page to see the eligibility checklist. The labelled council
+controls can serve an inspection notice. In **Inspections**, acknowledge the
+notice, review the findings, record a correction for each item, acknowledge the
+separate follow-up notice, and view the final outcome. Council actions are
+simulated in a separate control area. An issued Health Approval can be viewed
+from its details page and remains in this browser. No official notice, inspection,
+regulatory decision, or Health Approval is created.
 
 ## Run locally
 
@@ -101,8 +112,9 @@ python3 scripts/check-business-portal.py --base-url http://localhost:3000
 
 Checks cover onboarding, duplicate-contact recovery, contact editing, OTP expiry/resend,
 draft persistence and visible resume, email/phone sign-in, stage guards, staff-role
-handoff, desktop menus, mobile navigation at 390 px, the Fitness and Fumigation
-application journeys, issued-state persistence, horizontal overflow, and browser errors.
+handoff, desktop menus, mobile navigation at 390 px, the Fitness, Fumigation,
+and Health Approval journeys, issued-state persistence, horizontal overflow,
+and browser errors.
 Each run uses fresh browser contexts without touching your browser's saved data.
 Optional `--screenshots /tmp/ehrcms-browser-checks` captures desktop and mobile
 dashboards. Any failed assertion exits nonzero.

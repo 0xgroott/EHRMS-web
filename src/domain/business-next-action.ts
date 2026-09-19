@@ -1,6 +1,17 @@
 import type { BusinessAlert } from "./business-types"
 
 type CertificateProgress = "not-started" | "in-progress" | "active" | "expired"
+type HealthApprovalProgress =
+  | "eligible"
+  | "notice-served"
+  | "notice-acknowledged"
+  | "findings-issued"
+  | "corrections-recorded"
+  | "follow-up-served"
+  | "follow-up-acknowledged"
+  | "resolved"
+  | "approval-issued"
+  | "further-action"
 
 export interface BusinessNextActionInput {
   profileComplete: boolean
@@ -11,6 +22,7 @@ export interface BusinessNextActionInput {
   fumigation: CertificateProgress
   fumigationActionHref?: string
   missingHealthApprovalRequirement: boolean
+  healthApprovalStage?: HealthApprovalProgress
 }
 
 export interface BusinessNextAction {
@@ -115,6 +127,89 @@ export function getBusinessNextAction(
       href: input.fumigationActionHref ?? "/business/fumigation/tracker",
       label: "Track Fumigation application",
     }
+  if (
+    input.healthApprovalStage &&
+    input.healthApprovalStage !== "approval-issued"
+  ) {
+    const healthActions: Record<
+      Exclude<HealthApprovalProgress, "approval-issued">,
+      BusinessNextAction
+    > = {
+      eligible: {
+        id: "health-eligible",
+        title: "Health Approval: inspection pending",
+        description:
+          "Both certificate requirements are complete. Review inspection readiness and the next step.",
+        href: "/business/health-approval",
+        label: "View Health Approval",
+      },
+      "notice-served": {
+        id: "acknowledge-inspection",
+        title: "Acknowledge your inspection notice",
+        description:
+          "Review the scheduled visit and confirm receipt of the council notice.",
+        href: "/business/inspections",
+        label: "View inspection notice",
+      },
+      "notice-acknowledged": {
+        id: "await-inspection",
+        title: "Inspection scheduled",
+        description:
+          "Your notice is acknowledged. Review the visit details and preparation instructions.",
+        href: "/business/inspections",
+        label: "View inspection details",
+      },
+      "findings-issued": {
+        id: "correct-findings",
+        title: "Complete corrective actions",
+        description:
+          "Review each finding and record the work completed before follow-up.",
+        href: "/business/inspections",
+        label: "View required actions",
+      },
+      "corrections-recorded": {
+        id: "await-follow-up",
+        title: "Corrections recorded",
+        description:
+          "The council follow-up step is next. Review the recorded actions and deadlines.",
+        href: "/business/inspections",
+        label: "Track follow-up",
+      },
+      "follow-up-served": {
+        id: "acknowledge-follow-up",
+        title: "Acknowledge the follow-up notice",
+        description:
+          "Review the separate follow-up visit and confirm receipt of its notice.",
+        href: "/business/inspections",
+        label: "View follow-up notice",
+      },
+      "follow-up-acknowledged": {
+        id: "await-follow-up-outcome",
+        title: "Follow-up inspection pending",
+        description:
+          "Your follow-up notice is acknowledged. The council outcome is next.",
+        href: "/business/inspections",
+        label: "Track follow-up",
+      },
+      resolved: {
+        id: "review-health-decision",
+        title: "Review the Health Approval decision",
+        description:
+          "The corrective actions were resolved after follow-up. Review the council decision.",
+        href: "/business/health-approval",
+        label: "View Health Approval",
+      },
+      "further-action": {
+        id: "further-action",
+        title: "Further action required",
+        description:
+          "The follow-up left an outstanding finding. Review the recorded outcome and contact the council.",
+        href: "/business/inspections",
+        label: "Review follow-up outcome",
+      },
+    }
+    return healthActions[input.healthApprovalStage]
+  }
   if (input.missingHealthApprovalRequirement)
     return {
       id: "complete-health-requirement",

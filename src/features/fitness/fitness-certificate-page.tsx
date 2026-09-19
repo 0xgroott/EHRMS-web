@@ -14,6 +14,7 @@ import {
 import { useFitness } from "./fitness-context"
 import { useFumigation } from "@/features/fumigation/fumigation-context"
 import { FumigationLink } from "@/features/fumigation/fumigation-shared"
+import { useInspection } from "@/features/inspection/inspection-context"
 import {
   FitnessEmptyState,
   FitnessLink,
@@ -149,7 +150,10 @@ export function BusinessCertificatesPage() {
   const { state, isHydrated } = useFitness()
   const { state: fumigation, isHydrated: fumigationIsHydrated } =
     useFumigation()
-  if (!isHydrated || !fumigationIsHydrated) return <FitnessLoading />
+  const { state: inspection, isHydrated: inspectionIsHydrated } =
+    useInspection()
+  if (!isHydrated || !fumigationIsHydrated || !inspectionIsHydrated)
+    return <FitnessLoading />
   const application = state.application
   const fumigationApplication = fumigation.application
   const fumigationCertificate =
@@ -160,6 +164,8 @@ export function BusinessCertificatesPage() {
     application?.stage === "issued" ? application.certificate : undefined
   const submitted =
     application && !["draft", "review"].includes(application.stage)
+  const healthCertificate = inspection.inspection?.certificate
+  const healthEligible = Boolean(certificate && fumigationCertificate)
   return (
     <div className="flex max-w-5xl min-w-0 flex-col gap-6 break-words">
       <PageHeader
@@ -257,18 +263,38 @@ export function BusinessCertificatesPage() {
           </FumigationLink>
         </CardFooter>
       </Card>
-      <section
-        aria-labelledby="health-approval"
-        className="flex flex-col gap-2"
-      >
-        <h2 id="health-approval" className="font-semibold">
-          Health Approval
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          Requires valid Fitness and Fumigation Certificates, eligibility
-          checks, and inspection. This workflow is coming in a later slice.
-        </p>
-      </section>
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <h2>Health Approval</h2>
+          </CardTitle>
+          <Badge variant="secondary">
+            {healthCertificate
+              ? "Issued"
+              : healthEligible
+                ? "Inspection pending"
+                : "Requirements incomplete"}
+          </Badge>
+          <CardDescription>
+            {healthCertificate
+              ? "Approval outcome for your registered premises."
+              : "Follows Fitness, Fumigation, eligibility checks, and inspection."}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            {healthCertificate?.id ??
+              (healthEligible
+                ? "Follow the inspection and council decision."
+                : "Complete the missing certificate requirements first.")}
+          </p>
+        </CardContent>
+        <CardFooter>
+          <FitnessLink href="/business/health-approval">
+            View Health Approval
+          </FitnessLink>
+        </CardFooter>
+      </Card>
     </div>
   )
 }

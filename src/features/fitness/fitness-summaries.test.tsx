@@ -7,6 +7,7 @@ import { FitnessProvider } from "./fitness-context"
 import { createFitnessStore } from "./fitness-store"
 import { FumigationProvider } from "@/features/fumigation/fumigation-context"
 import { createFumigationStore } from "@/features/fumigation/fumigation-store"
+import { InspectionProvider } from "@/features/inspection/inspection-context"
 
 vi.mock("@/app/business-session", () => ({
   useBusinessSession: () => ({
@@ -31,7 +32,9 @@ it("shows an active Fitness summary and Fumigation start action", async () => {
   render(
     <FitnessProvider>
       <FumigationProvider>
-        <BusinessApplicationsPage />
+        <InspectionProvider>
+          <BusinessApplicationsPage />
+        </InspectionProvider>
       </FumigationProvider>
     </FitnessProvider>
   )
@@ -82,7 +85,9 @@ it("shows issued Fitness and Fumigation certificates in certificates navigation"
   render(
     <FitnessProvider>
       <FumigationProvider>
-        <BusinessCertificatesPage />
+        <InspectionProvider>
+          <BusinessCertificatesPage />
+        </InspectionProvider>
       </FumigationProvider>
     </FitnessProvider>
   )
@@ -94,4 +99,7 @@ it("shows issued Fitness and Fumigation certificates in certificates navigation"
   expect(
     screen.getByRole("link", { name: "View Fumigation Certificate" })
   ).toHaveAttribute("href", "/business/fumigation/certificate")
+  expect(
+    screen.getByRole("link", { name: "View Health Approval" })
+  ).toHaveAttribute("href", "/business/health-approval")
 })
