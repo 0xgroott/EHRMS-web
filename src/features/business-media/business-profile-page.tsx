@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { seedDatabase } from "@/data/seeds"
 import { useBusinessMedia } from "./business-media-context"
 import type { BusinessMediaItem } from "./business-media-store"
+import { BusinessProfileEditDrawer } from "./business-profile-edit-drawer"
 
 const acceptedImages = "image/png,image/jpeg,image/webp"
 const photoLabels = ["Premises photo 1", "Premises photo 2", "Premises photo 3"]
@@ -127,6 +128,8 @@ export function BusinessProfilePage() {
   const [busy, setBusy] = useState(false)
   const [avatarError, setAvatarError] = useState("")
   const [photoError, setPhotoError] = useState("")
+  const [editing, setEditing] = useState(false)
+  const [saveNotice, setSaveNotice] = useState("")
 
   if (!businessReady || !mediaReady) {
     return (
@@ -174,7 +177,28 @@ export function BusinessProfilePage() {
         eyebrow="Business account"
         title="Business profile"
         description="Your registered business and premises details."
+        actions={
+          <Button variant="outline" onClick={() => setEditing(true)}>
+            Edit profile
+          </Button>
+        }
       />
+      {saveNotice && (
+        <Alert role="status">
+          <AlertDescription>{saveNotice}</AlertDescription>
+        </Alert>
+      )}
+      {editing && premises && (
+        <BusinessProfileEditDrawer
+          profile={profile}
+          councilName={council?.name ?? premises.councilId}
+          onClose={() => setEditing(false)}
+          onSaved={() => {
+            setEditing(false)
+            setSaveNotice("Profile changes saved.")
+          }}
+        />
+      )}
 
       <section
         aria-labelledby="business-identity"

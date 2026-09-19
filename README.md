@@ -40,8 +40,9 @@ Saved registration recovery is local to this browser and does not authenticate y
 anyone using this browser can continue its demo draft. Older saved registrations
 without an expiry timestamp keep their details and require a new verification code.
 Browser storage retains account/premises details, document metadata, and resized
-profile images, never passwords, OTP values, or document contents. Signing out clears the business demo
-state; signing in with the seeded account replaces it. Use fictional data.
+profile images, never passwords, OTP values, or document contents. Signing out clears the active
+business session. Saved edits to the seeded business profile and its images remain available when
+that account signs in again. Use fictional data.
 
 From the dashboard, open **Food handlers** to add or edit a handler. An incomplete
 handler can be saved, but cannot be selected for a Fitness application. Start an
@@ -54,9 +55,10 @@ Food handler and certificate application forms open in drawers inside the signed
 portal; their URLs can still be opened directly. Inspection correction forms open
 from the corresponding finding.
 
-Open **Business profile** to upload or replace a business avatar/logo and up to
+Open **Business profile** to edit business and premises details, or upload or replace a business avatar/logo and up to
 three premises or kitchen photos. PNG, JPG, and WebP images up to 8 MB are accepted
-and resized for browser persistence. The avatar appears in the account menu and
+and resized for browser persistence. Profile edits are saved with **Save changes**; verified
+email, phone number, and council assignment remain read-only. The avatar appears in the account menu and
 the first premises photo appears on the dashboard.
 
 From the dashboard or Applications, start a Fumigation application. Confirm the premises

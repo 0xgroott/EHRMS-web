@@ -6,9 +6,27 @@ import type {
   BusinessPortalState,
   BusinessPremisesInput,
   BusinessProfile,
+  BusinessProfileDetailsInput,
 } from "@/domain/business-types"
 
 export const STORAGE_KEY = "ehrcms:business:v1"
+const SEEDED_PROFILE_DETAILS_KEY = "ehrcms:business-profile-details:v1"
+
+function isProfileDetails(
+  value: unknown
+): value is BusinessProfileDetailsInput {
+  if (!isRecord(value)) return false
+  return (
+    typeof value.businessName === "string" &&
+    typeof value.contactName === "string" &&
+    typeof value.premisesName === "string" &&
+    typeof value.businessType === "string" &&
+    (value.registrationNumber === undefined ||
+      typeof value.registrationNumber === "string") &&
+    typeof value.address === "string" &&
+    typeof value.ward === "string"
+  )
+}
 
 const businessStages: BusinessOnboardingStage[] = [
   "account",
@@ -101,6 +119,18 @@ function isBusinessPortalState(value: unknown): value is BusinessPortalState {
 
 export function createBusinessStorage(storage: Storage = window.localStorage) {
   return {
+    readSeededProfileDetails(): BusinessProfileDetailsInput | null {
+      try {
+        const raw = storage.getItem(SEEDED_PROFILE_DETAILS_KEY)
+        const parsed: unknown = raw ? JSON.parse(raw) : null
+        return isProfileDetails(parsed) ? parsed : null
+      } catch {
+        return null
+      }
+    },
+    writeSeededProfileDetails(details: BusinessProfileDetailsInput) {
+      storage.setItem(SEEDED_PROFILE_DETAILS_KEY, JSON.stringify(details))
+    },
     read(): BusinessPortalState {
       try {
         const raw = storage.getItem(STORAGE_KEY)
