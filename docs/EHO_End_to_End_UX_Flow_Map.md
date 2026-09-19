@@ -1,3 +1,7 @@
+---
+title: "EHRCMS Environmental Health Officer (EHO) — End-to-End UX Flow Map"
+---
+
 # EHRCMS Environmental Health Officer (EHO) — End-to-End UX Flow Map
 
 ## Scope

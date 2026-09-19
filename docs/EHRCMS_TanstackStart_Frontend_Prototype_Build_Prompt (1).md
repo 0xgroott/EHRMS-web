@@ -1,3 +1,7 @@
+---
+title: "EHRCMS Frontend Prototype Build Prompt"
+---
+
 # EHRCMS Frontend Prototype Build Prompt
 
 You are helping me build a frontend-only clickable prototype for a product called **EHRCMS — Environmental Health Regulatory Case Management System**.

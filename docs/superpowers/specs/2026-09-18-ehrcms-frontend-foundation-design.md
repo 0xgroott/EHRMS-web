@@ -1,3 +1,7 @@
+---
+title: "EHRCMS Frontend Foundation Design"
+---
+
 # EHRCMS Frontend Foundation Design
 
 ## Purpose

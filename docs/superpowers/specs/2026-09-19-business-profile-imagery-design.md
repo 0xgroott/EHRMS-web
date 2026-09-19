@@ -1,3 +1,7 @@
+---
+title: "Business profile imagery — design/build brief"
+---
+
 # Business profile imagery — design/build brief
 
 ## Outcome

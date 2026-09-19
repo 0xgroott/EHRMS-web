@@ -1,0 +1,78 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "EHRCMS Documentation",
+  "colors": {
+    "primary": "#176B5B"
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Overview",
+        "pages": ["index"]
+      },
+      {
+        "tab": "Internal library",
+        "groups": [
+          {
+            "group": "Start here",
+            "pages": ["internal/index"]
+          },
+          {
+            "group": "Product requirements",
+            "pages": ["SRS_EHRCMS_Draft 2"]
+          },
+          {
+            "group": "Role journeys",
+            "pages": [
+              "Business_User_End_to_End_UX_Flow_Map",
+              "EHO_End_to_End_UX_Flow_Map",
+              "MOH_End_to_End_UX_Flow_Map",
+              "Admin_SuperAdmin_End_to_End_UX_Flow_Map"
+            ]
+          },
+          {
+            "group": "Screen specifications",
+            "pages": [
+              "Business Portal - UX Flow Screen Specifications",
+              "EHO_UX_Flow_Screen_Specifications",
+              "MOH_Director_UX_Flow_Screen_Specifications",
+              "Admin_Dashboard_UX_Flow_Screen_Specifications"
+            ]
+          },
+          {
+            "group": "Prototype guidance",
+            "pages": [
+              "EHRCMS_TanstackStart_Frontend_Prototype_Build_Prompt (1)",
+              "Clean_Prototype_Slice_Build_Playbook"
+            ]
+          },
+          {
+            "group": "Designs and build briefs",
+            "pages": [
+              "superpowers/specs/2026-09-18-ehrcms-frontend-foundation-design",
+              "superpowers/specs/2026-09-18-business-portal-onboarding-dashboard-design",
+              "superpowers/specs/2026-09-19-business-portal-fitness-slice-design",
+              "superpowers/specs/2026-09-19-business-portal-fumigation-slice-brief",
+              "superpowers/specs/2026-09-19-business-portal-health-approval-slice-brief",
+              "superpowers/specs/2026-09-19-business-portal-form-drawers-design",
+              "superpowers/specs/2026-09-19-business-profile-imagery-design",
+              "superpowers/specs/2026-09-18-design-to-ui-process-article-design"
+            ]
+          },
+          {
+            "group": "Implementation plans",
+            "pages": [
+              "superpowers/plans/2026-09-18-ehrcms-frontend-foundation",
+              "superpowers/plans/2026-09-18-business-portal-slice-1",
+              "superpowers/plans/2026-09-19-business-portal-fitness-slice",
+              "superpowers/plans/2026-09-19-business-portal-form-drawers",
+              "superpowers/plans/2026-09-19-business-profile-imagery",
+              "superpowers/plans/2026-09-18-design-to-ui-process-article"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

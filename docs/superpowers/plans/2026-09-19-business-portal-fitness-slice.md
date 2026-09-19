@@ -1,3 +1,7 @@
+---
+title: "Business Portal Fitness Slice Implementation Plan"
+---
+
 # Business Portal Fitness Slice Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development or superpowers:executing-plans. Steps use checkbox (`- [ ]`) syntax for tracking. For this prototype, independent UI blocks may be delegated concurrently after the shared state contract is fixed; each block owns disjoint files.

@@ -1,3 +1,7 @@
+---
+title: "EHRCMS Medical Officer of Health (MOH) — End-to-End UX Flow Map"
+---
+
 # EHRCMS Medical Officer of Health (MOH) — End-to-End UX Flow Map
 
 ## Scope
