@@ -5,6 +5,15 @@ import type {
 } from "./fitness-types"
 
 const STORAGE_PREFIX = "ehrcms:fitness:v1:"
+const subscribers = new Map<string, Set<FitnessStoreListener>>()
+
+export type FitnessStoreListener = (state: FitnessState) => void
+
+export interface FitnessStore {
+  read: (profileId: string) => FitnessState
+  write: (profileId: string, state: FitnessState) => void
+  subscribe: (profileId: string, listener: FitnessStoreListener) => () => void
+}
 
 export function emptyFitnessState(): FitnessState {
   return { handlers: [], application: null }
@@ -14,7 +23,9 @@ export function fitnessStorageKey(profileId: string) {
   return `${STORAGE_PREFIX}${profileId}`
 }
 
-export function createFitnessStore(storage: Storage | null = browserStorage()) {
+export function createFitnessStore(
+  storage: Storage | null = browserStorage()
+): FitnessStore {
   return {
     read(profileId: string): FitnessState {
       if (!storage || !profileId) return emptyFitnessState()
@@ -32,6 +43,19 @@ export function createFitnessStore(storage: Storage | null = browserStorage()) {
     write(profileId: string, state: FitnessState) {
       if (!storage || !profileId) return
       storage.setItem(fitnessStorageKey(profileId), JSON.stringify(state))
+      subscribers.get(profileId)?.forEach((listener) => {
+        listener(structuredClone(state))
+      })
+    },
+    subscribe(profileId: string, listener: FitnessStoreListener) {
+      if (!profileId) return () => undefined
+      const profileSubscribers = subscribers.get(profileId) ?? new Set()
+      profileSubscribers.add(listener)
+      subscribers.set(profileId, profileSubscribers)
+      return () => {
+        profileSubscribers.delete(listener)
+        if (profileSubscribers.size === 0) subscribers.delete(profileId)
+      }
     },
   }
 }

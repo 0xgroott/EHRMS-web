@@ -20,8 +20,19 @@ export function handlerReadiness(handler: FoodHandler): HandlerReadiness {
 export function beginApplication(
   handlers: readonly FoodHandler[],
   handlerIds: readonly string[],
-  id = "fitness-demo-application"
+  id = "fitness-demo-application",
+  currentApplication: FitnessApplication | null = null
 ): FitnessRuleResult<FitnessApplication> {
+  if (
+    currentApplication &&
+    currentApplication.stage !== "draft" &&
+    currentApplication.stage !== "review"
+  ) {
+    return {
+      ok: false,
+      error: "Selected handlers can only be changed before payment",
+    }
+  }
   const selectedIds = [...new Set(handlerIds)]
   if (selectedIds.length === 0) {
     return { ok: false, error: "Select at least one eligible food handler" }
@@ -79,7 +90,8 @@ export function chooseFacility(
 }
 
 export function confirmDemoPayment(
-  application: FitnessApplication
+  application: FitnessApplication,
+  handlers: readonly FoodHandler[]
 ): FitnessRuleResult<FitnessApplication> {
   if (application.stage !== "review" || !application.facilityId) {
     return {
@@ -94,6 +106,17 @@ export function confirmDemoPayment(
     return {
       ok: false,
       error: "A valid assessment total is required for demo payment",
+    }
+  }
+  const handlersById = new Map(handlers.map((handler) => [handler.id, handler]))
+  const hasIneligibleSelection = application.handlerIds.some((handlerId) => {
+    const handler = handlersById.get(handlerId)
+    return !handler || !handlerReadiness(handler).ready
+  })
+  if (hasIneligibleSelection) {
+    return {
+      ok: false,
+      error: "Selected handlers must remain eligible before demo payment",
     }
   }
 

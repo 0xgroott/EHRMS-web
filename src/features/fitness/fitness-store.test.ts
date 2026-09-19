@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 import { createFitnessStore, fitnessStorageKey } from "./fitness-store"
 import type { FitnessState } from "./fitness-types"
 
@@ -38,5 +38,24 @@ describe("fitness store", () => {
       application: null,
     })
     expect(localStorage.getItem(fitnessStorageKey("business-b"))).toBeNull()
+  })
+
+  it("notifies only the matching profile and removes listeners on cleanup", () => {
+    const store = createFitnessStore(localStorage)
+    const businessA = vi.fn()
+    const businessB = vi.fn()
+    const unsubscribeA = store.subscribe("business-a", businessA)
+    const unsubscribeB = store.subscribe("business-b", businessB)
+
+    store.write("business-a", savedState)
+
+    expect(businessA).toHaveBeenCalledWith(savedState)
+    expect(businessB).not.toHaveBeenCalled()
+
+    unsubscribeA()
+    unsubscribeB()
+    store.write("business-a", { handlers: [], application: null })
+
+    expect(businessA).toHaveBeenCalledTimes(1)
   })
 })

@@ -52,9 +52,62 @@ describe("fitness rules", () => {
     const result = beginApplication([handler], [handler.id])
     if (!result.ok) throw new Error(result.error)
 
-    expect(confirmDemoPayment(result.value)).toEqual({
+    expect(confirmDemoPayment(result.value, [handler])).toEqual({
       ok: false,
       error: "Choose an approved facility before demo payment",
+    })
+  })
+
+  it("does not replace a paid or issued application when selection is revisited", () => {
+    const issued: FitnessApplication = {
+      ...awaitingFacility,
+      stage: "issued",
+      certificate: {
+        id: "DEMO-CERT-1",
+        handlerIds: [handler.id],
+        councilId: "phc",
+        issuedAt: "2026-09-19T09:00:00.000Z",
+        expiresAt: "2027-09-19T09:00:00.000Z",
+      },
+    }
+
+    expect(
+      beginApplication([handler], [handler.id], "replacement", awaitingFacility)
+    ).toEqual({
+      ok: false,
+      error: "Selected handlers can only be changed before payment",
+    })
+    expect(
+      beginApplication([handler], [handler.id], "replacement", issued)
+    ).toEqual({
+      ok: false,
+      error: "Selected handlers can only be changed before payment",
+    })
+    expect(awaitingFacility.stage).toBe("awaiting-facility")
+    expect(issued.stage).toBe("issued")
+  })
+
+  it("blocks demo payment after a selected handler loses consent", () => {
+    const review: FitnessApplication = {
+      ...awaitingFacility,
+      stage: "review",
+      paymentReference: undefined,
+    }
+
+    expect(
+      confirmDemoPayment(review, [{ ...handler, consent: false }])
+    ).toEqual({
+      ok: false,
+      error: "Selected handlers must remain eligible before demo payment",
+    })
+    expect(review.stage).toBe("review")
+  })
+
+  it("rejects certificate issuance before the facility result", () => {
+    expect(issueDemoCertificate(awaitingFacility, "phc")).toEqual({
+      ok: false,
+      error:
+        "A fit facility result is required before issuing a demo certificate",
     })
   })
 

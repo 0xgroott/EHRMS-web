@@ -48,23 +48,23 @@ export function FitnessProvider({ children }: { children: React.ReactNode }) {
     useBusinessSession()
   const profile = businessState.profile
   const profileId = profile?.id ?? null
+  const store = useMemo(() => createFitnessStore(), [])
   const [state, setState] = useState<FitnessState>(emptyFitnessState)
   const [isHydrated, setIsHydrated] = useState(false)
 
   useEffect(() => {
     if (!businessIsHydrated) return
-    setState(
-      profileId ? createFitnessStore().read(profileId) : emptyFitnessState()
-    )
+    setState(profileId ? store.read(profileId) : emptyFitnessState())
     setIsHydrated(true)
-  }, [businessIsHydrated, profileId])
+    return profileId ? store.subscribe(profileId, setState) : undefined
+  }, [businessIsHydrated, profileId, store])
 
   const save = useCallback(
     (nextState: FitnessState) => {
-      if (profileId) createFitnessStore().write(profileId, nextState)
+      if (profileId) store.write(profileId, nextState)
       setState(nextState)
     },
-    [profileId]
+    [profileId, store]
   )
 
   const noProfile = useCallback(
@@ -109,7 +109,12 @@ export function FitnessProvider({ children }: { children: React.ReactNode }) {
   const selectHandlers = useCallback(
     (handlerIds: string[]): FitnessRuleResult<FitnessApplication> => {
       if (!profileId) return noProfile()
-      const result = beginApplication(state.handlers, handlerIds)
+      const result = beginApplication(
+        state.handlers,
+        handlerIds,
+        "fitness-demo-application",
+        state.application
+      )
       if (result.ok) save({ ...state, application: result.value })
       return result
     },
@@ -145,8 +150,11 @@ export function FitnessProvider({ children }: { children: React.ReactNode }) {
   )
 
   const confirmDemoPayment = useCallback(
-    () => updateApplication(confirmDemoPaymentRule),
-    [updateApplication]
+    () =>
+      updateApplication((application) =>
+        confirmDemoPaymentRule(application, state.handlers)
+      ),
+    [state.handlers, updateApplication]
   )
   const recordFitResult = useCallback(
     () => updateApplication(recordFitResultRule),
