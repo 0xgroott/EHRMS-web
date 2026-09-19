@@ -1,3 +1,7 @@
+---
+title: "Business Portal Slice 2 — Food Handlers and Fitness Demo"
+---
+
 # Business Portal Slice 2 — Food Handlers and Fitness Demo
 
 ## Purpose and source

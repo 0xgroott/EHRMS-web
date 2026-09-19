@@ -1,3 +1,7 @@
+---
+title: "EHRCMS software requirements specification — Draft 2"
+---
+
 |                        |                                  |
 |------------------------|----------------------------------|
 | **Document status**    | Draft 2 — for stakeholder review |

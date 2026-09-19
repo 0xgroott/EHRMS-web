@@ -1,3 +1,7 @@
+---
+title: "EHRCMS Admin & Super Admin — End-to-End UX Flow Map"
+---
+
 # EHRCMS Admin & Super Admin — End-to-End UX Flow Map
 
 ## Scope
