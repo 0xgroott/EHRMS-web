@@ -214,8 +214,8 @@ describe("business dashboard", () => {
         name: "Start your Fumigation application",
       })
     ).toBeInTheDocument()
-    expect(screen.getByText("DEMO-CERT-001")).toBeInTheDocument()
-    expect(screen.getByText("Issued demo certificate")).toBeInTheDocument()
+    expect(screen.getByText("FIT-CERT-001")).toBeInTheDocument()
+    expect(screen.getByText("Issued")).toBeInTheDocument()
     expect(
       screen.getAllByRole("link", { name: /view fitness certificate/i }).length
     ).toBeGreaterThan(0)

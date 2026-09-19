@@ -2,6 +2,7 @@
 
 import argparse
 from contextlib import contextmanager
+from datetime import date
 import os
 from pathlib import Path
 import re
@@ -179,7 +180,7 @@ def run_checks(base_url, screenshots):
             at(page, "verify")
             page.get_by_label("6-digit verification code", exact=True).fill("654321")
             page.get_by_role("button", name="Verify and continue", exact=True).click()
-            expect(page.get_by_text("Enter the demo code 123456", exact=True).first).to_be_visible()
+            expect(page.get_by_text("Enter code 123456", exact=True).first).to_be_visible()
             at(page, "verify")
             page.clock.fast_forward(300_000)
             expect(page.get_by_text("This code has expired. Request a new code.", exact=True)).to_be_visible()
@@ -233,7 +234,7 @@ def run_checks(base_url, screenshots):
                 dashboard(page)
                 expect(page.get_by_text("Riverside Kitchen & Foods", exact=True).first).to_be_visible()
                 sign_out(page)
-            page.get_by_role("button", name="Use demo account", exact=True).click()
+            page.get_by_role("button", name="Preview as business user", exact=True).click()
             dashboard(page)
             passed("seeded email, phone and demo shortcut sign-in; sign out")
 
@@ -290,7 +291,7 @@ def run_checks(base_url, screenshots):
                             if message.type == "error" else None)
             try:
                 visit(fitness_page, "/business/sign-in")
-                fitness_page.get_by_role("button", name="Use demo account", exact=True).click()
+                fitness_page.get_by_role("button", name="Preview as business user", exact=True).click()
                 dashboard(fitness_page)
 
                 fitness_page.get_by_role("link", name="Food handlers", exact=True).click()
@@ -336,24 +337,58 @@ def run_checks(base_url, screenshots):
                 fitness_page.get_by_role("button", name="Review application", exact=True).click()
                 expect(fitness_page.get_by_role("heading", name="Review your application", exact=True)).to_be_visible()
                 expect(fitness_page.get_by_text("Amina Browser", exact=True)).to_be_visible()
-                fitness_page.get_by_role("button", name="Proceed to demo payment", exact=True).click()
-                expect(fitness_page.get_by_role("heading", name="Demo payment", exact=True)).to_be_visible()
-                fitness_page.get_by_role("button", name="Confirm demo payment", exact=True).click()
+                fitness_page.get_by_role("button", name="Proceed to payment", exact=True).click()
+                expect(fitness_page.get_by_role("heading", name="Payment", exact=True)).to_be_visible()
+                fitness_page.get_by_role("button", name="Confirm payment", exact=True).click()
                 at(fitness_page, "fitness/tracker")
                 expect(fitness_page.get_by_role("heading", name="Awaiting facility result", exact=True)).to_be_visible()
                 fitness_page.get_by_role("button", name="Simulate facility Fit result", exact=True).click()
                 expect(fitness_page.get_by_role("heading", name="Facility result received: Fit", exact=True)).to_be_visible()
                 fitness_page.get_by_role("button", name="Simulate council issuance", exact=True).click()
                 expect(fitness_page.get_by_role("heading", name="Council decision: issued", exact=True)).to_be_visible()
-                fitness_page.get_by_role("link", name="View demo certificate", exact=True).click()
+                fitness_page.get_by_role("link", name="View Fitness Certificate", exact=True).click()
                 at(fitness_page, "fitness/certificate")
-                expect(fitness_page.get_by_role("heading", name="Demo Fitness Certificate", exact=True)).to_be_visible()
+                expect(fitness_page.get_by_role("heading", name="Fitness Certificate", exact=True)).to_be_visible()
                 expect(fitness_page.get_by_text("Amina Browser", exact=True)).to_be_visible()
                 fitness_page.reload(wait_until="networkidle")
-                expect(fitness_page.get_by_role("heading", name="Demo Fitness Certificate", exact=True)).to_be_visible()
+                expect(fitness_page.get_by_role("heading", name="Fitness Certificate", exact=True)).to_be_visible()
                 fitness_page.get_by_role("link", name="Home", exact=True).click()
                 dashboard(fitness_page)
-                expect(fitness_page.get_by_text("Issued demo certificate", exact=True)).to_be_visible()
+                expect(fitness_page.get_by_text("Issued", exact=True)).to_be_visible()
+
+                fitness_page.get_by_role("link", name="Start Fumigation application", exact=True).first.click()
+                at(fitness_page, "fumigation/apply")
+                fitness_page.get_by_role("button", name="Choose provider", exact=True).click()
+                expect(fitness_page.get_by_role("alert")).to_contain_text("Enter the requested fumigation period")
+                fitness_page.get_by_label("Requested service month", exact=True).fill(date.today().strftime("%Y-%m"))
+                fitness_page.get_by_role("button", name="Choose provider", exact=True).click()
+                expect(fitness_page.get_by_role("alert")).to_contain_text("Confirm the premises declaration")
+                fitness_page.get_by_role("checkbox", name=re.compile("I confirm these premises details")).check()
+                fitness_page.get_by_role("button", name="Choose provider", exact=True).click()
+                expect(fitness_page.get_by_role("heading", name="Choose a licensed provider", exact=True)).to_be_visible()
+                fitness_page.get_by_role("radio", name=re.compile("Clearfield Environmental Services")).check()
+                fitness_page.get_by_role("button", name="Select provider", exact=True).click()
+                expect(fitness_page.get_by_role("heading", name="Review your application", exact=True)).to_be_visible()
+                expect(fitness_page.get_by_text("₦45,000").first).to_be_visible()
+                fitness_page.get_by_role("button", name="Proceed to payment", exact=True).click()
+                expect(fitness_page.get_by_text(re.compile("No money moves"))).to_be_visible()
+                fitness_page.get_by_role("button", name="Confirm payment", exact=True).click()
+                at(fitness_page, "fumigation/tracker")
+                expect(fitness_page.get_by_role("heading", name="Awaiting provider report", exact=True)).to_be_visible()
+                expect(fitness_page.get_by_role("button", name="Simulate council decision", exact=True)).to_be_disabled()
+                fitness_page.get_by_role("button", name="Simulate provider report", exact=True).click()
+                expect(fitness_page.get_by_role("heading", name="Report submitted", exact=True)).to_be_visible()
+                fitness_page.get_by_role("button", name="Simulate EHO confirmation", exact=True).click()
+                expect(fitness_page.get_by_role("heading", name="Awaiting council decision", exact=True)).to_be_visible()
+                fitness_page.get_by_role("button", name="Simulate council decision", exact=True).click()
+                fitness_page.get_by_role("link", name="View Fumigation Certificate", exact=True).click()
+                at(fitness_page, "fumigation/certificate")
+                expect(fitness_page.get_by_role("heading", name="Fumigation Certificate", exact=True).first).to_be_visible()
+                expect(fitness_page.get_by_text("Clearfield Environmental Services", exact=True)).to_be_visible()
+                expect(fitness_page.get_by_text(re.compile("not an official council document"))).to_be_visible()
+                fitness_page.reload(wait_until="networkidle")
+                expect(fitness_page.get_by_role("heading", name="Fumigation Certificate", exact=True).first).to_be_visible()
+                passed("Slice 3 Fumigation validation, provider, payment, external decisions, certificate, and persistence")
 
                 fitness_page.set_viewport_size({"width": 390, "height": 844})
                 for route in (
@@ -363,6 +398,9 @@ def run_checks(base_url, screenshots):
                     "certificates",
                     "fitness/tracker",
                     "fitness/certificate",
+                    "fumigation/apply",
+                    "fumigation/tracker",
+                    "fumigation/certificate",
                 ):
                     visit(fitness_page, "/business/" + route)
                     no_overflow(fitness_page)

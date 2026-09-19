@@ -20,7 +20,7 @@ export function handlerReadiness(handler: FoodHandler): HandlerReadiness {
 export function beginApplication(
   handlers: readonly FoodHandler[],
   handlerIds: readonly string[],
-  id = "fitness-demo-application",
+  id = "fitness-application-1",
   currentApplication: FitnessApplication | null = null
 ): FitnessRuleResult<FitnessApplication> {
   if (
@@ -96,7 +96,7 @@ export function confirmDemoPayment(
   if (application.stage !== "review" || !application.facilityId) {
     return {
       ok: false,
-      error: "Choose an approved facility before demo payment",
+      error: "Choose an approved facility before payment",
     }
   }
   if (
@@ -105,7 +105,7 @@ export function confirmDemoPayment(
   ) {
     return {
       ok: false,
-      error: "A valid assessment total is required for demo payment",
+      error: "A valid assessment total is required for payment",
     }
   }
   const handlersById = new Map(handlers.map((handler) => [handler.id, handler]))
@@ -116,7 +116,7 @@ export function confirmDemoPayment(
   if (hasIneligibleSelection) {
     return {
       ok: false,
-      error: "Selected handlers must remain eligible before demo payment",
+      error: "Selected handlers must remain eligible before payment",
     }
   }
 
@@ -125,7 +125,7 @@ export function confirmDemoPayment(
     value: {
       ...application,
       stage: "awaiting-facility",
-      paymentReference: `DEMO-FITNESS-${application.id.toUpperCase()}`,
+      paymentReference: `FIT-PAY-${application.id.toUpperCase()}`,
     },
   }
 }
@@ -154,8 +154,7 @@ export function issueDemoCertificate(
   if (application.stage !== "result-received") {
     return {
       ok: false,
-      error:
-        "A fit facility result is required before issuing a demo certificate",
+      error: "A fit facility result is required before issuing a certificate",
     }
   }
   if (!councilId.trim()) {
@@ -168,7 +167,7 @@ export function issueDemoCertificate(
       ...application,
       stage: "issued",
       certificate: {
-        id: `DEMO-CERT-${application.id.toUpperCase()}`,
+        id: `FIT-CERT-${application.id.toUpperCase()}`,
         handlerIds: [...application.handlerIds],
         councilId,
         issuedAt: dates.issuedAt,

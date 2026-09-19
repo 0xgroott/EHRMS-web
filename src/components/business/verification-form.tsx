@@ -148,7 +148,7 @@ export function VerificationForm({
             className="min-h-11 tracking-[0.35em]"
           />
           <FieldDescription id={`${id}-hint`}>
-            This demo code expires five minutes after it is issued.
+            This code expires five minutes after it is issued.
           </FieldDescription>
           {(error || codeError) && (
             <p

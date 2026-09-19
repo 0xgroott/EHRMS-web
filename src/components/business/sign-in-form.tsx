@@ -143,7 +143,7 @@ export function SignInForm({ onSubmit, createAccountLink }: SignInFormProps) {
                 void form.handleSubmit()
               }}
             >
-              Use demo account
+              Preview as business user
             </Button>
           </div>
         )}

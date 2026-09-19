@@ -568,8 +568,8 @@ export function BusinessSetupForm({
               className="min-h-11 cursor-pointer"
             />
             <FieldDescription>
-              PDF, JPG, or PNG. We keep metadata only; file contents are not
-              uploaded in this demo.
+              PDF, JPG, or PNG. Document names and file details are saved in
+              this browser; file contents are not uploaded.
             </FieldDescription>
             {documents.length > 0 && (
               <ul

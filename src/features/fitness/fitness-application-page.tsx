@@ -23,6 +23,11 @@ import {
   FieldSet,
 } from "@/components/ui/field"
 import { useFitness } from "./fitness-context"
+import { useFumigation } from "@/features/fumigation/fumigation-context"
+import {
+  FumigationLink,
+  fumigationStageLabel,
+} from "@/features/fumigation/fumigation-shared"
 import { handlerReadiness } from "./fitness-rules"
 import {
   APPROVED_FITNESS_FACILITIES,
@@ -84,7 +89,7 @@ function ApplicationSteps({ onPaid }: { onPaid?: () => void }) {
     people: "Select food handlers",
     facility: "Choose an approved facility",
     review: "Review your application",
-    payment: "Demo payment",
+    payment: "Payment",
   }
   const steps: Step[] = ["people", "facility", "review", "payment"]
   function go(next: Step) {
@@ -134,7 +139,7 @@ function ApplicationSteps({ onPaid }: { onPaid?: () => void }) {
                 ? "Facility"
                 : item === "review"
                   ? "Review"
-                  : "Demo payment"}
+                  : "Payment"}
           </li>
         ))}
       </ol>
@@ -225,11 +230,10 @@ function ApplicationSteps({ onPaid }: { onPaid?: () => void }) {
       {step === "facility" && (
         <>
           <FieldSet>
-            <FieldLegend>Approved facilities · demo directory</FieldLegend>
+            <FieldLegend>Approved facilities</FieldLegend>
             <FieldDescription>
               Each option shows one approved total for this application. Contact
-              the selected facility after demo payment to coordinate attendance.
-              Live appointments are not available.
+              the selected facility after payment to coordinate attendance.
             </FieldDescription>
             <FieldGroup className="gap-3">
               {APPROVED_FITNESS_FACILITIES.map((option) => (
@@ -335,7 +339,7 @@ function ApplicationSteps({ onPaid }: { onPaid?: () => void }) {
           {step === "review" ? (
             <div className="flex flex-wrap gap-3">
               <Button className="min-h-11" onClick={() => go("payment")}>
-                Proceed to demo payment
+                Proceed to payment
               </Button>
               <Button
                 variant="outline"
@@ -358,15 +362,15 @@ function ApplicationSteps({ onPaid }: { onPaid?: () => void }) {
                 <AlertDescription>
                   <Badge variant="secondary">Simulated payment</Badge>
                   <p>
-                    No money moves. This confirms a demo payment only; no card
-                    or bank details are collected. Payment does not issue a
-                    certificate.
+                    No money will move, and no card or bank details are
+                    collected. Confirming this simulated payment starts the
+                    application; it does not issue a certificate.
                   </p>
                 </AlertDescription>
               </Alert>
               <div className="flex flex-wrap gap-3">
                 <Button className="min-h-11" onClick={pay}>
-                  Confirm demo payment
+                  Confirm payment
                 </Button>
                 <Button
                   variant="outline"
@@ -386,8 +390,14 @@ function ApplicationSteps({ onPaid }: { onPaid?: () => void }) {
 
 export function BusinessApplicationsPage() {
   const { state, isHydrated } = useFitness()
-  if (!isHydrated) return <FitnessLoading />
+  const { state: fumigation, isHydrated: fumigationIsHydrated } =
+    useFumigation()
+  if (!isHydrated || !fumigationIsHydrated) return <FitnessLoading />
   const application = state.application
+  const fumigationApplication = fumigation.application
+  const fumigationSubmitted =
+    fumigationApplication &&
+    !["draft", "review"].includes(fumigationApplication.stage)
   const submitted =
     application && !["draft", "review"].includes(application.stage)
   return (
@@ -412,7 +422,7 @@ export function BusinessApplicationsPage() {
         <CardContent>
           <p className="text-sm text-muted-foreground">
             {application
-              ? `${application.handlerIds.length} food ${application.handlerIds.length === 1 ? "handler" : "handlers"} selected · demo application`
+              ? `${application.handlerIds.length} food ${application.handlerIds.length === 1 ? "handler" : "handlers"} selected`
               : "Select eligible food handlers and an approved facility to begin your Fitness application."}
           </p>
         </CardContent>
@@ -432,19 +442,43 @@ export function BusinessApplicationsPage() {
           </FitnessLink>
         </CardFooter>
       </Card>
-      <section
-        aria-labelledby="fumigation-applications"
-        className="flex flex-col gap-2 rounded-lg border p-5"
-      >
-        <h2 id="fumigation-applications" className="font-semibold">
-          Fumigation
-        </h2>
-        <Badge variant="outline">Upcoming</Badge>
-        <p className="text-sm text-muted-foreground">
-          Fumigation applications are coming in a later slice. You cannot apply
-          for this service yet.
-        </p>
-      </section>
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <h2>Fumigation</h2>
+          </CardTitle>
+          <CardDescription>
+            Premises fumigation by a licensed provider.
+          </CardDescription>
+          <Badge variant="secondary">
+            {fumigationApplication
+              ? fumigationStageLabel[fumigationApplication.stage]
+              : "Not started"}
+          </Badge>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            {fumigationApplication
+              ? `Requested service month: ${fumigationApplication.requestedPeriod}`
+              : "Choose a provider and review the service total for your premises."}
+          </p>
+        </CardContent>
+        <CardFooter>
+          <FumigationLink
+            href={
+              fumigationSubmitted
+                ? "/business/fumigation/tracker"
+                : "/business/fumigation/apply"
+            }
+          >
+            {fumigationSubmitted
+              ? "Track Fumigation application"
+              : fumigationApplication
+                ? "Continue Fumigation application"
+                : "Start Fumigation application"}
+          </FumigationLink>
+        </CardFooter>
+      </Card>
     </div>
   )
 }

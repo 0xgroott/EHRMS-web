@@ -75,7 +75,7 @@ describe("business onboarding validation", () => {
   })
   it("accepts only the visible demo OTP", () => {
     expect(validateOtp("123456")).toEqual({})
-    expect(validateOtp("654321").code).toBe("Enter the demo code 123456")
+    expect(validateOtp("654321").code).toBe("Enter code 123456")
   })
   it("requires council and premises address", () => {
     const errors = validatePremises({

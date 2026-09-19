@@ -82,9 +82,7 @@ describe("VerificationForm", () => {
   })
 
   it("shows a wrong-code error without clearing the entered code", async () => {
-    const onVerify = vi
-      .fn()
-      .mockResolvedValue({ error: "Enter the demo code 123456" })
+    const onVerify = vi.fn().mockResolvedValue({ error: "Enter code 123456" })
     renderVerification({ onVerify })
     enterCode("000000")
 
@@ -93,7 +91,7 @@ describe("VerificationForm", () => {
       .click(screen.getByRole("button", { name: "Verify and continue" }))
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Enter the demo code 123456"
+      "Enter code 123456"
     )
     expect(screen.getByLabelText("6-digit verification code")).toHaveValue(
       "000000"
