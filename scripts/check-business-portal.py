@@ -1,4 +1,4 @@
-"""Repeatable Slice 1 checks. Requires Python Playwright and Chromium."""
+"""Repeatable business-portal Slice 1 and Slice 2 checks. Requires Playwright."""
 
 import argparse
 from contextlib import contextmanager
@@ -90,6 +90,27 @@ def run_checks(base_url, screenshots):
         for title in ("Fitness", "Fumigation", "Health Approval"):
             expect(page.get_by_role("heading", name=title, exact=True)).to_be_visible()
         expect(page.get_by_role("link", name="Apply for Health Approval", exact=True)).to_have_count(0)
+        no_overflow(page)
+
+    def portal_destination(page, route):
+        """Assert the real destination behind each portal navigation item."""
+        at(page, route)
+        if route == "dashboard":
+            dashboard(page)
+        elif route == "food-handlers":
+            expect(page.get_by_role("heading", name="Food handlers", exact=True)).to_be_visible()
+            expect(page.get_by_role("link", name="Add food handler", exact=True)).to_be_visible()
+        elif route == "applications":
+            expect(page.get_by_role("heading", name="Applications", exact=True)).to_be_visible()
+            expect(page.get_by_role("heading", name="Fitness", exact=True)).to_be_visible()
+            expect(page.get_by_role("link", name="Start Fitness application", exact=True)).to_be_visible()
+        elif route == "certificates":
+            expect(page.get_by_role("heading", name="Certificates", exact=True)).to_be_visible()
+            expect(page.get_by_role("heading", name="Fitness Certificate", exact=True)).to_be_visible()
+            expect(page.get_by_role("link", name="Start Fitness application", exact=True)).to_be_visible()
+        else:
+            page.get_by_role("link", name="Return to dashboard", exact=True).click()
+            dashboard(page)
         no_overflow(page)
 
     with sync_playwright() as playwright:
@@ -223,9 +244,9 @@ def run_checks(base_url, screenshots):
                 expect(page.get_by_role("link", name=label, exact=True)).to_have_count(0)
             for label, route in navigation.items():
                 page.get_by_role("link", name=label, exact=True).click()
-                at(page, route)
-                if route != "dashboard":
-                    page.get_by_role("link", name="Return to dashboard", exact=True).click()
+                portal_destination(page, route)
+                if route in {"food-handlers", "applications", "certificates"}:
+                    page.get_by_role("link", name="Home", exact=True).click()
                     dashboard(page)
             page.get_by_role("button", name="Notifications", exact=True).click()
             expect(page.get_by_text("No notifications yet", exact=True)).to_be_visible()
@@ -248,8 +269,7 @@ def run_checks(base_url, screenshots):
                 expect(dialog).to_be_visible()
                 dialog.get_by_role("link", name=label, exact=True).click()
                 expect(dialog).to_be_hidden()
-                at(page, route)
-                no_overflow(page)
+                portal_destination(page, route)
             visit(page, "/business/dashboard")
             dashboard(page)
             if screenshots:
@@ -259,6 +279,96 @@ def run_checks(base_url, screenshots):
             visit(page, "/business/register")
             no_overflow(page)
             passed("390px mobile drawer, all destinations, sign out and no horizontal overflow")
+
+            # Slice 2 is deliberately isolated from registration coverage above.
+            # A fresh browser context proves the seeded demo journey has no hidden
+            # dependency on the preceding localStorage state.
+            fitness_context = browser.new_context(viewport={"width": 1440, "height": 1000})
+            fitness_page = fitness_context.new_page()
+            fitness_page.on("pageerror", lambda error: errors.append("page: " + str(error)))
+            fitness_page.on("console", lambda message: errors.append("console: " + message.text)
+                            if message.type == "error" else None)
+            try:
+                visit(fitness_page, "/business/sign-in")
+                fitness_page.get_by_role("button", name="Use demo account", exact=True).click()
+                dashboard(fitness_page)
+
+                fitness_page.get_by_role("link", name="Food handlers", exact=True).click()
+                at(fitness_page, "food-handlers")
+                fitness_page.get_by_role("link", name="Add food handler", exact=True).click()
+                at(fitness_page, "food-handler/new")
+                for label, value in {
+                    "Full name": "Amina Browser",
+                    "Date of birth": "1994-07-16",
+                    "Job role": "Cook",
+                    "Identity number": "BROWSER-ID-001",
+                    "Phone number": "08039990003",
+                }.items():
+                    fitness_page.get_by_label(label, exact=True).fill(value)
+                fitness_page.get_by_label("Sex", exact=True).click()
+                fitness_page.get_by_role("option", name="Female", exact=True).click()
+                fitness_page.get_by_role(
+                    "checkbox", name=re.compile("^I confirm this food handler")
+                ).check()
+                fitness_page.get_by_role("button", name="Save food handler", exact=True).click()
+                at(fitness_page, "food-handlers")
+                expect(fitness_page.get_by_text("Amina Browser", exact=True)).to_be_visible()
+                expect(fitness_page.get_by_text("Ready to apply", exact=True)).to_be_visible()
+
+                # A saved name-only record stays visible but cannot be selected.
+                fitness_page.get_by_role("link", name="Add food handler", exact=True).click()
+                at(fitness_page, "food-handler/new")
+                fitness_page.get_by_label("Full name", exact=True).fill("Incomplete Browser")
+                fitness_page.get_by_role("button", name="Save food handler", exact=True).click()
+                at(fitness_page, "food-handlers")
+                fitness_page.get_by_role("link", name="Start Fitness application", exact=True).click()
+                at(fitness_page, "fitness/apply")
+                expect(fitness_page.get_by_role("checkbox", name="Incomplete Browser", exact=True)).to_be_disabled()
+                expect(fitness_page.get_by_text("Role needed", exact=True)).to_be_visible()
+
+                fitness_page.get_by_role("checkbox", name="Amina Browser", exact=True).check()
+                expect(fitness_page.get_by_role("status")).to_have_text("1 selected")
+                fitness_page.get_by_role("button", name="Continue to facility", exact=True).click()
+                expect(fitness_page.get_by_role("heading", name="Choose an approved facility", exact=True)).to_be_visible()
+                fitness_page.get_by_role(
+                    "radio", name="Port Harcourt City Health Centre", exact=True
+                ).check()
+                fitness_page.get_by_role("button", name="Review application", exact=True).click()
+                expect(fitness_page.get_by_role("heading", name="Review your application", exact=True)).to_be_visible()
+                expect(fitness_page.get_by_text("Amina Browser", exact=True)).to_be_visible()
+                fitness_page.get_by_role("button", name="Proceed to demo payment", exact=True).click()
+                expect(fitness_page.get_by_role("heading", name="Demo payment", exact=True)).to_be_visible()
+                fitness_page.get_by_role("button", name="Confirm demo payment", exact=True).click()
+                at(fitness_page, "fitness/tracker")
+                expect(fitness_page.get_by_role("heading", name="Awaiting facility result", exact=True)).to_be_visible()
+                fitness_page.get_by_role("button", name="Simulate facility Fit result", exact=True).click()
+                expect(fitness_page.get_by_role("heading", name="Facility result received: Fit", exact=True)).to_be_visible()
+                fitness_page.get_by_role("button", name="Simulate council issuance", exact=True).click()
+                expect(fitness_page.get_by_role("heading", name="Council decision: issued", exact=True)).to_be_visible()
+                fitness_page.get_by_role("link", name="View demo certificate", exact=True).click()
+                at(fitness_page, "fitness/certificate")
+                expect(fitness_page.get_by_role("heading", name="Demo Fitness Certificate", exact=True)).to_be_visible()
+                expect(fitness_page.get_by_text("Amina Browser", exact=True)).to_be_visible()
+                fitness_page.reload(wait_until="networkidle")
+                expect(fitness_page.get_by_role("heading", name="Demo Fitness Certificate", exact=True)).to_be_visible()
+                fitness_page.get_by_role("link", name="Home", exact=True).click()
+                dashboard(fitness_page)
+                expect(fitness_page.get_by_text("Issued demo certificate", exact=True)).to_be_visible()
+
+                fitness_page.set_viewport_size({"width": 390, "height": 844})
+                for route in (
+                    "dashboard",
+                    "food-handlers",
+                    "applications",
+                    "certificates",
+                    "fitness/tracker",
+                    "fitness/certificate",
+                ):
+                    visit(fitness_page, "/business/" + route)
+                    no_overflow(fitness_page)
+                passed("fresh seeded Slice 2 Fitness journey, issued-state persistence and 390px layout")
+            finally:
+                fitness_context.close()
             assert not errors, "Browser errors:\n" + "\n".join(errors)
             passed("no browser console or page errors")
             print(f"PASS: {len(summaries)} journey groups", flush=True)

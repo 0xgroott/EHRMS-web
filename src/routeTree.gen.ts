@@ -38,6 +38,11 @@ import { Route as BusinessPortalDashboardRouteImport } from './routes/business._
 import { Route as BusinessPortalFoodHandlersRouteImport } from './routes/business._portal.food-handlers'
 import { Route as BusinessPortalInspectionsRouteImport } from './routes/business._portal.inspections'
 import { Route as BusinessPortalProfileRouteImport } from './routes/business._portal.profile'
+import { Route as BusinessPortalFitnessApplyRouteImport } from './routes/business._portal.fitness.apply'
+import { Route as BusinessPortalFitnessCertificateRouteImport } from './routes/business._portal.fitness.certificate'
+import { Route as BusinessPortalFitnessTrackerRouteImport } from './routes/business._portal.fitness.tracker'
+import { Route as BusinessPortalFoodHandlerHandlerIdRouteImport } from './routes/business._portal.food-handler.$handlerId'
+import { Route as BusinessPortalFoodHandlerNewRouteImport } from './routes/business._portal.food-handler.new'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -186,6 +191,36 @@ const BusinessPortalProfileRoute = BusinessPortalProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => BusinessPortalRoute,
 } as any)
+const BusinessPortalFitnessApplyRoute =
+  BusinessPortalFitnessApplyRouteImport.update({
+    id: '/fitness/apply',
+    path: '/fitness/apply',
+    getParentRoute: () => BusinessPortalRoute,
+  } as any)
+const BusinessPortalFitnessCertificateRoute =
+  BusinessPortalFitnessCertificateRouteImport.update({
+    id: '/fitness/certificate',
+    path: '/fitness/certificate',
+    getParentRoute: () => BusinessPortalRoute,
+  } as any)
+const BusinessPortalFitnessTrackerRoute =
+  BusinessPortalFitnessTrackerRouteImport.update({
+    id: '/fitness/tracker',
+    path: '/fitness/tracker',
+    getParentRoute: () => BusinessPortalRoute,
+  } as any)
+const BusinessPortalFoodHandlerHandlerIdRoute =
+  BusinessPortalFoodHandlerHandlerIdRouteImport.update({
+    id: '/food-handler/$handlerId',
+    path: '/food-handler/$handlerId',
+    getParentRoute: () => BusinessPortalRoute,
+  } as any)
+const BusinessPortalFoodHandlerNewRoute =
+  BusinessPortalFoodHandlerNewRouteImport.update({
+    id: '/food-handler/new',
+    path: '/food-handler/new',
+    getParentRoute: () => BusinessPortalRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -215,6 +250,11 @@ export interface FileRoutesByFullPath {
   '/business/inspections': typeof BusinessPortalInspectionsRoute
   '/business/profile': typeof BusinessPortalProfileRoute
   '/premises/': typeof AppPremisesIndexRoute
+  '/business/fitness/apply': typeof BusinessPortalFitnessApplyRoute
+  '/business/fitness/certificate': typeof BusinessPortalFitnessCertificateRoute
+  '/business/fitness/tracker': typeof BusinessPortalFitnessTrackerRoute
+  '/business/food-handler/$handlerId': typeof BusinessPortalFoodHandlerHandlerIdRoute
+  '/business/food-handler/new': typeof BusinessPortalFoodHandlerNewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -243,6 +283,11 @@ export interface FileRoutesByTo {
   '/business/inspections': typeof BusinessPortalInspectionsRoute
   '/business/profile': typeof BusinessPortalProfileRoute
   '/premises': typeof AppPremisesIndexRoute
+  '/business/fitness/apply': typeof BusinessPortalFitnessApplyRoute
+  '/business/fitness/certificate': typeof BusinessPortalFitnessCertificateRoute
+  '/business/fitness/tracker': typeof BusinessPortalFitnessTrackerRoute
+  '/business/food-handler/$handlerId': typeof BusinessPortalFoodHandlerHandlerIdRoute
+  '/business/food-handler/new': typeof BusinessPortalFoodHandlerNewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -275,6 +320,11 @@ export interface FileRoutesById {
   '/business/_portal/inspections': typeof BusinessPortalInspectionsRoute
   '/business/_portal/profile': typeof BusinessPortalProfileRoute
   '/_app/premises/': typeof AppPremisesIndexRoute
+  '/business/_portal/fitness/apply': typeof BusinessPortalFitnessApplyRoute
+  '/business/_portal/fitness/certificate': typeof BusinessPortalFitnessCertificateRoute
+  '/business/_portal/fitness/tracker': typeof BusinessPortalFitnessTrackerRoute
+  '/business/_portal/food-handler/$handlerId': typeof BusinessPortalFoodHandlerHandlerIdRoute
+  '/business/_portal/food-handler/new': typeof BusinessPortalFoodHandlerNewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -306,6 +356,11 @@ export interface FileRouteTypes {
     | '/business/inspections'
     | '/business/profile'
     | '/premises/'
+    | '/business/fitness/apply'
+    | '/business/fitness/certificate'
+    | '/business/fitness/tracker'
+    | '/business/food-handler/$handlerId'
+    | '/business/food-handler/new'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -334,6 +389,11 @@ export interface FileRouteTypes {
     | '/business/inspections'
     | '/business/profile'
     | '/premises'
+    | '/business/fitness/apply'
+    | '/business/fitness/certificate'
+    | '/business/fitness/tracker'
+    | '/business/food-handler/$handlerId'
+    | '/business/food-handler/new'
   id:
     | '__root__'
     | '/'
@@ -365,6 +425,11 @@ export interface FileRouteTypes {
     | '/business/_portal/inspections'
     | '/business/_portal/profile'
     | '/_app/premises/'
+    | '/business/_portal/fitness/apply'
+    | '/business/_portal/fitness/certificate'
+    | '/business/_portal/fitness/tracker'
+    | '/business/_portal/food-handler/$handlerId'
+    | '/business/_portal/food-handler/new'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -578,6 +643,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BusinessPortalProfileRouteImport
       parentRoute: typeof BusinessPortalRoute
     }
+    '/business/_portal/fitness/apply': {
+      id: '/business/_portal/fitness/apply'
+      path: '/fitness/apply'
+      fullPath: '/business/fitness/apply'
+      preLoaderRoute: typeof BusinessPortalFitnessApplyRouteImport
+      parentRoute: typeof BusinessPortalRoute
+    }
+    '/business/_portal/fitness/certificate': {
+      id: '/business/_portal/fitness/certificate'
+      path: '/fitness/certificate'
+      fullPath: '/business/fitness/certificate'
+      preLoaderRoute: typeof BusinessPortalFitnessCertificateRouteImport
+      parentRoute: typeof BusinessPortalRoute
+    }
+    '/business/_portal/fitness/tracker': {
+      id: '/business/_portal/fitness/tracker'
+      path: '/fitness/tracker'
+      fullPath: '/business/fitness/tracker'
+      preLoaderRoute: typeof BusinessPortalFitnessTrackerRouteImport
+      parentRoute: typeof BusinessPortalRoute
+    }
+    '/business/_portal/food-handler/$handlerId': {
+      id: '/business/_portal/food-handler/$handlerId'
+      path: '/food-handler/$handlerId'
+      fullPath: '/business/food-handler/$handlerId'
+      preLoaderRoute: typeof BusinessPortalFoodHandlerHandlerIdRouteImport
+      parentRoute: typeof BusinessPortalRoute
+    }
+    '/business/_portal/food-handler/new': {
+      id: '/business/_portal/food-handler/new'
+      path: '/food-handler/new'
+      fullPath: '/business/food-handler/new'
+      preLoaderRoute: typeof BusinessPortalFoodHandlerNewRouteImport
+      parentRoute: typeof BusinessPortalRoute
+    }
   }
 }
 
@@ -624,6 +724,11 @@ interface BusinessPortalRouteChildren {
   BusinessPortalFoodHandlersRoute: typeof BusinessPortalFoodHandlersRoute
   BusinessPortalInspectionsRoute: typeof BusinessPortalInspectionsRoute
   BusinessPortalProfileRoute: typeof BusinessPortalProfileRoute
+  BusinessPortalFitnessApplyRoute: typeof BusinessPortalFitnessApplyRoute
+  BusinessPortalFitnessCertificateRoute: typeof BusinessPortalFitnessCertificateRoute
+  BusinessPortalFitnessTrackerRoute: typeof BusinessPortalFitnessTrackerRoute
+  BusinessPortalFoodHandlerHandlerIdRoute: typeof BusinessPortalFoodHandlerHandlerIdRoute
+  BusinessPortalFoodHandlerNewRoute: typeof BusinessPortalFoodHandlerNewRoute
 }
 
 const BusinessPortalRouteChildren: BusinessPortalRouteChildren = {
@@ -633,6 +738,12 @@ const BusinessPortalRouteChildren: BusinessPortalRouteChildren = {
   BusinessPortalFoodHandlersRoute: BusinessPortalFoodHandlersRoute,
   BusinessPortalInspectionsRoute: BusinessPortalInspectionsRoute,
   BusinessPortalProfileRoute: BusinessPortalProfileRoute,
+  BusinessPortalFitnessApplyRoute: BusinessPortalFitnessApplyRoute,
+  BusinessPortalFitnessCertificateRoute: BusinessPortalFitnessCertificateRoute,
+  BusinessPortalFitnessTrackerRoute: BusinessPortalFitnessTrackerRoute,
+  BusinessPortalFoodHandlerHandlerIdRoute:
+    BusinessPortalFoodHandlerHandlerIdRoute,
+  BusinessPortalFoodHandlerNewRoute: BusinessPortalFoodHandlerNewRoute,
 }
 
 const BusinessPortalRouteWithChildren = BusinessPortalRoute._addFileChildren(
