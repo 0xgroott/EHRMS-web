@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { cn } from "@/lib/utils"
 import { useFumigation } from "./fumigation-context"
 import {
   LICENSED_FUMIGATION_PROVIDERS,
@@ -27,7 +28,13 @@ const steps: { id: Step; label: string }[] = [
   { id: "payment", label: "Payment" },
 ]
 
-export function FumigationApplicationPage({ onPaid }: { onPaid?: () => void }) {
+export function FumigationApplicationPage({
+  onPaid,
+  inDrawer = false,
+}: {
+  onPaid?: () => void
+  inDrawer?: boolean
+}) {
   const {
     state,
     isHydrated,
@@ -55,6 +62,12 @@ export function FumigationApplicationPage({ onPaid }: { onPaid?: () => void }) {
     application?.providerId ?? ""
   )
   const [error, setError] = useState("")
+  const titles: Record<Step, string> = {
+    premises: "Start fumigation application",
+    provider: "Choose a licensed provider",
+    review: "Review your application",
+    payment: "Service payment",
+  }
   if (!isHydrated) return <FumigationLoading />
   if (application && !["draft", "review"].includes(application.stage)) {
     return (
@@ -94,18 +107,15 @@ export function FumigationApplicationPage({ onPaid }: { onPaid?: () => void }) {
 
   return (
     <div className="flex max-w-5xl min-w-0 flex-col gap-7 pb-12">
-      <PageHeader
-        eyebrow="Fumigation Certificate"
-        title={
-          {
-            premises: "Start fumigation application",
-            provider: "Choose a licensed provider",
-            review: "Review your application",
-            payment: "Service payment",
-          }[step]
-        }
-        description="Arrange fumigation for your registered premises."
-      />
+      {inDrawer ? (
+        <h2 className="text-xl font-semibold tracking-tight">{titles[step]}</h2>
+      ) : (
+        <PageHeader
+          eyebrow="Fumigation Certificate"
+          title={titles[step]}
+          description="Arrange fumigation for your registered premises."
+        />
+      )}
       <ol
         aria-label="Application steps"
         className="grid grid-cols-2 gap-2 sm:grid-cols-4"
@@ -128,8 +138,13 @@ export function FumigationApplicationPage({ onPaid }: { onPaid?: () => void }) {
       )}
 
       {step === "premises" && (
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_17rem]">
-          <div className="space-y-6">
+        <div
+          className={cn(
+            "grid min-w-0 gap-6",
+            !inDrawer && "lg:grid-cols-[minmax(0,1fr)_17rem]"
+          )}
+        >
+          <div className="min-w-0 space-y-6">
             <section className="border-b pb-6">
               <h2 className="text-lg font-semibold">Premises</h2>
               <p className="mt-3 font-medium">{premises?.premisesName}</p>
@@ -174,12 +189,17 @@ export function FumigationApplicationPage({ onPaid }: { onPaid?: () => void }) {
             </div>
             <div className="flex flex-wrap gap-3">
               <Button onClick={start}>Choose provider</Button>
-              <FumigationLink href="/business/dashboard" variant="link">
+              <FumigationLink href="/business/applications" variant="link">
                 Cancel
               </FumigationLink>
             </div>
           </div>
-          <aside className="border-t pt-4 text-sm text-muted-foreground lg:border-t-0 lg:border-l lg:pl-6">
+          <aside
+            className={cn(
+              "border-t pt-4 text-sm text-muted-foreground",
+              !inDrawer && "lg:border-t-0 lg:border-l lg:pl-6"
+            )}
+          >
             <h2 className="font-semibold text-foreground">What happens next</h2>
             <p className="mt-2 leading-6">
               Choose a licensed provider, review the service total, then track
@@ -294,8 +314,13 @@ export function FumigationApplicationPage({ onPaid }: { onPaid?: () => void }) {
       )}
 
       {step === "payment" && (
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
-          <div className="space-y-5">
+        <div
+          className={cn(
+            "grid min-w-0 gap-6",
+            !inDrawer && "lg:grid-cols-[minmax(0,1fr)_18rem]"
+          )}
+        >
+          <div className="min-w-0 space-y-5">
             <Card>
               <CardHeader>
                 <CardTitle>
@@ -328,12 +353,17 @@ export function FumigationApplicationPage({ onPaid }: { onPaid?: () => void }) {
               <Button variant="outline" onClick={() => go("review")}>
                 Return to application
               </Button>
-              <FumigationLink href="/business/dashboard" variant="link">
+              <FumigationLink href="/business/applications" variant="link">
                 Pay later
               </FumigationLink>
             </div>
           </div>
-          <aside className="border-t pt-4 text-sm text-muted-foreground lg:border-t-0 lg:border-l lg:pl-6">
+          <aside
+            className={cn(
+              "border-t pt-4 text-sm text-muted-foreground",
+              !inDrawer && "lg:border-t-0 lg:border-l lg:pl-6"
+            )}
+          >
             <Badge variant="outline">Next</Badge>
             <p className="mt-3 leading-6">
               After confirmation, the application tracker shows the provider

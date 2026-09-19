@@ -43,7 +43,13 @@ import {
 
 type Step = "people" | "facility" | "review" | "payment"
 
-export function FitnessApplicationPage({ onPaid }: { onPaid?: () => void }) {
+export function FitnessApplicationPage({
+  onPaid,
+  inDrawer = false,
+}: {
+  onPaid?: () => void
+  inDrawer?: boolean
+}) {
   const { state, isHydrated } = useFitness()
   if (!isHydrated) return <FitnessLoading />
   if (
@@ -59,10 +65,16 @@ export function FitnessApplicationPage({ onPaid }: { onPaid?: () => void }) {
       />
     )
   }
-  return <ApplicationSteps onPaid={onPaid} />
+  return <ApplicationSteps onPaid={onPaid} inDrawer={inDrawer} />
 }
 
-function ApplicationSteps({ onPaid }: { onPaid?: () => void }) {
+function ApplicationSteps({
+  onPaid,
+  inDrawer,
+}: {
+  onPaid?: () => void
+  inDrawer: boolean
+}) {
   const { state, selectHandlers, chooseFacility, confirmDemoPayment } =
     useFitness()
   const { state: businessState } = useBusinessSession()
@@ -113,11 +125,15 @@ function ApplicationSteps({ onPaid }: { onPaid?: () => void }) {
   }
   return (
     <div className="flex max-w-4xl min-w-0 flex-col gap-6 break-words">
-      <PageHeader
-        eyebrow="Fitness application"
-        title={titles[step]}
-        description="Apply for the food handlers at your current premises."
-      />
+      {inDrawer ? (
+        <h2 className="text-xl font-semibold tracking-tight">{titles[step]}</h2>
+      ) : (
+        <PageHeader
+          eyebrow="Fitness application"
+          title={titles[step]}
+          description="Apply for the food handlers at your current premises."
+        />
+      )}
       <ol
         aria-label="Application steps"
         className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4"

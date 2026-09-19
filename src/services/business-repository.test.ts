@@ -179,6 +179,70 @@ describe("business repository", () => {
     }
   )
 
+  it("saves valid profile edits without changing verified details or documents", () => {
+    const repository = createBusinessRepository(
+      createBusinessStorage(localStorage)
+    )
+    repository.signInDemo("ada@riverside.ng", "riverside-demo")
+    const before = repository.getState()
+    const result = repository.updateProfileDetails({
+      businessName: " Riverside Foods ",
+      contactName: " Ada Okafor ",
+      premisesName: "Riverside Central Kitchen",
+      businessType: "Restaurant",
+      registrationNumber: "RC-123",
+      address: "12 Abonnema Wharf Road",
+      ward: "Diobu",
+    })
+
+    expect(result).toMatchObject({
+      ok: true,
+      state: {
+        profile: {
+          businessName: "Riverside Foods",
+          premises: {
+            premisesName: "Riverside Central Kitchen",
+            registrationNumber: "RC-123",
+          },
+        },
+      },
+    })
+    expect(repository.getState().profile).toMatchObject({
+      email: before.profile?.email,
+      phone: before.profile?.phone,
+      verified: true,
+      documents: before.profile?.documents,
+      premises: { councilId: before.profile?.premises?.councilId },
+    })
+    repository.reset()
+    repository.signInDemo("ada@riverside.ng", "riverside-demo")
+    expect(repository.getState().profile?.businessName).toBe("Riverside Foods")
+    expect(repository.getState().profile?.premises?.premisesName).toBe(
+      "Riverside Central Kitchen"
+    )
+  })
+
+  it("rejects invalid profile changes without modifying storage", () => {
+    const repository = createBusinessRepository(
+      createBusinessStorage(localStorage)
+    )
+    repository.signInDemo("ada@riverside.ng", "riverside-demo")
+    const before = repository.getState()
+    const result = repository.updateProfileDetails({
+      businessName: " ",
+      contactName: "Ada Okafor",
+      premisesName: "Riverside Kitchen",
+      businessType: "Restaurant",
+      address: "12 Abonnema Wharf Road",
+      ward: "Diobu",
+    })
+    expect(result).toMatchObject({
+      ok: false,
+      errors: { businessName: expect.any(String) },
+    })
+    expect(repository.getState()).toEqual(before)
+  })
+
   it("updates contact details while retaining verification stage", () => {
     const repository = createBusinessRepository(
       createBusinessStorage(localStorage)

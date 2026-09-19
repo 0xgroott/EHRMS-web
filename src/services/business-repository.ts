@@ -9,12 +9,14 @@ import type {
   BusinessPortalState,
   BusinessPremisesInput,
   BusinessProfile,
+  BusinessProfileDetailsInput,
   ValidationErrors,
 } from "@/domain/business-types"
 import {
   validateAccount,
   validateOtp,
   validatePremises,
+  validateProfileDetails,
 } from "@/domain/business-validation"
 import type { createBusinessStorage } from "./business-storage"
 
@@ -24,6 +26,7 @@ type BusinessRepositoryErrors = Partial<
   Record<
     | keyof BusinessAccountInput
     | keyof BusinessPremisesInput
+    | keyof BusinessProfileDetailsInput
     | "code"
     | "credentials"
     | "state",
@@ -99,7 +102,20 @@ export function createBusinessRepository(
         return failure({ credentials: "Email or password is incorrect" })
       }
 
-      return write(structuredClone(returningBusinessState))
+      const seeded = structuredClone(returningBusinessState)
+      const details = storage.readSeededProfileDetails()
+      if (details && seeded.profile?.premises) {
+        seeded.profile.businessName = details.businessName
+        seeded.profile.contactName = details.contactName
+        Object.assign(seeded.profile.premises, {
+          premisesName: details.premisesName,
+          businessType: details.businessType,
+          registrationNumber: details.registrationNumber,
+          address: details.address,
+          ward: details.ward,
+        })
+      }
+      return write(seeded)
     },
     createAccount(input: BusinessAccountInput): BusinessRepositoryResult {
       const errors = {
@@ -186,6 +202,41 @@ export function createBusinessRepository(
         ),
         verificationExpiresAt: now() + VERIFICATION_LIFETIME_MS,
       })
+    },
+    updateProfileDetails(
+      input: BusinessProfileDetailsInput
+    ): BusinessRepositoryResult {
+      const state = storage.read()
+      if (state.stage !== "complete" || !state.profile?.premises) {
+        return failure({
+          state: "Complete business setup before editing the profile",
+        })
+      }
+      const details = {
+        businessName: input.businessName.trim(),
+        contactName: input.contactName.trim(),
+        premisesName: input.premisesName.trim(),
+        businessType: input.businessType.trim(),
+        registrationNumber: input.registrationNumber?.trim() || undefined,
+        address: input.address.trim(),
+        ward: input.ward.trim(),
+      }
+      const errors = validateProfileDetails(details)
+      if (hasErrors(errors)) return failure(errors)
+
+      const { businessName, contactName, ...premisesDetails } = details
+
+      const next = withProfile(state, {
+        ...state.profile,
+        businessName,
+        contactName,
+        premises: { ...state.profile.premises, ...premisesDetails },
+      })
+      const result = write(next)
+      if (state.profile.id === returningBusinessState.profile?.id) {
+        storage.writeSeededProfileDetails(details)
+      }
+      return result
     },
     savePremisesDraft(
       premises: BusinessPremisesInput,

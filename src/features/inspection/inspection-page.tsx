@@ -1,9 +1,15 @@
 import { useState } from "react"
+import { BusinessFormDrawer } from "@/components/business/business-form-drawer"
 import { PageHeader } from "@/components/shared/page-header"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Textarea } from "@/components/ui/textarea"
 import { seedDatabase } from "@/data/seeds"
@@ -80,9 +86,14 @@ export function InspectionPage() {
     resolveFollowUp,
     escalateFollowUp,
   } = useInspection()
-  const [notes, setNotes] = useState<Record<string, string>>({})
+  const [selectedFindingId, setSelectedFindingId] = useState<string | null>(
+    null
+  )
+  const [correctionNote, setCorrectionNote] = useState("")
+  const [correctionSaved, setCorrectionSaved] = useState("")
+  const [correctionError, setCorrectionError] = useState("")
   const [error, setError] = useState("")
-  const [fieldError, setFieldError] = useState<string | null>(null)
+  const [fieldError, setFieldError] = useState(false)
 
   if (!isHydrated) {
     return (
@@ -116,25 +127,35 @@ export function InspectionPage() {
   const allCorrectionsRecorded = inspection.findings.every((finding) =>
     Boolean(finding.correctionNote)
   )
+  const selectedFinding = inspection.findings.find(
+    (finding) => finding.id === selectedFindingId
+  )
 
   function advance(action: () => TransitionResult) {
     const result = action()
     setError(result.ok ? "" : result.error)
   }
 
+  function closeCorrection() {
+    setSelectedFindingId(null)
+    setCorrectionNote("")
+    setCorrectionError("")
+    setFieldError(false)
+  }
+
   function saveCorrection(findingId: string) {
-    const note = (notes[findingId] || "").trim()
+    const note = correctionNote.trim()
     if (!note) {
-      setFieldError(findingId)
+      setFieldError(true)
       return
     }
     const result = recordCorrection(findingId, note)
     if (result.ok) {
-      setFieldError(null)
-      setError("")
-      setNotes((current) => ({ ...current, [findingId]: "" }))
+      setFieldError(false)
+      setCorrectionSaved(`Correction recorded for ${selectedFinding?.title}.`)
+      closeCorrection()
     } else {
-      setError(result.error)
+      setCorrectionError(result.error)
     }
   }
 
@@ -265,49 +286,28 @@ export function InspectionPage() {
                       </p>
                     </div>
                   ) : inspection.stage === "findings-issued" ? (
-                    <div className="max-w-2xl space-y-3">
-                      <Label htmlFor={`correction-${finding.id}`}>
-                        How was this corrected?
-                      </Label>
-                      <Textarea
-                        id={`correction-${finding.id}`}
-                        value={notes[finding.id] || ""}
-                        onChange={(event) => {
-                          setNotes((current) => ({
-                            ...current,
-                            [finding.id]: event.target.value,
-                          }))
-                          if (fieldError === finding.id) setFieldError(null)
-                        }}
-                        aria-invalid={fieldError === finding.id}
-                        aria-describedby={
-                          fieldError === finding.id
-                            ? `correction-error-${finding.id}`
-                            : undefined
-                        }
-                        placeholder="Describe the completed work"
-                      />
-                      {fieldError === finding.id && (
-                        <p
-                          id={`correction-error-${finding.id}`}
-                          className="text-sm text-destructive"
-                          role="alert"
-                        >
-                          Enter a correction note before saving.
-                        </p>
-                      )}
-                      <Button
-                        variant="outline"
-                        onClick={() => saveCorrection(finding.id)}
-                      >
-                        Save correction
-                      </Button>
-                    </div>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setCorrectionSaved("")
+                        setCorrectionNote("")
+                        setCorrectionError("")
+                        setFieldError(false)
+                        setSelectedFindingId(finding.id)
+                      }}
+                    >
+                      Record correction
+                    </Button>
                   ) : null}
                 </div>
               </li>
             ))}
           </ol>
+          {correctionSaved && (
+            <p role="status" className="text-sm text-muted-foreground">
+              {correctionSaved}
+            </p>
+          )}
           {allCorrectionsRecorded && (
             <p className="text-sm text-muted-foreground">
               All corrections are recorded. The council must schedule and
@@ -433,6 +433,70 @@ export function InspectionPage() {
         </div>
       </section>
       <ApprovalLink>Back to Health Approval</ApprovalLink>
+      {selectedFinding && (
+        <BusinessFormDrawer
+          title="Record correction"
+          description={selectedFinding.title}
+          onClose={closeCorrection}
+        >
+          <form
+            className="flex max-w-2xl flex-col gap-6"
+            onSubmit={(event) => {
+              event.preventDefault()
+              saveCorrection(selectedFinding.id)
+            }}
+          >
+            <div className="flex flex-col gap-3 text-sm">
+              <p>
+                <span className="block text-muted-foreground">
+                  Required action
+                </span>
+                {selectedFinding.action}
+              </p>
+              <p>
+                <span className="block text-muted-foreground">Deadline</span>
+                <time dateTime={selectedFinding.deadline}>
+                  {formatDate(selectedFinding.deadline)}
+                </time>
+              </p>
+            </div>
+            <FieldGroup>
+              <Field data-invalid={fieldError}>
+                <FieldLabel htmlFor="correction-note">
+                  How was this corrected?
+                </FieldLabel>
+                <Textarea
+                  id="correction-note"
+                  value={correctionNote}
+                  onChange={(event) => {
+                    setCorrectionNote(event.target.value)
+                    if (fieldError) setFieldError(false)
+                  }}
+                  aria-invalid={fieldError}
+                  aria-describedby={fieldError ? "correction-error" : undefined}
+                  placeholder="Describe the completed work"
+                />
+                {fieldError && (
+                  <FieldError id="correction-error">
+                    Enter a correction note before saving.
+                  </FieldError>
+                )}
+              </Field>
+            </FieldGroup>
+            {correctionError && (
+              <Alert variant="destructive">
+                <AlertDescription>{correctionError}</AlertDescription>
+              </Alert>
+            )}
+            <div className="flex flex-wrap gap-3">
+              <Button type="submit">Save correction</Button>
+              <Button type="button" variant="outline" onClick={closeCorrection}>
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </BusinessFormDrawer>
+      )}
     </div>
   )
 }

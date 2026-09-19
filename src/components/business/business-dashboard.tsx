@@ -97,11 +97,13 @@ export function BusinessDashboard({
   fitness = { handlers: [], application: null },
   fumigation = { application: null },
   inspection = { inspection: null },
+  premisesPhoto,
 }: {
   state: BusinessPortalState
   fitness?: FitnessState
   fumigation?: FumigationState
   inspection?: InspectionState
+  premisesPhoto?: string
 }) {
   const { profile } = state
   const profileComplete = Boolean(
@@ -235,15 +237,24 @@ export function BusinessDashboard({
         aria-label="Business profile"
         className="flex min-w-0 flex-col justify-between gap-3 sm:flex-row sm:items-start"
       >
-        <div className="min-w-0">
-          <p className="font-semibold">
-            {profile?.businessName || "Your business"}
-          </p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {profile?.premises
-              ? `${profile.premises.premisesName} · ${profile.premises.address}`
-              : "Premises details still needed"}
-          </p>
+        <div className="flex min-w-0 items-center gap-4">
+          {premisesPhoto && (
+            <img
+              src={premisesPhoto}
+              alt={`${profile?.premises?.premisesName ?? "Business"} premises`}
+              className="size-16 shrink-0 rounded-md object-cover"
+            />
+          )}
+          <div className="min-w-0">
+            <p className="font-semibold">
+              {profile?.businessName || "Your business"}
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {profile?.premises
+                ? `${profile.premises.premisesName} · ${profile.premises.address}`
+                : "Premises details still needed"}
+            </p>
+          </div>
         </div>
         <Badge variant="outline" className="shrink-0 self-start">
           {profileComplete && <CheckCircle2 aria-hidden="true" />}{" "}

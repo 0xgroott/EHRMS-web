@@ -16,6 +16,15 @@ export interface BusinessPremisesInput {
   councilId: string
 }
 
+export type BusinessProfileDetailsInput = Pick<
+  BusinessProfile,
+  "businessName" | "contactName"
+> &
+  Pick<
+    BusinessPremisesInput,
+    "premisesName" | "businessType" | "registrationNumber" | "address" | "ward"
+  >
+
 export interface BusinessDocument {
   id: string
   name: string

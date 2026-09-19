@@ -60,6 +60,17 @@ it("blocks an empty selection and explains an incomplete handler", async () => {
   ).not.toBeInTheDocument()
 })
 
+it("uses a compact step heading inside the application drawer", () => {
+  mount(<FitnessApplicationPage inDrawer />, {
+    handlers: [handler],
+    application: null,
+  })
+  expect(
+    screen.getByRole("heading", { name: "Select food handlers", level: 2 })
+  ).toBeVisible()
+  expect(screen.queryByText("Fitness application")).not.toBeInTheDocument()
+})
+
 it("takes eligible people through review and simulated payment, then separate external decisions", async () => {
   const user = userEvent.setup()
   const onPaid = vi.fn()

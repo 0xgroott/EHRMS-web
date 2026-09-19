@@ -1,6 +1,7 @@
 import type {
   BusinessAccountInput,
   BusinessPremisesInput,
+  BusinessProfileDetailsInput,
   ValidationErrors,
 } from "./business-types"
 
@@ -20,6 +21,23 @@ export function validateAccount(
   if (value.password.length < 10) errors.password = "Use at least 10 characters"
   if (!value.acceptedTerms)
     errors.acceptedTerms = "Accept the terms and privacy notice"
+  return errors
+}
+
+export function validateProfileDetails(
+  value: BusinessProfileDetailsInput
+): ValidationErrors<BusinessProfileDetailsInput> {
+  const errors: ValidationErrors<BusinessProfileDetailsInput> = {}
+  if (!value.businessName.trim())
+    errors.businessName = "Enter the registered business name"
+  if (!value.contactName.trim())
+    errors.contactName = "Enter the contact person's name"
+  if (!value.premisesName.trim())
+    errors.premisesName = "Enter the premises name"
+  if (!value.businessType.trim())
+    errors.businessType = "Enter the business type"
+  if (!value.address.trim()) errors.address = "Enter the premises address"
+  if (!value.ward.trim()) errors.ward = "Enter the ward"
   return errors
 }
 

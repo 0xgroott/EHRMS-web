@@ -89,22 +89,83 @@ it("requires a correction note for each finding and keeps council actions separa
     })
   ).toBeDisabled()
 
-  const saveButtons = screen.getAllByRole("button", { name: "Save correction" })
-  await user.click(saveButtons[0])
+  const correctionActions = screen.getAllByRole("button", {
+    name: "Record correction",
+  })
   expect(
-    screen.getByText("Enter a correction note before saving.")
+    screen.queryByRole("textbox", { name: "How was this corrected?" })
+  ).not.toBeInTheDocument()
+  await user.click(correctionActions[0])
+  const drawer = screen.getByRole("dialog", { name: "Record correction" })
+  expect(within(drawer).getByText("Cleaning records")).toBeInTheDocument()
+  await user.click(
+    within(drawer).getByRole("button", { name: "Save correction" })
+  )
+  expect(
+    within(drawer).getByText("Enter a correction note before saving.")
   ).toBeInTheDocument()
   expect(fixtures.recordCorrection).not.toHaveBeenCalled()
 
   await user.type(
-    screen.getAllByRole("textbox", { name: "How was this corrected?" })[0],
+    within(drawer).getByRole("textbox", { name: "How was this corrected?" }),
     "Updated and signed the cleaning register."
   )
-  await user.click(saveButtons[0])
+  await user.click(
+    within(drawer).getByRole("button", { name: "Save correction" })
+  )
   expect(fixtures.recordCorrection).toHaveBeenCalledWith(
     "finding-1",
     "Updated and signed the cleaning register."
   )
+  expect(screen.getByRole("status")).toHaveTextContent(
+    "Correction recorded for Cleaning records."
+  )
+
+  await user.click(
+    screen.getAllByRole("button", { name: "Record correction" })[1]
+  )
+  const secondDrawer = screen.getByRole("dialog", { name: "Record correction" })
+  expect(within(secondDrawer).getByText("Waste storage")).toBeInTheDocument()
+  await user.type(
+    within(secondDrawer).getByRole("textbox", {
+      name: "How was this corrected?",
+    }),
+    "Secured the waste bins."
+  )
+  await user.click(
+    within(secondDrawer).getByRole("button", { name: "Save correction" })
+  )
+  expect(fixtures.recordCorrection).toHaveBeenCalledWith(
+    "finding-2",
+    "Secured the waste bins."
+  )
+})
+
+it("dismisses an unfinished correction and clears its validation", async () => {
+  fixtures.inspection = caseAt("findings-issued")
+  const user = userEvent.setup()
+  render(<InspectionPage />)
+
+  await user.click(
+    screen.getAllByRole("button", { name: "Record correction" })[0]
+  )
+  await user.click(screen.getByRole("button", { name: "Save correction" }))
+  expect(
+    screen.getByText("Enter a correction note before saving.")
+  ).toBeInTheDocument()
+
+  await user.click(screen.getByRole("button", { name: "Cancel" }))
+  expect(
+    screen.queryByRole("dialog", { name: "Record correction" })
+  ).not.toBeInTheDocument()
+  expect(fixtures.recordCorrection).not.toHaveBeenCalled()
+
+  await user.click(
+    screen.getAllByRole("button", { name: "Record correction" })[0]
+  )
+  expect(
+    screen.queryByText("Enter a correction note before saving.")
+  ).not.toBeInTheDocument()
 })
 
 it("requires a separate acknowledgement for the follow-up notice", async () => {

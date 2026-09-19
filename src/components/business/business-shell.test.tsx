@@ -15,6 +15,7 @@ import {
 } from "@/data/business-seeds"
 import { createBusinessStorage } from "@/services/business-storage"
 import { BusinessShell } from "./business-shell"
+import { BusinessMediaProvider } from "@/features/business-media/business-media-context"
 import { BusinessPortalAccess } from "./business-portal-access"
 import { UpcomingModule } from "./upcoming-module"
 
@@ -31,7 +32,9 @@ function shell(path = "/business/applications") {
   const root = createRootRoute({
     component: () => (
       <Providers>
-        <BusinessShell />
+        <BusinessMediaProvider>
+          <BusinessShell />
+        </BusinessMediaProvider>
       </Providers>
     ),
   })
