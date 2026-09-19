@@ -7,6 +7,7 @@ export interface BusinessNextActionInput {
   alerts: readonly BusinessAlert[]
   foodHandlerCount: number
   fitness: CertificateProgress
+  fitnessActionHref?: string
   fumigation: CertificateProgress
   missingHealthApprovalRequirement: boolean
 }
@@ -80,8 +81,17 @@ export function getBusinessNextAction(
           : "Start your Fitness application",
       description:
         "Choose eligible food handlers and a facility for their assessment.",
-      href: "/business/applications",
-      label: "View Fitness applications",
+      href: "/business/fitness/apply",
+      label: "Start Fitness application",
+    }
+  if (input.fitness === "in-progress")
+    return {
+      id: "track-fitness",
+      title: "Track your Fitness application",
+      description:
+        "Review the current stage, selected food handlers, and next step for your Fitness application.",
+      href: input.fitnessActionHref ?? "/business/fitness/tracker",
+      label: "Track Fitness application",
     }
   if (input.fumigation === "not-started" || input.fumigation === "expired")
     return {

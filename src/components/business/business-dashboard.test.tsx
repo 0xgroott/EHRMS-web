@@ -1,7 +1,20 @@
 import { render, screen, within } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
 import { returningBusinessState } from "@/data/business-seeds"
+import type { FitnessState } from "@/features/fitness/fitness-types"
 import { BusinessDashboard } from "./business-dashboard"
+
+const handler: FitnessState["handlers"][number] = {
+  id: "handler-1",
+  fullName: "Tari Briggs",
+  sex: "Female",
+  dateOfBirth: "1993-05-12",
+  role: "Cook",
+  identityNumber: "ID-001",
+  phone: "08031230001",
+  premisesName: "Riverside Kitchen",
+  consent: true,
+}
 
 describe("business dashboard", () => {
   it("shows the returning business, premises, profile status and exactly one next action", () => {
@@ -128,5 +141,83 @@ describe("business dashboard", () => {
     ).toHaveAttribute("href", "/business/setup")
     expect(screen.getByText("Profile incomplete")).toBeInTheDocument()
     expect(screen.queryByText("Non-compliant")).not.toBeInTheDocument()
+  })
+  it("moves the next action from handler registration into the Fitness journey", () => {
+    const { rerender } = render(
+      <BusinessDashboard
+        state={returningBusinessState}
+        fitness={{ handlers: [handler], application: null }}
+      />
+    )
+    let nextAction = screen.getByRole("region", {
+      name: "Next required action",
+    })
+    expect(
+      within(nextAction).getByRole("link", { name: /start fitness/i })
+    ).toHaveAttribute("href", "/business/fitness/apply")
+
+    rerender(
+      <BusinessDashboard
+        state={returningBusinessState}
+        fitness={{
+          handlers: [handler],
+          application: {
+            id: "fitness-demo-application",
+            handlerIds: [handler.id],
+            stage: "awaiting-facility",
+            facilityId: "phc-health-centre",
+            totalNgn: 12500,
+            paymentReference: "DEMO-FITNESS-001",
+          },
+        }}
+      />
+    )
+    nextAction = screen.getByRole("region", {
+      name: "Next required action",
+    })
+    expect(
+      within(nextAction).getByRole("link", { name: /track fitness/i })
+    ).toHaveAttribute("href", "/business/fitness/tracker")
+    expect(
+      screen.getAllByText(/Awaiting facility result/i).length
+    ).toBeGreaterThan(0)
+  })
+  it("shows issued demo certificate and makes Fumigation next action", () => {
+    render(
+      <BusinessDashboard
+        state={returningBusinessState}
+        fitness={{
+          handlers: [handler],
+          application: {
+            id: "fitness-demo-application",
+            handlerIds: [handler.id],
+            stage: "issued",
+            facilityId: "phc-health-centre",
+            totalNgn: 12500,
+            paymentReference: "DEMO-FITNESS-001",
+            certificate: {
+              id: "DEMO-CERT-001",
+              handlerIds: [handler.id],
+              councilId: "phc",
+              issuedAt: "2026-09-19T00:00:00.000Z",
+              expiresAt: "2027-09-19T00:00:00.000Z",
+            },
+          },
+        }}
+      />
+    )
+    const nextAction = screen.getByRole("region", {
+      name: "Next required action",
+    })
+    expect(
+      within(nextAction).getByRole("heading", {
+        name: "Start your Fumigation application",
+      })
+    ).toBeInTheDocument()
+    expect(screen.getByText("DEMO-CERT-001")).toBeInTheDocument()
+    expect(screen.getByText("Issued demo certificate")).toBeInTheDocument()
+    expect(
+      screen.getAllByRole("link", { name: /view fitness certificate/i }).length
+    ).toBeGreaterThan(0)
   })
 })

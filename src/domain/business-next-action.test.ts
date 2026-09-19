@@ -61,17 +61,21 @@ describe("business next action", () => {
     (fitness) => {
       expect(
         getBusinessNextAction({ ...ready, fitness, fumigation: "not-started" })
-      ).toMatchObject({ id: "start-fitness", href: "/business/applications" })
+      ).toMatchObject({ id: "start-fitness", href: "/business/fitness/apply" })
     }
   )
-  it("does not duplicate an active Fitness application", () => {
+  it("tracks an in-progress Fitness application before starting Fumigation", () => {
     expect(
       getBusinessNextAction({
         ...ready,
         fitness: "in-progress",
         fumigation: "not-started",
+        fitnessActionHref: "/business/fitness/tracker",
       })
-    ).toMatchObject({ id: "start-fumigation" })
+    ).toMatchObject({
+      id: "track-fitness",
+      href: "/business/fitness/tracker",
+    })
   })
   it("renews expired Fumigation before missing Health Approval conditions", () => {
     expect(
