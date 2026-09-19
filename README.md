@@ -49,6 +49,9 @@ simulated payment. The tracker then lets you simulate the facility's Fit result
 and the council's certificate issuance. Open the issued certificate from
 the tracker or Certificates page; refresh to see the saved state persist.
 No real payment, medical assessment, or certificate issuance takes place.
+Food handler and certificate application forms open in drawers inside the signed-in
+portal; their URLs can still be opened directly. Inspection correction forms open
+from the corresponding finding.
 
 From the dashboard or Applications, start a Fumigation application. Confirm the premises
 and service month, choose a licensed provider, review the total, and confirm the
