@@ -1,3 +1,7 @@
+---
+title: "Building a Clean Prototype Slice with AI"
+---
+
 # Building a Clean Prototype Slice with AI
 
 ## What I was building

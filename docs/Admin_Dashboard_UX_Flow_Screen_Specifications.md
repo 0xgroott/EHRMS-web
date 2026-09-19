@@ -1,3 +1,7 @@
+---
+title: "Admin Dashboard — UX Flow Screen Specifications"
+---
+
 # Admin Dashboard — UX Flow Screen Specifications
 
 ## Scope

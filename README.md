@@ -120,3 +120,21 @@ Optional `--screenshots /tmp/ehrcms-browser-checks` captures desktop and mobile
 dashboards. Any failed assertion exits nonzero.
 
 Product specifications and implementation plans live in [`docs/`](docs/).
+
+## Documentation site
+
+The Mintlify site lives in [`docs/`](docs/) and renders those Markdown documents
+directly. Its navigation is configured in [`docs/docs.json`](docs/docs.json).
+From that directory, run `mint dev --port 3333` to preview it without conflicting
+with the application on port 3000. Run `mint validate` before publishing.
+
+Existing product and engineering documents are in the **Internal
+library**. The public overview is [`docs/index.mdx`](docs/index.mdx). Before
+connecting the repository to a Mintlify deployment, configure **Partial
+Authentication** in the Mintlify dashboard and confirm that an unsigned visitor
+cannot open an internal page by URL. Frontmatter alone does not enforce access
+without that dashboard setting. Mintlify must use the `docs/` directory as the
+documentation root. Keep the Git repository private as well if these documents
+must be confidential; Mintlify authentication does not hide repository files.
+The `.docx` SRS remains an archive of the source draft;
+edit the Markdown page for the web and synchronize the archive if needed.

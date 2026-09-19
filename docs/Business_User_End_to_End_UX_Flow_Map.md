@@ -1,3 +1,7 @@
+---
+title: "EHRCMS Business User — End-to-End UX Flow Map"
+---
+
 # EHRCMS Business User — End-to-End UX Flow Map
 
 ## Scope

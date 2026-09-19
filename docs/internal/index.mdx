@@ -1,0 +1,23 @@
+---
+title: "Internal library"
+description: "Find the canonical EHRCMS product and engineering documents."
+---
+
+# Internal library
+
+This site renders the Markdown files in this repository directly. Edit the document linked in the navigation; do not maintain a second copy in Mintlify or a conversation.
+
+## Where to start
+
+- [Software requirements specification](/SRS_EHRCMS_Draft%202) — the stakeholder review draft. Treat unresolved items as open questions.
+- [Business user journey](/Business_User_End_to_End_UX_Flow_Map) and [business portal screen specification](/Business%20Portal%20-%20UX%20Flow%20Screen%20Specifications) — product behavior for the business portal.
+- [Frontend prototype build prompt](/EHRCMS_TanstackStart_Frontend_Prototype_Build_Prompt%20(1)) — prototype scope and implementation constraints.
+- [Prototype build playbook](/Clean_Prototype_Slice_Build_Playbook) — process lessons from the first slice.
+
+The **Designs and build briefs** and **Implementation plans** sections record decisions for individual slices. Use the latest relevant approved design or brief when implementing a slice, and verify any older statements against the current application before treating them as current behavior.
+
+## Publishing rule
+
+All existing project documents in this library are intended to require authentication. The public overview is the only page marked `public: true`. Configure **Partial Authentication** in the Mintlify dashboard before connecting this repository or publishing the site. Without that dashboard setting, page metadata does not protect the documents.
+
+The `.docx` SRS is an archive of the source draft. The Markdown version is the canonical searchable page for this site. Synchronize the archive if it must be distributed again.
