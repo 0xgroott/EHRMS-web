@@ -15,6 +15,7 @@ Frontend prototype for the Environmental Health Regulatory and Compliance Manage
 - Food-handler management and Fitness Certificate journey
 - Premises fumigation application through provider selection, payment confirmation, report, EHO review, and certificate view
 - Health Approval eligibility, inspection notices, corrective actions, follow-up, and council outcome
+- Business profile with a logo/avatar and three premises or kitchen photos
 
 ## Business portal demo
 
@@ -38,8 +39,8 @@ create usable password credentials: only the seeded account supports sign-in.
 Saved registration recovery is local to this browser and does not authenticate you;
 anyone using this browser can continue its demo draft. Older saved registrations
 without an expiry timestamp keep their details and require a new verification code.
-Browser storage retains account/premises details and document metadata, never
-passwords, OTP values, or document contents. Signing out clears the business demo
+Browser storage retains account/premises details, document metadata, and resized
+profile images, never passwords, OTP values, or document contents. Signing out clears the business demo
 state; signing in with the seeded account replaces it. Use fictional data.
 
 From the dashboard, open **Food handlers** to add or edit a handler. An incomplete
@@ -52,6 +53,11 @@ No real payment, medical assessment, or certificate issuance takes place.
 Food handler and certificate application forms open in drawers inside the signed-in
 portal; their URLs can still be opened directly. Inspection correction forms open
 from the corresponding finding.
+
+Open **Business profile** to upload or replace a business avatar/logo and up to
+three premises or kitchen photos. PNG, JPG, and WebP images up to 8 MB are accepted
+and resized for browser persistence. The avatar appears in the account menu and
+the first premises photo appears on the dashboard.
 
 From the dashboard or Applications, start a Fumigation application. Confirm the premises
 and service month, choose a licensed provider, review the total, and confirm the
@@ -116,7 +122,7 @@ python3 scripts/check-business-portal.py --base-url http://localhost:3000
 Checks cover onboarding, duplicate-contact recovery, contact editing, OTP expiry/resend,
 draft persistence and visible resume, email/phone sign-in, stage guards, staff-role
 handoff, desktop menus, mobile navigation at 390 px, the Fitness, Fumigation,
-and Health Approval journeys, issued-state persistence, horizontal overflow,
+Health Approval, and profile imagery journeys, issued-state persistence, horizontal overflow,
 and browser errors.
 Each run uses fresh browser contexts without touching your browser's saved data.
 Optional `--screenshots /tmp/ehrcms-browser-checks` captures desktop and mobile

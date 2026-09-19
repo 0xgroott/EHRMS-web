@@ -1,6 +1,7 @@
 """Repeatable business-portal Slice 1 and Slice 2 checks. Requires Playwright."""
 
 import argparse
+import base64
 from contextlib import contextmanager
 from datetime import date
 import os
@@ -112,6 +113,10 @@ def run_checks(base_url, screenshots):
         elif route == "inspections":
             expect(page.get_by_role("heading", name="Inspections", exact=True)).to_be_visible()
             expect(page.get_by_role("link", name="View Health Approval requirements", exact=True)).to_be_visible()
+        elif route == "profile":
+            expect(page.get_by_role("heading", name="Business profile", exact=True)).to_be_visible()
+            expect(page.get_by_role("heading", name="Premises and kitchen photos", exact=True)).to_be_visible()
+            expect(page.get_by_role("button", name="Upload avatar or logo", exact=True)).to_be_visible()
         else:
             page.get_by_role("link", name="Return to dashboard", exact=True).click()
             dashboard(page)
@@ -259,7 +264,7 @@ def run_checks(base_url, screenshots):
             page.get_by_role("button", name="Business account", exact=True).click()
             page.get_by_role("menuitem", name="Business profile", exact=True).click()
             at(page, "profile")
-            page.get_by_role("link", name="Return to dashboard", exact=True).click()
+            page.get_by_role("link", name="Home", exact=True).click()
             dashboard(page)
             passed("staff role handoff, desktop navigation, notifications and account menu")
             if screenshots:
@@ -296,6 +301,44 @@ def run_checks(base_url, screenshots):
                 visit(fitness_page, "/business/sign-in")
                 fitness_page.get_by_role("button", name="Preview as business user", exact=True).click()
                 dashboard(fitness_page)
+
+                image_bytes = base64.b64decode(
+                    "iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAEElEQVR4nGPQqM2DIwbiOAC6wxExS9lJ8QAAAABJRU5ErkJggg=="
+                )
+                image_file = lambda name: {"name": name, "mimeType": "image/png", "buffer": image_bytes}
+                fitness_page.get_by_role("link", name="Business profile", exact=True).click()
+                at(fitness_page, "profile")
+                fitness_page.get_by_label("Upload business avatar or logo", exact=True).set_input_files(
+                    {"name": "notes.txt", "mimeType": "text/plain", "buffer": b"not an image"}
+                )
+                expect(fitness_page.get_by_text("Choose a PNG, JPG, or WebP image.", exact=True)).to_be_visible()
+                expect(fitness_page.get_by_role("button", name="Upload avatar or logo", exact=True)).to_be_enabled()
+                fitness_page.get_by_label("Upload business avatar or logo", exact=True).set_input_files(image_file("riverside-logo.png"))
+                expect(fitness_page.get_by_role("button", name="Business account", exact=True).get_by_role("img", name="Riverside Kitchen & Foods logo")).to_be_visible()
+                for index, name in enumerate(("front.png", "kitchen.png", "work-area.png"), start=1):
+                    expect(fitness_page.get_by_label(f"Upload premises photo {index}", exact=True)).to_be_enabled()
+                    fitness_page.get_by_label(f"Upload premises photo {index}", exact=True).set_input_files(image_file(name))
+                    expect(fitness_page.get_by_role("img", name=f"Premises photo {index}: {name}")).to_be_visible()
+                expect(fitness_page.get_by_text("3 of 3 photos", exact=True)).to_be_visible()
+                expect(fitness_page.get_by_label("Replace premises photo 2", exact=True)).to_be_enabled()
+                fitness_page.get_by_label("Replace premises photo 2", exact=True).set_input_files(image_file("kitchen-updated.png"))
+                expect(fitness_page.get_by_role("img", name="Premises photo 2: kitchen-updated.png")).to_be_visible()
+                remove_photo = fitness_page.get_by_role("listitem").filter(has_text="Premises photo 3").get_by_role("button", name="Remove", exact=True)
+                expect(remove_photo).to_be_enabled()
+                remove_photo.click()
+                expect(fitness_page.get_by_text("2 of 3 photos", exact=True)).to_be_visible()
+                fitness_page.get_by_label("Upload premises photo 3", exact=True).set_input_files(image_file("work-area.png"))
+                fitness_page.reload(wait_until="networkidle")
+                expect(fitness_page.get_by_text("3 of 3 photos", exact=True)).to_be_visible()
+                fitness_page.set_viewport_size({"width": 390, "height": 844})
+                no_overflow(fitness_page)
+                fitness_page.set_viewport_size({"width": 1440, "height": 1000})
+                sign_out(fitness_page)
+                fitness_page.get_by_role("button", name="Preview as business user", exact=True).click()
+                dashboard(fitness_page)
+                expect(fitness_page.get_by_role("img", name="Riverside Kitchen premises")).to_be_visible()
+                expect(fitness_page.get_by_role("button", name="Business account", exact=True).get_by_role("img", name="Riverside Kitchen & Foods logo")).to_be_visible()
+                passed("business profile images, validation, replace/remove, reload, sign-in, and 390px layout")
 
                 fitness_page.get_by_role("link", name="Food handlers", exact=True).click()
                 at(fitness_page, "food-handlers")

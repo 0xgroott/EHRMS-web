@@ -1,7 +1,7 @@
 import { Bell, LogOut, Store } from "lucide-react"
 import { Link } from "@tanstack/react-router"
 import { useBusinessSession } from "@/app/business-session"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import {
@@ -14,12 +14,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar"
+import { useBusinessMedia } from "@/features/business-media/business-media-context"
 
 export function BusinessHeader() {
   const { state, signOut, error } = useBusinessSession()
+  const { media } = useBusinessMedia()
   const { isMobile, openMobile } = useSidebar()
   const profile = state.profile
-  const initials = (profile?.contactName ?? "Business user")
+  const initials = (profile?.businessName ?? "Business")
     .split(/\s+/)
     .filter(Boolean)
     .slice(0, 2)
@@ -100,6 +102,12 @@ export function BusinessHeader() {
             aria-label="Business account"
           >
             <Avatar size="sm">
+              {media.avatar && (
+                <AvatarImage
+                  src={media.avatar.dataUrl}
+                  alt={`${profile?.businessName ?? "Business"} logo`}
+                />
+              )}
               <AvatarFallback>{initials}</AvatarFallback>
             </Avatar>
           </DropdownMenuTrigger>

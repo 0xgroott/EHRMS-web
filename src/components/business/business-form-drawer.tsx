@@ -20,7 +20,7 @@ export function BusinessFormDrawer({
 }) {
   return (
     <Sheet open onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="right" className="w-full gap-0 sm:max-w-3xl">
+      <SheetContent side="right" className="w-full gap-0 sm:max-w-[52.8rem]">
         <SheetHeader className="shrink-0 border-b px-5 py-4 sm:px-8">
           <SheetTitle>{title}</SheetTitle>
           <SheetDescription>{description}</SheetDescription>
