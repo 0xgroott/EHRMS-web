@@ -109,6 +109,9 @@ def run_checks(base_url, screenshots):
             expect(page.get_by_role("heading", name="Certificates", exact=True)).to_be_visible()
             expect(page.get_by_role("heading", name="Fitness Certificate", exact=True)).to_be_visible()
             expect(page.get_by_role("link", name="Start Fitness application", exact=True)).to_be_visible()
+        elif route == "inspections":
+            expect(page.get_by_role("heading", name="Inspections", exact=True)).to_be_visible()
+            expect(page.get_by_role("link", name="View Health Approval requirements", exact=True)).to_be_visible()
         else:
             page.get_by_role("link", name="Return to dashboard", exact=True).click()
             dashboard(page)
@@ -390,6 +393,40 @@ def run_checks(base_url, screenshots):
                 expect(fitness_page.get_by_role("heading", name="Fumigation Certificate", exact=True).first).to_be_visible()
                 passed("Slice 3 Fumigation validation, provider, payment, external decisions, certificate, and persistence")
 
+                fitness_page.get_by_role("link", name="Home", exact=True).click()
+                dashboard(fitness_page)
+                next_action = fitness_page.get_by_role("region", name="Next required action")
+                next_action.get_by_role("link", name="View Health Approval", exact=True).click()
+                at(fitness_page, "health-approval")
+                expect(fitness_page.get_by_role("heading", name="Health Approval", exact=True)).to_be_visible()
+                expect(fitness_page.get_by_text("Requirements met", exact=True)).to_be_visible()
+                expect(fitness_page.get_by_role("link", name="Apply for Health Approval", exact=True)).to_have_count(0)
+                fitness_page.get_by_role("button", name="Simulate inspection notice", exact=True).click()
+                fitness_page.get_by_role("link", name="View inspection notice", exact=True).click()
+                at(fitness_page, "inspections")
+                expect(fitness_page.get_by_role("heading", name="Inspection notice", exact=True)).to_be_visible()
+                fitness_page.get_by_role("button", name="Acknowledge notice", exact=True).click()
+                fitness_page.get_by_role("button", name="Simulate inspection findings", exact=True).click()
+                expect(fitness_page.get_by_role("heading", name="Corrective actions", exact=True)).to_be_visible()
+                fitness_page.get_by_role("button", name="Save correction", exact=True).first.click()
+                expect(fitness_page.get_by_text("Enter a correction note before saving.", exact=True)).to_be_visible()
+                fitness_page.get_by_label("How was this corrected?", exact=True).first.fill("Dry goods moved into sealed containers and raised storage")
+                fitness_page.get_by_role("button", name="Save correction", exact=True).first.click()
+                fitness_page.get_by_label("How was this corrected?", exact=True).first.fill("Covered bins installed and daily disposal log started")
+                fitness_page.get_by_role("button", name="Save correction", exact=True).first.click()
+                fitness_page.get_by_role("button", name="Simulate follow-up notice", exact=True).click()
+                expect(fitness_page.get_by_role("heading", name="Follow-up inspection notice", exact=True)).to_be_visible()
+                fitness_page.get_by_role("button", name="Acknowledge follow-up notice", exact=True).click()
+                fitness_page.get_by_role("button", name="Simulate findings resolved", exact=True).click()
+                fitness_page.get_by_role("link", name="View Health Approval decision", exact=True).click()
+                at(fitness_page, "health-approval")
+                fitness_page.get_by_role("button", name="Simulate council issuance", exact=True).click()
+                expect(fitness_page.get_by_role("heading", name="Health Approval Certificate", exact=True)).to_be_visible()
+                expect(fitness_page.get_by_text(re.compile("not an official council document"))).to_be_visible()
+                fitness_page.reload(wait_until="networkidle")
+                expect(fitness_page.get_by_role("heading", name="Health Approval Certificate", exact=True)).to_be_visible()
+                passed("Slice 4 eligibility, notices, corrective actions, follow-up, council outcome, and persistence")
+
                 fitness_page.set_viewport_size({"width": 390, "height": 844})
                 for route in (
                     "dashboard",
@@ -401,6 +438,8 @@ def run_checks(base_url, screenshots):
                     "fumigation/apply",
                     "fumigation/tracker",
                     "fumigation/certificate",
+                    "health-approval",
+                    "inspections",
                 ):
                     visit(fitness_page, "/business/" + route)
                     no_overflow(fitness_page)

@@ -2,6 +2,7 @@ import { ArrowRight, BellRing, CheckCircle2 } from "lucide-react"
 import type { BusinessPortalState } from "@/domain/business-types"
 import type { FitnessState } from "@/features/fitness/fitness-types"
 import type { FumigationState } from "@/features/fumigation/fumigation-types"
+import type { InspectionState } from "@/features/inspection/inspection-types"
 import { fumigationStageLabel } from "@/features/fumigation/fumigation-shared"
 import { formatFitnessReference } from "@/features/fitness/fitness-tracker-page"
 import {
@@ -95,10 +96,12 @@ export function BusinessDashboard({
   state,
   fitness = { handlers: [], application: null },
   fumigation = { application: null },
+  inspection = { inspection: null },
 }: {
   state: BusinessPortalState
   fitness?: FitnessState
   fumigation?: FumigationState
+  inspection?: InspectionState
 }) {
   const { profile } = state
   const profileComplete = Boolean(
@@ -116,6 +119,11 @@ export function BusinessDashboard({
   const fumigationInProgress = Boolean(
     fumigationApplication && !fumigationIssued
   )
+  const inspectionCase = inspection.inspection
+  const healthEligible = fitnessIssued && fumigationIssued
+  const healthStage = healthEligible
+    ? (inspectionCase?.stage ?? "eligible")
+    : undefined
   const fumigationActionHref =
     fumigationApplication?.stage === "draft" ||
     fumigationApplication?.stage === "review"
@@ -142,7 +150,8 @@ export function BusinessDashboard({
         ? "in-progress"
         : "not-started",
     fumigationActionHref,
-    missingHealthApprovalRequirement: true,
+    missingHealthApprovalRequirement: !healthEligible,
+    healthApprovalStage: healthStage,
   })
   const statuses = [
     {
@@ -190,11 +199,29 @@ export function BusinessDashboard({
     },
     {
       title: "Health Approval",
-      status: "Requirements incomplete",
-      description:
-        "Requires valid Fitness and Fumigation Certificates, followed by eligibility checks and inspection.",
-      href: "/business/certificates",
-      label: "View Health Approval requirements",
+      status: !healthEligible
+        ? "Requirements incomplete"
+        : inspectionCase?.stage === "approval-issued"
+          ? "Issued"
+          : inspectionCase?.stage === "further-action"
+            ? "Further action required"
+            : inspectionCase?.stage === "findings-issued"
+              ? "Corrective action required"
+              : inspectionCase?.stage === "follow-up-served" ||
+                  inspectionCase?.stage === "follow-up-acknowledged"
+                ? "Follow-up inspection pending"
+                : inspectionCase?.stage === "notice-served"
+                  ? "Acknowledgement required"
+                  : "Inspection pending",
+      description: !healthEligible
+        ? "Requires Fitness and Fumigation Certificates, followed by eligibility checks and inspection."
+        : inspectionCase?.stage === "approval-issued"
+          ? "Your Health Approval outcome is available for these premises."
+          : "Follow the inspection, findings, and council decision for your premises.",
+      href: "/business/health-approval",
+      label: healthEligible
+        ? "View Health Approval"
+        : "View Health Approval requirements",
     },
   ]
   return (

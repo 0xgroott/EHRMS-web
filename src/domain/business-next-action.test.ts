@@ -98,6 +98,35 @@ describe("business next action", () => {
       label: "Review missing requirements",
     })
   })
+  it("routes eligible premises through the inspection and corrective action steps", () => {
+    expect(
+      getBusinessNextAction({ ...ready, healthApprovalStage: "eligible" })
+    ).toMatchObject({
+      id: "health-eligible",
+      href: "/business/health-approval",
+    })
+    expect(
+      getBusinessNextAction({ ...ready, healthApprovalStage: "notice-served" })
+    ).toMatchObject({
+      id: "acknowledge-inspection",
+      href: "/business/inspections",
+    })
+    expect(
+      getBusinessNextAction({
+        ...ready,
+        healthApprovalStage: "findings-issued",
+      })
+    ).toMatchObject({
+      id: "correct-findings",
+      href: "/business/inspections",
+    })
+    expect(
+      getBusinessNextAction({ ...ready, healthApprovalStage: "resolved" })
+    ).toMatchObject({
+      id: "review-health-decision",
+      href: "/business/health-approval",
+    })
+  })
   it("monitors compliance when no prerequisite requires action", () => {
     expect(getBusinessNextAction(ready)).toMatchObject({
       id: "monitor-compliance",

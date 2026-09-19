@@ -36,6 +36,7 @@ import { Route as BusinessPortalApplicationsRouteImport } from './routes/busines
 import { Route as BusinessPortalCertificatesRouteImport } from './routes/business._portal.certificates'
 import { Route as BusinessPortalDashboardRouteImport } from './routes/business._portal.dashboard'
 import { Route as BusinessPortalFoodHandlersRouteImport } from './routes/business._portal.food-handlers'
+import { Route as BusinessPortalHealthApprovalRouteImport } from './routes/business._portal.health-approval'
 import { Route as BusinessPortalInspectionsRouteImport } from './routes/business._portal.inspections'
 import { Route as BusinessPortalProfileRouteImport } from './routes/business._portal.profile'
 import { Route as BusinessPortalFitnessApplyRouteImport } from './routes/business._portal.fitness.apply'
@@ -183,6 +184,12 @@ const BusinessPortalFoodHandlersRoute =
     path: '/food-handlers',
     getParentRoute: () => BusinessPortalRoute,
   } as any)
+const BusinessPortalHealthApprovalRoute =
+  BusinessPortalHealthApprovalRouteImport.update({
+    id: '/health-approval',
+    path: '/health-approval',
+    getParentRoute: () => BusinessPortalRoute,
+  } as any)
 const BusinessPortalInspectionsRoute =
   BusinessPortalInspectionsRouteImport.update({
     id: '/inspections',
@@ -268,6 +275,7 @@ export interface FileRoutesByFullPath {
   '/business/certificates': typeof BusinessPortalCertificatesRoute
   '/business/dashboard': typeof BusinessPortalDashboardRoute
   '/business/food-handlers': typeof BusinessPortalFoodHandlersRoute
+  '/business/health-approval': typeof BusinessPortalHealthApprovalRoute
   '/business/inspections': typeof BusinessPortalInspectionsRoute
   '/business/profile': typeof BusinessPortalProfileRoute
   '/premises/': typeof AppPremisesIndexRoute
@@ -304,6 +312,7 @@ export interface FileRoutesByTo {
   '/business/certificates': typeof BusinessPortalCertificatesRoute
   '/business/dashboard': typeof BusinessPortalDashboardRoute
   '/business/food-handlers': typeof BusinessPortalFoodHandlersRoute
+  '/business/health-approval': typeof BusinessPortalHealthApprovalRoute
   '/business/inspections': typeof BusinessPortalInspectionsRoute
   '/business/profile': typeof BusinessPortalProfileRoute
   '/premises': typeof AppPremisesIndexRoute
@@ -344,6 +353,7 @@ export interface FileRoutesById {
   '/business/_portal/certificates': typeof BusinessPortalCertificatesRoute
   '/business/_portal/dashboard': typeof BusinessPortalDashboardRoute
   '/business/_portal/food-handlers': typeof BusinessPortalFoodHandlersRoute
+  '/business/_portal/health-approval': typeof BusinessPortalHealthApprovalRoute
   '/business/_portal/inspections': typeof BusinessPortalInspectionsRoute
   '/business/_portal/profile': typeof BusinessPortalProfileRoute
   '/_app/premises/': typeof AppPremisesIndexRoute
@@ -383,6 +393,7 @@ export interface FileRouteTypes {
     | '/business/certificates'
     | '/business/dashboard'
     | '/business/food-handlers'
+    | '/business/health-approval'
     | '/business/inspections'
     | '/business/profile'
     | '/premises/'
@@ -419,6 +430,7 @@ export interface FileRouteTypes {
     | '/business/certificates'
     | '/business/dashboard'
     | '/business/food-handlers'
+    | '/business/health-approval'
     | '/business/inspections'
     | '/business/profile'
     | '/premises'
@@ -458,6 +470,7 @@ export interface FileRouteTypes {
     | '/business/_portal/certificates'
     | '/business/_portal/dashboard'
     | '/business/_portal/food-handlers'
+    | '/business/_portal/health-approval'
     | '/business/_portal/inspections'
     | '/business/_portal/profile'
     | '/_app/premises/'
@@ -668,6 +681,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BusinessPortalFoodHandlersRouteImport
       parentRoute: typeof BusinessPortalRoute
     }
+    '/business/_portal/health-approval': {
+      id: '/business/_portal/health-approval'
+      path: '/health-approval'
+      fullPath: '/business/health-approval'
+      preLoaderRoute: typeof BusinessPortalHealthApprovalRouteImport
+      parentRoute: typeof BusinessPortalRoute
+    }
     '/business/_portal/inspections': {
       id: '/business/_portal/inspections'
       path: '/inspections'
@@ -782,6 +802,7 @@ interface BusinessPortalRouteChildren {
   BusinessPortalCertificatesRoute: typeof BusinessPortalCertificatesRoute
   BusinessPortalDashboardRoute: typeof BusinessPortalDashboardRoute
   BusinessPortalFoodHandlersRoute: typeof BusinessPortalFoodHandlersRoute
+  BusinessPortalHealthApprovalRoute: typeof BusinessPortalHealthApprovalRoute
   BusinessPortalInspectionsRoute: typeof BusinessPortalInspectionsRoute
   BusinessPortalProfileRoute: typeof BusinessPortalProfileRoute
   BusinessPortalFitnessApplyRoute: typeof BusinessPortalFitnessApplyRoute
@@ -799,6 +820,7 @@ const BusinessPortalRouteChildren: BusinessPortalRouteChildren = {
   BusinessPortalCertificatesRoute: BusinessPortalCertificatesRoute,
   BusinessPortalDashboardRoute: BusinessPortalDashboardRoute,
   BusinessPortalFoodHandlersRoute: BusinessPortalFoodHandlersRoute,
+  BusinessPortalHealthApprovalRoute: BusinessPortalHealthApprovalRoute,
   BusinessPortalInspectionsRoute: BusinessPortalInspectionsRoute,
   BusinessPortalProfileRoute: BusinessPortalProfileRoute,
   BusinessPortalFitnessApplyRoute: BusinessPortalFitnessApplyRoute,
