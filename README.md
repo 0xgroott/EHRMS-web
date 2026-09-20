@@ -167,6 +167,19 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
+## Deploy to Vercel
+
+This TanStack Start app uses Nitro for the production build. Vercel detects the
+framework from `vercel.json` and runs `npm run build` using the committed
+`package-lock.json`. No environment variables are required for the current
+browser-local workflows.
+
+Link the repository in Vercel or run `vercel` from the project root for a preview
+deployment. Run `vercel --prod` to deploy to production. Check the welcome page
+and direct links such as `/business/sign-in` and `/eho/sign-in` after deployment.
+The role sign-ins and records are fictional browser-local fixtures; deploying the
+site does not add shared accounts, backend persistence, or council integrations.
+
 ## Quality checks
 
 ```bash

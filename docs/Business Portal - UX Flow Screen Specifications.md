@@ -235,7 +235,7 @@ This document defines the business-facing screens required to register a premise
 - Job or role
 - Identity number
 - Phone number
-- Workplace
+- Business branch/location (selected from registered premises; disabled when only one branch exists)
 - Consent record
 - Configurable council fields
 
@@ -245,7 +245,6 @@ This document defines the business-facing screens required to register a premise
 
 **Alternative actions:**
 
-- Save and add another
 - Cancel
 - Archive record where allowed
 

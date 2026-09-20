@@ -5,16 +5,23 @@ import { BusinessFormDrawer } from "@/components/business/business-form-drawer"
 import { notifySuccess } from "@/components/ui/app-toast"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { FoodHandlerForm } from "./food-handler-form"
+import type { BusinessBranchOption } from "./food-handler-form"
 import { FoodHandlersPage } from "./food-handlers-page"
 import { useFitness } from "./fitness-context"
 
+function branchOption(name: string, ward?: string): BusinessBranchOption {
+  return { value: name, label: ward ? `${name}, ${ward}` : name }
+}
+
 export function NewFoodHandlerDrawerPage() {
   const navigate = useNavigate()
-  const [formKey, setFormKey] = useState(0)
   const { state: businessState } = useBusinessSession()
   const { addHandler } = useFitness()
-  const premisesName =
-    businessState.profile?.premises?.premisesName ?? "Current premises"
+  const premises = businessState.profile?.premises
+  const branch = branchOption(
+    premises?.premisesName ?? "Current premises",
+    premises?.ward
+  )
   const close = () => void navigate({ to: "/business/food-handlers" })
 
   return (
@@ -22,20 +29,15 @@ export function NewFoodHandlerDrawerPage() {
       <FoodHandlersPage />
       <BusinessFormDrawer
         title="Add food handler"
-        description="Record the details needed to include this person in a Fitness Certificate application."
+        compactPadding
         onClose={close}
       >
         <FoodHandlerForm
-          key={formKey}
-          premisesName={premisesName}
-          onSave={(handler, destination) => {
+          branchOptions={[branch]}
+          onSave={(handler) => {
             addHandler(handler)
             notifySuccess("Food handler added")
-            if (destination === "another") {
-              setFormKey((current) => current + 1)
-            } else {
-              close()
-            }
+            close()
           }}
           onCancel={close}
         />
@@ -51,8 +53,10 @@ export function EditFoodHandlerDrawerPage({
 }) {
   const navigate = useNavigate()
   const [saveError, setSaveError] = useState("")
+  const { state: businessState } = useBusinessSession()
   const { state, isHydrated, updateHandler } = useFitness()
   const handler = state.handlers.find((record) => record.id === handlerId)
+  const premises = businessState.profile?.premises
   const close = () => void navigate({ to: "/business/food-handlers" })
 
   return (
@@ -63,9 +67,10 @@ export function EditFoodHandlerDrawerPage({
           title={handler ? "Edit food handler" : "Food handler not found"}
           description={
             handler
-              ? `Update ${handler.fullName}'s details before starting a Fitness Certificate application.`
+              ? undefined
               : "Return to food handlers to select an existing staff record."
           }
+          compactPadding
           onClose={close}
         >
           {saveError && (
@@ -76,7 +81,14 @@ export function EditFoodHandlerDrawerPage({
           {handler && (
             <FoodHandlerForm
               handler={handler}
-              premisesName={handler.premisesName}
+              branchOptions={[
+                branchOption(
+                  handler.premisesName,
+                  premises?.premisesName === handler.premisesName
+                    ? premises.ward
+                    : undefined
+                ),
+              ]}
               onSave={(next) => {
                 const result = updateHandler(handler.id, next)
                 if (result.ok) {
