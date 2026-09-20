@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react"
+import { render, screen, within } from "@testing-library/react"
 import { describe, expect, it, vi } from "vitest"
 import { FoodHandlersPage } from "./food-handlers-page"
 import type { FitnessState } from "./fitness-types"
@@ -50,7 +50,11 @@ describe("FoodHandlersPage", () => {
 
     expect(screen.getByText("Ada Okafor")).toBeVisible()
     expect(screen.getByText("Kitchen assistant")).toBeVisible()
-    expect(screen.getByText("Ready to apply")).toBeVisible()
+    expect(
+      within(screen.getByRole("row", { name: /Ada Okafor/ })).getByText(
+        "Ready to apply"
+      )
+    ).toBeVisible()
     expect(screen.getByText("No Fitness coverage")).toBeVisible()
     expect(
       screen.getByRole("link", { name: "Start Fitness application" })
@@ -139,5 +143,48 @@ describe("FoodHandlersPage", () => {
     expect(
       screen.queryByRole("link", { name: "Start Fitness application" })
     ).not.toBeInTheDocument()
+  })
+
+  it("keeps existing food-handler coverage visible during a renewal", () => {
+    mockedFitness.value = {
+      isHydrated: true,
+      state: {
+        handlers: [
+          {
+            id: "handler-ada",
+            fullName: "Ada Okafor",
+            sex: "Female",
+            dateOfBirth: "1991-04-12",
+            role: "Cook",
+            identityNumber: "NIN-1",
+            phone: "08030000000",
+            premisesName: "Riverside Kitchen",
+            consent: true,
+          },
+        ],
+        application: {
+          id: "fitness-application-2",
+          handlerIds: ["handler-ada"],
+          stage: "draft",
+        },
+        history: [
+          {
+            id: "fitness-application-1",
+            handlerIds: ["handler-ada"],
+            stage: "issued",
+            certificate: {
+              id: "FIT-CERT-1",
+              handlerIds: ["handler-ada"],
+              councilId: "phc",
+              issuedAt: "2026-09-01",
+              expiresAt: "2099-09-01",
+            },
+          },
+        ],
+      },
+    }
+    render(<FoodHandlersPage />)
+
+    expect(screen.getByText("Covered by Fitness certificate")).toBeVisible()
   })
 })

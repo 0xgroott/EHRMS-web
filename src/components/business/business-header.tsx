@@ -1,4 +1,4 @@
-import { Bell, LogOut, Store } from "lucide-react"
+import { Bell, LogOut, Settings2 } from "lucide-react"
 import { Link } from "@tanstack/react-router"
 import { useBusinessSession } from "@/app/business-session"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -120,16 +120,21 @@ export function BusinessHeader() {
                 {profile?.contactName}
               </DropdownMenuLabel>
               <DropdownMenuItem
-                render={<Link to="/business/profile" />}
+                render={<Link to="/business/settings" />}
                 className="min-h-11"
               >
-                <Store aria-hidden="true" />
-                Business profile
+                <Settings2 aria-hidden="true" />
+                Settings
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem onClick={signOut} className="min-h-11">
+              <DropdownMenuItem
+                onClick={() => {
+                  if (signOut()) window.location.assign("/")
+                }}
+                className="min-h-11"
+              >
                 <LogOut aria-hidden="true" />
                 Sign out
               </DropdownMenuItem>

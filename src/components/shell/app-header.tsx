@@ -7,7 +7,9 @@ import { Input } from "@/components/ui/input"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 
 export function businessRoleHandoffPath(role: DemoRole) {
-  return role === "business-user" ? "/business/dashboard" : null
+  if (role === "business-user") return "/business/dashboard"
+  if (role === "eho") return "/eho/sign-in"
+  return null
 }
 
 function navigateTo(path: string) {
@@ -56,11 +58,11 @@ export function AppHeader() {
           ))}
         </select>
         <label className="sr-only" htmlFor="role">
-          Demo role
+          Role
         </label>
         <select
           id="role"
-          aria-label="Demo role"
+          aria-label="Role"
           className="h-9 max-w-40 rounded-md border bg-background px-2 text-sm"
           value={role}
           onChange={(event) => {

@@ -25,7 +25,7 @@ const destinations = [
   ["Applications", "/business/applications"],
   ["Certificates", "/business/certificates"],
   ["Inspections", "/business/inspections"],
-  ["Business profile", "/business/profile"],
+  ["Settings", "/business/settings"],
 ]
 
 function shell(path = "/business/applications") {
@@ -88,12 +88,7 @@ describe("Business shell", () => {
     expect(within(nav).getByRole("link", { name: "Home" })).not.toHaveAttribute(
       "aria-current"
     )
-    for (const label of [
-      "Finance",
-      "Users",
-      "Council administration",
-      "Demo role",
-    ])
+    for (const label of ["Finance", "Users", "Council administration", "Role"])
       expect(screen.queryByText(label)).not.toBeInTheDocument()
     expect(await screen.findByText("Riverside Kitchen & Foods")).toBeVisible()
     expect(screen.getAllByRole("main")).toHaveLength(1)

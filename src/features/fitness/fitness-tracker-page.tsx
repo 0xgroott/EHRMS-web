@@ -1,9 +1,12 @@
 import { useState } from "react"
 import { useBusinessSession } from "@/app/business-session"
+import { DocumentDownloadButton } from "@/components/business/document-download-button"
+import { paymentReceiptDocument } from "@/domain/business-document-downloads"
 import { PageHeader } from "@/components/shared/page-header"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { notifySuccess } from "@/components/ui/app-toast"
 import {
   Card,
   CardContent,
@@ -210,10 +213,15 @@ export function FitnessTrackerPage() {
                 </dd>
               </div>
             </dl>
-            <p className="text-sm text-muted-foreground">
-              No money was collected. This payment reference is for this
-              simulation only.
-            </p>
+            <DocumentDownloadButton
+              document={paymentReceiptDocument(
+                "Fitness",
+                application,
+                businessState.profile
+              )}
+            >
+              Download payment record
+            </DocumentDownloadButton>
           </CardContent>
         </Card>
         <section aria-label="Application timeline" className="min-w-0">
@@ -235,18 +243,17 @@ export function FitnessTrackerPage() {
           </ol>
         </section>
       </div>
-      <section aria-labelledby="fitness-simulation-controls-title">
+      <section aria-labelledby="fitness-external-steps-title">
         <Card>
           <CardHeader>
-            <Badge variant="outline">Simulation only</Badge>
             <CardTitle>
-              <h2 id="fitness-simulation-controls-title">
-                Facility and council actions
+              <h2 id="fitness-external-steps-title">
+                Facility and council updates
               </h2>
             </CardTitle>
             <CardDescription>
-              The controls below simulate actions by the facility and council.
-              They do not submit real results or issue an official certificate.
+              The facility and council complete these steps. View each outcome
+              as the application progresses.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
@@ -263,9 +270,10 @@ export function FitnessTrackerPage() {
                 onClick={() => {
                   const result = recordFitResult()
                   setError(result.ok ? "" : result.error)
+                  if (result.ok) notifySuccess("Facility Fit result recorded")
                 }}
               >
-                Simulate facility Fit result
+                Show facility Fit result
               </Button>
               <Button
                 variant="outline"
@@ -274,9 +282,10 @@ export function FitnessTrackerPage() {
                 onClick={() => {
                   const result = issueDemoCertificate()
                   setError(result.ok ? "" : result.error)
+                  if (result.ok) notifySuccess("Fitness certificate issued")
                 }}
               >
-                Simulate council issuance
+                Show council decision
               </Button>
             </div>
             <p className="text-sm text-muted-foreground">

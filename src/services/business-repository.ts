@@ -176,6 +176,12 @@ export function createBusinessRepository(
     updateContact(input: ContactInput): BusinessRepositoryResult {
       const state = storage.read()
       if (!state.profile) return failure({ state: "Create an account first" })
+      if (state.stage === "complete") {
+        return failure({
+          state:
+            "Contact changes to a completed account require a separate verification process",
+        })
+      }
 
       const accountErrors = validateAccount({
         ...state.profile,

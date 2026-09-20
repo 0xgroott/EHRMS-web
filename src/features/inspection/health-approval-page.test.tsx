@@ -87,11 +87,11 @@ it("separates council scheduling from the business inspection action", async () 
   fixtures.fumigation.application = { stage: "issued" }
   render(<HealthApprovalPage />)
   const controls = screen.getByRole("region", {
-    name: /council simulation controls/i,
+    name: /council updates/i,
   })
   await userEvent.setup().click(
     within(controls).getByRole("button", {
-      name: /simulate inspection notice/i,
+      name: /show inspection notice/i,
     })
   )
   expect(fixtures.scheduleNotice).toHaveBeenCalledWith(true)
@@ -123,7 +123,12 @@ it("shows the issued outcome with a non-official disclosure", () => {
   render(<HealthApprovalPage />)
   expect(screen.getByRole("heading", { name: "Health Approval" })).toBeVisible()
   expect(screen.getByText("HA-001")).toBeVisible()
-  expect(screen.getByText(/not an official council document/i)).toBeVisible()
+  expect(
+    screen.getByRole("heading", { name: "Health Approval issued" })
+  ).toBeVisible()
+  expect(
+    screen.getByRole("button", { name: "Download Health Approval" })
+  ).toBeVisible()
   expect(
     screen.getByRole("link", { name: /view inspection record/i })
   ).toHaveAttribute("href", "/business/inspections")

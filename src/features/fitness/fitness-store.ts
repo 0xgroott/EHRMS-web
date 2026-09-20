@@ -71,7 +71,10 @@ function isFitnessState(value: unknown): value is FitnessState {
     Array.isArray(candidate.handlers) &&
     candidate.handlers.every(isFoodHandler) &&
     (candidate.application === null ||
-      isFitnessApplication(candidate.application))
+      isFitnessApplication(candidate.application)) &&
+    (candidate.history === undefined ||
+      (Array.isArray(candidate.history) &&
+        candidate.history.every(isFitnessApplication)))
   )
 }
 
@@ -80,6 +83,9 @@ function isFoodHandler(value: unknown): value is FoodHandler {
   const handler = value as Partial<FoodHandler>
   return (
     typeof handler.id === "string" &&
+    (handler.archivedAt === undefined ||
+      (typeof handler.archivedAt === "string" &&
+        Number.isFinite(Date.parse(handler.archivedAt)))) &&
     typeof handler.fullName === "string" &&
     typeof handler.sex === "string" &&
     typeof handler.dateOfBirth === "string" &&
@@ -98,6 +104,25 @@ function isFitnessApplication(value: unknown): value is FitnessApplication {
     typeof application.id === "string" &&
     Array.isArray(application.handlerIds) &&
     application.handlerIds.every((id) => typeof id === "string") &&
+    (application.handlerSnapshots === undefined ||
+      (Array.isArray(application.handlerSnapshots) &&
+        application.handlerSnapshots.every(isFoodHandler))) &&
+    (application.certificate === undefined ||
+      (typeof application.certificate.id === "string" &&
+        Array.isArray(application.certificate.handlerIds) &&
+        application.certificate.handlerIds.every(
+          (id) => typeof id === "string"
+        ) &&
+        typeof application.certificate.councilId === "string" &&
+        (application.certificate.premisesSnapshot === undefined ||
+          (typeof application.certificate.premisesSnapshot.businessName ===
+            "string" &&
+            typeof application.certificate.premisesSnapshot.premisesName ===
+              "string" &&
+            typeof application.certificate.premisesSnapshot.address ===
+              "string")) &&
+        Number.isFinite(Date.parse(application.certificate.issuedAt)) &&
+        Number.isFinite(Date.parse(application.certificate.expiresAt)))) &&
     [
       "draft",
       "review",

@@ -1,9 +1,12 @@
 import { useState } from "react"
 import { useBusinessSession } from "@/app/business-session"
+import { DocumentDownloadButton } from "@/components/business/document-download-button"
+import { paymentReceiptDocument } from "@/domain/business-document-downloads"
 import { PageHeader } from "@/components/shared/page-header"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { notifySuccess } from "@/components/ui/app-toast"
 import {
   Card,
   CardContent,
@@ -56,6 +59,16 @@ export function FitnessApplicationPage({
     state.application &&
     !["draft", "review"].includes(state.application.stage)
   ) {
+    if (state.application.stage === "issued") {
+      return (
+        <FitnessEmptyState
+          title="Fitness certificate issued"
+          description="Your certificate is available. Start a renewal from its details when you are ready."
+          href="/business/fitness/certificate"
+          label="View Fitness Certificate"
+        />
+      )
+    }
     return (
       <FitnessEmptyState
         title="Your Fitness application is underway"
@@ -77,6 +90,9 @@ function ApplicationSteps({
 }) {
   const { state, selectHandlers, chooseFacility, confirmDemoPayment } =
     useFitness()
+  const currentHandlers = state.handlers.filter(
+    (handler) => !handler.archivedAt
+  )
   const { state: businessState } = useBusinessSession()
   const premises = businessState.profile?.premises
   const [step, setStep] = useState<Step>(
@@ -94,7 +110,7 @@ function ApplicationSteps({
   )
   const [error, setError] = useState("")
   const facility = findApprovedFitnessFacility(facilityId)
-  const selectedHandlers = state.handlers.filter((handler) =>
+  const selectedHandlers = currentHandlers.filter((handler) =>
     selectedIds.includes(handler.id)
   )
   const titles: Record<Step, string> = {
@@ -121,6 +137,7 @@ function ApplicationSteps({
   function pay() {
     const result = confirmDemoPayment()
     if (!result.ok) return setError(result.error)
+    notifySuccess("Fitness application submitted")
     onPaid?.()
   }
   return (
@@ -166,7 +183,7 @@ function ApplicationSteps({
       )}
       {step === "people" && (
         <>
-          {state.handlers.length === 0 ? (
+          {currentHandlers.length === 0 ? (
             <FitnessEmptyState
               title="Add food handlers first"
               description="Save staff records with identity, job role, phone, and consent before applying."
@@ -184,7 +201,7 @@ function ApplicationSteps({
                   updating before selection.
                 </FieldDescription>
                 <FieldGroup className="gap-3">
-                  {state.handlers.map((handler) => {
+                  {currentHandlers.map((handler) => {
                     const readiness = handlerReadiness(handler)
                     return (
                       <Field
@@ -376,11 +393,11 @@ function ApplicationSteps({
             <>
               <Alert>
                 <AlertDescription>
-                  <Badge variant="secondary">Simulated payment</Badge>
+                  <Badge variant="secondary">Payment</Badge>
                   <p>
-                    No money will move, and no card or bank details are
-                    collected. Confirming this simulated payment starts the
-                    application; it does not issue a certificate.
+                    Check the amount and selected facility before confirming
+                    payment. Payment starts the assessment; a certificate is
+                    issued only after the required decisions.
                   </p>
                 </AlertDescription>
               </Alert>
@@ -406,6 +423,7 @@ function ApplicationSteps({
 
 export function BusinessApplicationsPage() {
   const { state, isHydrated } = useFitness()
+  const { state: businessState } = useBusinessSession()
   const { state: fumigation, isHydrated: fumigationIsHydrated } =
     useFumigation()
   if (!isHydrated || !fumigationIsHydrated) return <FitnessLoading />
@@ -445,19 +463,68 @@ export function BusinessApplicationsPage() {
         <CardFooter>
           <FitnessLink
             href={
-              submitted
-                ? "/business/fitness/tracker"
-                : "/business/fitness/apply"
+              application?.stage === "issued"
+                ? "/business/fitness/certificate"
+                : submitted
+                  ? "/business/fitness/tracker"
+                  : "/business/fitness/apply"
             }
           >
-            {submitted
-              ? "Track Fitness application"
-              : application
-                ? "Continue Fitness application"
-                : "Start Fitness application"}
+            {application?.stage === "issued"
+              ? "View Fitness Certificate or renew"
+              : submitted
+                ? "Track Fitness application"
+                : application
+                  ? "Continue Fitness application"
+                  : state.history?.length
+                    ? "Start Fitness renewal"
+                    : "Start Fitness application"}
           </FitnessLink>
         </CardFooter>
       </Card>
+      {(state.history?.length ?? 0) > 0 && (
+        <section
+          aria-labelledby="fitness-application-history"
+          className="space-y-3"
+        >
+          <h2
+            id="fitness-application-history"
+            className="text-lg font-semibold"
+          >
+            Fitness application history
+          </h2>
+          <ul className="divide-y rounded-lg border">
+            {[...(state.history ?? [])].reverse().map((item) => (
+              <li key={item.id} className="p-4 text-sm">
+                <p className="font-medium">{item.id}</p>
+                <p className="mt-1 text-muted-foreground">
+                  {fitnessStageLabel[item.stage]} · {item.handlerIds.length}{" "}
+                  food handlers
+                </p>
+                {item.paymentReference && (
+                  <p className="mt-1 break-all">
+                    Payment reference: {item.paymentReference}
+                  </p>
+                )}
+                <DocumentDownloadButton
+                  document={paymentReceiptDocument(
+                    "Fitness",
+                    item,
+                    businessState.profile
+                  )}
+                >
+                  Download payment record
+                </DocumentDownloadButton>
+                {item.certificate && (
+                  <p className="mt-1 break-all">
+                    Certificate: {item.certificate.id}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       <Card>
         <CardHeader>
           <CardTitle>
@@ -482,19 +549,67 @@ export function BusinessApplicationsPage() {
         <CardFooter>
           <FumigationLink
             href={
-              fumigationSubmitted
-                ? "/business/fumigation/tracker"
-                : "/business/fumigation/apply"
+              fumigationApplication?.stage === "issued"
+                ? "/business/fumigation/certificate"
+                : fumigationSubmitted
+                  ? "/business/fumigation/tracker"
+                  : "/business/fumigation/apply"
             }
           >
-            {fumigationSubmitted
-              ? "Track Fumigation application"
-              : fumigationApplication
-                ? "Continue Fumigation application"
-                : "Start Fumigation application"}
+            {fumigationApplication?.stage === "issued"
+              ? "View Fumigation Certificate or renew"
+              : fumigationSubmitted
+                ? "Track Fumigation application"
+                : fumigationApplication
+                  ? "Continue Fumigation application"
+                  : fumigation.history?.length
+                    ? "Start Fumigation renewal"
+                    : "Start Fumigation application"}
           </FumigationLink>
         </CardFooter>
       </Card>
+      {(fumigation.history?.length ?? 0) > 0 && (
+        <section
+          aria-labelledby="fumigation-application-history"
+          className="space-y-3"
+        >
+          <h2
+            id="fumigation-application-history"
+            className="text-lg font-semibold"
+          >
+            Fumigation application history
+          </h2>
+          <ul className="divide-y rounded-lg border">
+            {[...(fumigation.history ?? [])].reverse().map((item) => (
+              <li key={item.id} className="p-4 text-sm">
+                <p className="font-medium">{item.id}</p>
+                <p className="mt-1 text-muted-foreground">
+                  {fumigationStageLabel[item.stage]} · {item.requestedPeriod}
+                </p>
+                {item.paymentReference && (
+                  <p className="mt-1 break-all">
+                    Payment reference: {item.paymentReference}
+                  </p>
+                )}
+                <DocumentDownloadButton
+                  document={paymentReceiptDocument(
+                    "Fumigation",
+                    item,
+                    businessState.profile
+                  )}
+                >
+                  Download payment record
+                </DocumentDownloadButton>
+                {item.certificate && (
+                  <p className="mt-1 break-all">
+                    Certificate: {item.certificate.id}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   )
 }

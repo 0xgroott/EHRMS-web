@@ -3,7 +3,7 @@ import {
   FileCheck2,
   Files,
   House,
-  Store,
+  Settings2,
   UsersRound,
 } from "lucide-react"
 
@@ -13,5 +13,5 @@ export const businessNavigation = [
   { label: "Applications", href: "/business/applications", icon: Files },
   { label: "Certificates", href: "/business/certificates", icon: FileCheck2 },
   { label: "Inspections", href: "/business/inspections", icon: ClipboardCheck },
-  { label: "Business profile", href: "/business/profile", icon: Store },
+  { label: "Settings", href: "/business/settings", icon: Settings2 },
 ] as const

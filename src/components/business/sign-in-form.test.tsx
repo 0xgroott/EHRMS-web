@@ -36,7 +36,9 @@ describe("SignInForm", () => {
     const onSubmit = renderSignIn()
     await userEvent
       .setup()
-      .click(screen.getByRole("button", { name: "Preview as business user" }))
+      .click(
+        screen.getByRole("button", { name: "Sign in as Riverside Kitchen" })
+      )
     await waitFor(() =>
       expect(onSubmit).toHaveBeenCalledExactlyOnceWith({
         contact: DEMO_BUSINESS_CREDENTIALS.email,
@@ -101,7 +103,7 @@ describe("SignInForm", () => {
 
     const submit = screen.getByRole("button", { name: "Signing in…" })
     const demo = screen.getByRole("button", {
-      name: "Preview as business user",
+      name: "Sign in as Riverside Kitchen",
     })
     expect(submit).toBeDisabled()
     expect(demo).toBeDisabled()

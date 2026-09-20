@@ -25,10 +25,11 @@ type BusinessSession = {
   state: BusinessPortalState
   isAuthenticated: boolean
   isHydrated: boolean
+  signedOut: boolean
   isLoading: boolean
   error: string | null
   signInDemo: (contact?: string, password?: string) => BusinessRepositoryResult
-  signOut: () => void
+  signOut: () => boolean
   refresh: () => Promise<BusinessPortalState | null>
 }
 
@@ -56,6 +57,7 @@ export function BusinessSessionProvider({
   const queryClient = useQueryClient()
   const [state, setState] = useState<BusinessPortalState>(emptyState)
   const [isHydrated, setIsHydrated] = useState(false)
+  const [signedOut, setSignedOut] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const operation = useRef(0)
   const isMounted = useRef(false)
@@ -121,6 +123,7 @@ export function BusinessSessionProvider({
 
         if (result.ok) {
           setState(result.state)
+          setSignedOut(false)
           queryClient.setQueryData(businessQueryKeys.state, result.state)
         }
 
@@ -143,10 +146,13 @@ export function BusinessSessionProvider({
       createBusinessRepository(createBusinessStorage()).reset()
       const nextState = emptyState()
       setState(nextState)
+      setSignedOut(true)
       queryClient.setQueryData(businessQueryKeys.state, nextState)
       setError(null)
+      return true
     } catch {
       setError("Unable to clear the business session")
+      return false
     }
   }, [discardStaleRefreshes, queryClient])
 
@@ -155,13 +161,14 @@ export function BusinessSessionProvider({
       state,
       isAuthenticated: state.profile !== null,
       isHydrated,
+      signedOut,
       isLoading: !isHydrated,
       error,
       signInDemo,
       signOut,
       refresh,
     }),
-    [error, isHydrated, refresh, signInDemo, signOut, state]
+    [error, isHydrated, refresh, signInDemo, signOut, signedOut, state]
   )
 
   return (

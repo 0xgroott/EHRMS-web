@@ -1,10 +1,17 @@
 import { useState } from "react"
 import { ArrowRight, CheckCircle2, Circle, ClipboardList } from "lucide-react"
 import { useBusinessSession } from "@/app/business-session"
+import { DocumentDownloadButton } from "@/components/business/document-download-button"
+import { healthApprovalDocument } from "@/domain/business-document-downloads"
+import {
+  certificateIsValid,
+  latestCertificateApplication,
+} from "@/domain/certificate-validity"
 import { PageHeader } from "@/components/shared/page-header"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { notifySuccess } from "@/components/ui/app-toast"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { seedDatabase } from "@/data/seeds"
@@ -122,8 +129,20 @@ export function HealthApprovalPage() {
     )
   }
 
-  const fitnessIssued = fitness.application?.stage === "issued"
-  const fumigationIssued = fumigation.application?.stage === "issued"
+  const fitnessCertificate = latestCertificateApplication(
+    fitness.application,
+    fitness.history
+  )?.certificate
+  const fumigationCertificate = latestCertificateApplication(
+    fumigation.application,
+    fumigation.history
+  )?.certificate
+  const fitnessIssued = fitnessCertificate
+    ? certificateIsValid(fitnessCertificate.expiresAt)
+    : fitness.application?.stage === "issued"
+  const fumigationIssued = fumigationCertificate
+    ? certificateIsValid(fumigationCertificate.expiresAt)
+    : fumigation.application?.stage === "issued"
   const eligible = fitnessIssued && fumigationIssued
   const inspection = state.inspection
   const status = inspection ? stageDetails[inspection.stage] : undefined
@@ -139,10 +158,12 @@ export function HealthApprovalPage() {
     : undefined
 
   function advance(
-    action: () => { ok: true; value: unknown } | { ok: false; error: string }
+    action: () => { ok: true; value: unknown } | { ok: false; error: string },
+    successMessage: string
   ) {
     const result = action()
     setError(result.ok ? "" : result.error)
+    if (result.ok) notifySuccess(successMessage)
   }
 
   return (
@@ -285,14 +306,6 @@ export function HealthApprovalPage() {
 
       {certificate && (
         <section aria-labelledby="certificate-heading" className="space-y-4">
-          <Alert>
-            <AlertTitle>Certificate simulation</AlertTitle>
-            <AlertDescription>
-              This issued outcome is part of the prototype. It is not an
-              official council document and cannot be used for regulatory
-              purposes.
-            </AlertDescription>
-          </Alert>
           <Card className="min-w-0 overflow-hidden">
             <CardHeader className="border-b bg-accent/40">
               <div className="flex flex-wrap items-start justify-between gap-3">
@@ -344,18 +357,23 @@ export function HealthApprovalPage() {
               </dl>
             </CardContent>
           </Card>
+          {inspection && (
+            <DocumentDownloadButton
+              document={healthApprovalDocument(inspection, business.profile)}
+              variant="default"
+            >
+              Download Health Approval
+            </DocumentDownloadButton>
+          )}
         </section>
       )}
 
       {eligible && (!inspection || inspection.stage === "resolved") && (
-        <section
-          aria-label="Council simulation controls"
-          className="border-t pt-6"
-        >
-          <h2 className="font-semibold">Council simulation controls</h2>
+        <section aria-label="Council updates" className="border-t pt-6">
+          <h2 className="font-semibold">Council updates</h2>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            These controls represent council actions in the prototype. They do
-            not serve a real notice or issue an official approval.
+            The council schedules inspections and issues approvals. View each
+            stage as the case progresses.
           </p>
           {error && (
             <Alert variant="destructive" className="mt-4" role="alert">
@@ -366,13 +384,21 @@ export function HealthApprovalPage() {
             {!inspection ? (
               <Button
                 variant="outline"
-                onClick={() => advance(() => scheduleNotice(eligible))}
+                onClick={() =>
+                  advance(
+                    () => scheduleNotice(eligible),
+                    "Inspection notice scheduled"
+                  )
+                }
               >
-                Simulate inspection notice
+                Show inspection notice
               </Button>
             ) : (
-              <Button variant="outline" onClick={() => advance(issueApproval)}>
-                Simulate council issuance
+              <Button
+                variant="outline"
+                onClick={() => advance(issueApproval, "Health Approval issued")}
+              >
+                Show Health Approval decision
               </Button>
             )}
           </div>

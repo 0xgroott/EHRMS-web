@@ -1,6 +1,5 @@
 import { useId, useState } from "react"
 import { useBusinessSession } from "@/app/business-session"
-import { BusinessFormDrawer } from "@/components/business/business-form-drawer"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import {
@@ -10,6 +9,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { notifySuccess } from "@/components/ui/app-toast"
 import type {
   BusinessProfile,
   BusinessProfileDetailsInput,
@@ -43,17 +43,7 @@ function detailsFromProfile(
   }
 }
 
-export function BusinessProfileEditDrawer({
-  profile,
-  councilName,
-  onClose,
-  onSaved,
-}: {
-  profile: BusinessProfile
-  councilName: string
-  onClose: () => void
-  onSaved: () => void
-}) {
+export function BusinessProfileForm({ profile }: { profile: BusinessProfile }) {
   const id = useId()
   const { refresh } = useBusinessSession()
   const [values, setValues] = useState(() => detailsFromProfile(profile))
@@ -89,7 +79,7 @@ export function BusinessProfileEditDrawer({
         setSaveError("Changes were saved. Refresh the page to see them.")
         return
       }
-      onSaved()
+      notifySuccess("Business profile saved")
     } catch {
       setSaveError("Unable to save changes. Try again.")
     } finally {
@@ -98,14 +88,16 @@ export function BusinessProfileEditDrawer({
   }
 
   return (
-    <BusinessFormDrawer
-      title="Edit business profile"
-      description="Update the details shown across your business account."
-      onClose={onClose}
-    >
+    <section aria-labelledby="business-profile-fields">
+      <h2 id="business-profile-fields" className="text-lg font-semibold">
+        Business and premises details
+      </h2>
+      <p className="mt-1 mb-6 text-sm text-muted-foreground">
+        Update the details shown across your business account.
+      </p>
       <form
         onSubmit={(event) => void save(event)}
-        className="flex max-w-2xl flex-col gap-8 pb-8"
+        className="flex max-w-4xl flex-col gap-6"
       >
         <FieldGroup className="gap-5 sm:grid sm:grid-cols-2">
           {fields.map(({ name, label }) => {
@@ -143,35 +135,17 @@ export function BusinessProfileEditDrawer({
             )
           })}
         </FieldGroup>
-        <div className="border-t pt-5 text-sm text-muted-foreground">
-          <p>
-            Email, phone number, and council stay linked to your verified
-            account.
-          </p>
-          <p className="mt-2">
-            Council:{" "}
-            <span className="font-medium text-foreground">{councilName}</span>
-          </p>
-        </div>
         {saveError && (
           <Alert variant="destructive" role="alert">
             <AlertDescription>{saveError}</AlertDescription>
           </Alert>
         )}
-        <div className="flex flex-wrap justify-end gap-3 border-t pt-5">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onClose}
-            disabled={saving}
-          >
-            Cancel
-          </Button>
+        <div className="flex flex-wrap justify-end border-t pt-5">
           <Button type="submit" disabled={!dirty || !valid || saving}>
             {saving ? "Saving changes…" : "Save changes"}
           </Button>
         </div>
       </form>
-    </BusinessFormDrawer>
+    </section>
   )
 }

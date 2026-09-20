@@ -56,14 +56,23 @@ describe("business next action", () => {
       href: "/business/food-handlers",
     })
   })
-  it.each(["not-started", "expired"] as const)(
-    "prioritizes Fitness when %s",
-    (fitness) => {
-      expect(
-        getBusinessNextAction({ ...ready, fitness, fumigation: "not-started" })
-      ).toMatchObject({ id: "start-fitness", href: "/business/fitness/apply" })
-    }
-  )
+  it("starts a new Fitness application before Fumigation", () => {
+    expect(
+      getBusinessNextAction({
+        ...ready,
+        fitness: "not-started",
+        fumigation: "not-started",
+      })
+    ).toMatchObject({ id: "start-fitness", href: "/business/fitness/apply" })
+  })
+  it("sends an expired Fitness certificate to its renewal action", () => {
+    expect(
+      getBusinessNextAction({ ...ready, fitness: "expired" })
+    ).toMatchObject({
+      id: "start-fitness",
+      href: "/business/fitness/certificate",
+    })
+  })
   it("tracks an in-progress Fitness application before starting Fumigation", () => {
     expect(
       getBusinessNextAction({
@@ -84,7 +93,10 @@ describe("business next action", () => {
         fumigation: "expired",
         missingHealthApprovalRequirement: true,
       })
-    ).toMatchObject({ id: "start-fumigation" })
+    ).toMatchObject({
+      id: "start-fumigation",
+      href: "/business/fumigation/certificate",
+    })
   })
   it("points to missing requirements without offering Health Approval application", () => {
     expect(

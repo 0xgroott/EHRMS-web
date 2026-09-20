@@ -1,6 +1,7 @@
 import { render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, expect, it, vi } from "vitest"
+import { AppToastProvider } from "@/components/ui/app-toast"
 import { InspectionPage } from "./inspection-page"
 import type { InspectionCase } from "./inspection-types"
 
@@ -75,17 +76,25 @@ function caseAt(stage: InspectionCase["stage"]): InspectionCase {
 it("requires a correction note for each finding and keeps council actions separate", async () => {
   fixtures.inspection = caseAt("findings-issued")
   const user = userEvent.setup()
-  render(<InspectionPage />)
+  render(
+    <AppToastProvider>
+      <InspectionPage />
+    </AppToastProvider>
+  )
 
   expect(
     screen.getByRole("heading", { name: "Inspections" })
   ).toBeInTheDocument()
+  expect(screen.getByRole("button", { name: "Download notice" })).toBeVisible()
+  expect(
+    screen.getByRole("button", { name: "Download findings notice" })
+  ).toBeVisible()
   const councilControls = screen.getByRole("region", {
-    name: /council actions/i,
+    name: /council updates/i,
   })
   expect(
     within(councilControls).getByRole("button", {
-      name: /simulate follow-up notice/i,
+      name: /show follow-up notice/i,
     })
   ).toBeDisabled()
 
@@ -117,9 +126,9 @@ it("requires a correction note for each finding and keeps council actions separa
     "finding-1",
     "Updated and signed the cleaning register."
   )
-  expect(screen.getByRole("status")).toHaveTextContent(
-    "Correction recorded for Cleaning records."
-  )
+  expect(
+    await screen.findByText("Correction recorded for Cleaning records")
+  ).toBeVisible()
 
   await user.click(
     screen.getAllByRole("button", { name: "Record correction" })[1]
@@ -178,6 +187,9 @@ it("requires a separate acknowledgement for the follow-up notice", async () => {
   }
   const user = userEvent.setup()
   render(<InspectionPage />)
+  expect(
+    screen.getByRole("button", { name: "Download follow-up notice" })
+  ).toBeVisible()
   await user.click(
     screen.getByRole("button", { name: "Acknowledge follow-up notice" })
   )

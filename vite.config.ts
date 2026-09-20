@@ -8,7 +8,7 @@ const config = defineConfig({
   resolve: { tsconfigPaths: true },
   plugins: [devtools(), tailwindcss(), tanstackStart(), viteReact()],
   test: {
-    exclude: ["**/.worktrees/**", ...configDefaults.exclude],
+    exclude: ["**/.worktrees/**", "**/e2e/**", ...configDefaults.exclude],
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],
     globals: true,

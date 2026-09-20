@@ -37,6 +37,7 @@ type FumigationContextValue = {
   recordProviderReport: () => ApplicationResult
   confirmEho: () => ApplicationResult
   issueCertificate: () => ApplicationResult
+  startRenewal: () => FumigationRuleResult<null>
 }
 
 const FumigationContext = createContext<FumigationContextValue | null>(null)
@@ -83,7 +84,9 @@ export function FumigationProvider({
       const result = beginFumigationApplication(
         requestedPeriod,
         declaration,
-        state.application
+        state.application,
+        state.application?.id ??
+          `fumigation-application-${(state.history?.length ?? 0) + 1}`
       )
       if (result.ok) save({ ...state, application: result.value })
       return result
@@ -131,14 +134,46 @@ export function FumigationProvider({
   )
   const issueCertificate = useCallback(
     () =>
-      updateApplication((application) =>
-        issueFumigationCertificate(
+      updateApplication((application) => {
+        const result = issueFumigationCertificate(
           application,
           profile?.premises?.councilId ?? ""
         )
-      ),
-    [profile?.premises?.councilId, updateApplication]
+        if (!result.ok || !result.value.certificate || !profile?.premises)
+          return result
+        return {
+          ok: true,
+          value: {
+            ...result.value,
+            certificate: {
+              ...result.value.certificate,
+              premisesSnapshot: {
+                businessName: profile.businessName,
+                premisesName: profile.premises.premisesName,
+                address: profile.premises.address,
+              },
+            },
+          },
+        }
+      }),
+    [profile, updateApplication]
   )
+
+  const startRenewal = useCallback((): FumigationRuleResult<null> => {
+    if (!profileId)
+      return { ok: false, error: "A signed-in business profile is required" }
+    if (state.application?.stage !== "issued" || !state.application.certificate)
+      return {
+        ok: false,
+        error: "An issued Fumigation certificate is required before renewal",
+      }
+    save({
+      ...state,
+      history: [...(state.history ?? []), state.application],
+      application: null,
+    })
+    return { ok: true, value: null }
+  }, [profileId, save, state])
 
   const value = useMemo(
     () => ({
@@ -150,6 +185,7 @@ export function FumigationProvider({
       recordProviderReport,
       confirmEho,
       issueCertificate,
+      startRenewal,
     }),
     [
       state,
@@ -160,6 +196,7 @@ export function FumigationProvider({
       recordProviderReport,
       confirmEho,
       issueCertificate,
+      startRenewal,
     ]
   )
 

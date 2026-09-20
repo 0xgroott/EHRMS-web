@@ -1,8 +1,21 @@
+import { useState } from "react"
 import { useBusinessSession } from "@/app/business-session"
+import { DocumentDownloadButton } from "@/components/business/document-download-button"
+import {
+  certificateIsValid,
+  certificateReminder,
+  latestCertificateApplication,
+} from "@/domain/certificate-validity"
+import { notifySuccessAfterNavigation } from "@/components/ui/app-toast"
 import { seedDatabase } from "@/data/seeds"
+import {
+  fitnessCertificateDocument,
+  fumigationCertificateDocument,
+} from "@/domain/business-document-downloads"
 import { PageHeader } from "@/components/shared/page-header"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -14,6 +27,7 @@ import {
 import { useFitness } from "./fitness-context"
 import { useFumigation } from "@/features/fumigation/fumigation-context"
 import { FumigationLink } from "@/features/fumigation/fumigation-shared"
+import { findLicensedProvider } from "@/features/fumigation/fumigation-seeds"
 import { useInspection } from "@/features/inspection/inspection-context"
 import {
   FitnessEmptyState,
@@ -36,24 +50,33 @@ function CertificateDate({ value }: { value: string }) {
 }
 
 export function FitnessCertificatePage() {
-  const { state, isHydrated } = useFitness()
+  const { state, isHydrated, startRenewal } = useFitness()
+  const [renewalError, setRenewalError] = useState("")
   const { state: businessState } = useBusinessSession()
   if (!isHydrated) return <FitnessLoading />
-  const certificate = state.application?.certificate
-  if (!certificate || state.application?.stage !== "issued") {
+  const issuedApplication = latestCertificateApplication(
+    state.application,
+    state.history
+  )
+  const certificate = issuedApplication?.certificate
+  if (!certificate) {
     return (
       <FitnessEmptyState
         title="No Fitness certificate yet"
         description="A certificate appears after payment, a Fit result from the facility, and the council decision."
         href={
-          state.application
+          state.application &&
+          !["draft", "review"].includes(state.application.stage)
             ? "/business/fitness/tracker"
             : "/business/fitness/apply"
         }
         label={
-          state.application
+          state.application &&
+          !["draft", "review"].includes(state.application.stage)
             ? "Track Fitness application"
-            : "Start Fitness application"
+            : state.application
+              ? "Continue Fitness application"
+              : "Start Fitness application"
         }
       />
     )
@@ -62,8 +85,13 @@ export function FitnessCertificatePage() {
     (item) => item.id === certificate.councilId
   )
   const premises = businessState.profile?.premises
-  const people = state.handlers.filter((handler) =>
-    certificate.handlerIds.includes(handler.id)
+  const people = (issuedApplication.handlerSnapshots ?? state.handlers).filter(
+    (handler) => certificate.handlerIds.includes(handler.id)
+  )
+  const reminder = certificateReminder(
+    certificate.expiresAt,
+    new Date(),
+    Boolean(state.history?.length && state.application?.stage !== "issued")
   )
   return (
     <div className="flex max-w-4xl min-w-0 flex-col gap-6 break-words">
@@ -72,16 +100,21 @@ export function FitnessCertificatePage() {
         title="Fitness Certificate"
         description="Certificate details for your premises and food handlers."
       />
-      <Alert>
-        <AlertTitle>Simulation only</AlertTitle>
-        <AlertDescription>
-          Not valid for regulatory use. This simulated certificate is not an
-          official council document.
-        </AlertDescription>
-      </Alert>
+      {reminder && (
+        <Alert>
+          <AlertDescription>{reminder}</AlertDescription>
+        </Alert>
+      )}
+      {renewalError && (
+        <Alert variant="destructive" role="alert">
+          <AlertDescription>{renewalError}</AlertDescription>
+        </Alert>
+      )}
       <Card>
         <CardHeader>
-          <Badge variant="secondary">Issued</Badge>
+          <Badge variant="secondary">
+            {certificateIsValid(certificate.expiresAt) ? "Issued" : "Expired"}
+          </Badge>
           <CardTitle>
             <h2>Fitness Certificate details</h2>
           </CardTitle>
@@ -135,7 +168,43 @@ export function FitnessCertificatePage() {
         </CardContent>
       </Card>
       <div className="flex flex-wrap gap-3">
-        <FitnessLink href="/business/fitness/tracker" variant="outline">
+        <DocumentDownloadButton
+          document={fitnessCertificateDocument(
+            issuedApplication,
+            state.handlers,
+            businessState.profile
+          )}
+          variant="default"
+        >
+          Download certificate
+        </DocumentDownloadButton>
+        {state.application?.stage === "issued" && (
+          <Button
+            variant="outline"
+            onClick={() => {
+              const result = startRenewal()
+              if (!result.ok) return setRenewalError(result.error)
+              notifySuccessAfterNavigation("Fitness renewal started")
+              globalThis.location.assign("/business/fitness/apply")
+            }}
+          >
+            Start renewal
+          </Button>
+        )}
+        {!state.application && Boolean(state.history?.length) && (
+          <FitnessLink href="/business/fitness/apply">
+            Continue renewal
+          </FitnessLink>
+        )}
+        <FitnessLink
+          href={
+            state.application &&
+            !["draft", "review"].includes(state.application.stage)
+              ? "/business/fitness/tracker"
+              : "/business/applications"
+          }
+          variant="outline"
+        >
           View application
         </FitnessLink>
         <FitnessLink href="/business/certificates" variant="link">
@@ -148,6 +217,7 @@ export function FitnessCertificatePage() {
 
 export function BusinessCertificatesPage() {
   const { state, isHydrated } = useFitness()
+  const { state: businessState } = useBusinessSession()
   const { state: fumigation, isHydrated: fumigationIsHydrated } =
     useFumigation()
   const { state: inspection, isHydrated: inspectionIsHydrated } =
@@ -156,16 +226,40 @@ export function BusinessCertificatesPage() {
     return <FitnessLoading />
   const application = state.application
   const fumigationApplication = fumigation.application
-  const fumigationCertificate =
-    fumigationApplication?.stage === "issued"
-      ? fumigationApplication.certificate
-      : undefined
-  const certificate =
-    application?.stage === "issued" ? application.certificate : undefined
+  const fumigationCertificate = latestCertificateApplication(
+    fumigationApplication,
+    fumigation.history
+  )?.certificate
+  const certificate = latestCertificateApplication(
+    application,
+    state.history
+  )?.certificate
+  const fitnessReminder = certificate
+    ? certificateReminder(
+        certificate.expiresAt,
+        new Date(),
+        Boolean(state.history?.length && application?.stage !== "issued")
+      )
+    : null
+  const fumigationReminder = fumigationCertificate
+    ? certificateReminder(
+        fumigationCertificate.expiresAt,
+        new Date(),
+        Boolean(
+          fumigation.history?.length &&
+          fumigationApplication?.stage !== "issued"
+        )
+      )
+    : null
   const submitted =
     application && !["draft", "review"].includes(application.stage)
   const healthCertificate = inspection.inspection?.certificate
-  const healthEligible = Boolean(certificate && fumigationCertificate)
+  const healthEligible = Boolean(
+    certificate &&
+    certificateIsValid(certificate.expiresAt) &&
+    fumigationCertificate &&
+    certificateIsValid(fumigationCertificate.expiresAt)
+  )
   return (
     <div className="flex max-w-5xl min-w-0 flex-col gap-6 break-words">
       <PageHeader
@@ -179,7 +273,11 @@ export function BusinessCertificatesPage() {
             <h2>Fitness Certificate</h2>
           </CardTitle>
           <Badge variant="secondary">
-            {certificate ? "Issued" : "Not issued"}
+            {certificate
+              ? certificateIsValid(certificate.expiresAt)
+                ? "Issued"
+                : "Expired"
+              : "Not issued"}
           </Badge>
           <CardDescription>
             {certificate
@@ -198,6 +296,9 @@ export function BusinessCertificatesPage() {
                 {certificate.handlerIds.length === 1 ? "handler" : "handlers"}{" "}
                 covered
               </p>
+              {fitnessReminder && (
+                <p className="text-sm text-foreground">{fitnessReminder}</p>
+              )}
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">
@@ -225,13 +326,77 @@ export function BusinessCertificatesPage() {
           </FitnessLink>
         </CardFooter>
       </Card>
+      {(state.history?.length ?? 0) > 0 && (
+        <section
+          aria-labelledby="fitness-certificate-history"
+          className="space-y-3"
+        >
+          <h2
+            id="fitness-certificate-history"
+            className="text-lg font-semibold"
+          >
+            Previous Fitness certificates
+          </h2>
+          <ul className="divide-y rounded-lg border">
+            {[...(state.history ?? [])]
+              .reverse()
+              .filter((item) => item.certificate)
+              .map((item) => (
+                <li key={item.id} className="p-4 text-sm">
+                  <details>
+                    <summary className="cursor-pointer font-medium">
+                      {formatFitnessReference(item.certificate!.id)} · expires{" "}
+                      <CertificateDate value={item.certificate!.expiresAt} />
+                    </summary>
+                    <div className="mt-3 space-y-1 text-muted-foreground">
+                      <p>Application: {item.id}</p>
+                      <p>
+                        Issued:{" "}
+                        <CertificateDate value={item.certificate!.issuedAt} />
+                      </p>
+                      <p>
+                        {item.certificate!.handlerIds.length} food handlers
+                        covered
+                      </p>
+                      {item.handlerSnapshots && (
+                        <p>
+                          {item.handlerSnapshots
+                            .map((handler) => handler.fullName)
+                            .join(", ")}
+                        </p>
+                      )}
+                      {item.paymentReference && (
+                        <p className="break-all">
+                          Payment reference: {item.paymentReference}
+                        </p>
+                      )}
+                      <DocumentDownloadButton
+                        document={fitnessCertificateDocument(
+                          item,
+                          state.handlers,
+                          businessState.profile
+                        )}
+                      >
+                        Download certificate
+                      </DocumentDownloadButton>
+                    </div>
+                  </details>
+                </li>
+              ))}
+          </ul>
+        </section>
+      )}
       <Card>
         <CardHeader>
           <CardTitle>
             <h2>Fumigation Certificate</h2>
           </CardTitle>
           <Badge variant="secondary">
-            {fumigationCertificate ? "Issued" : "Not issued"}
+            {fumigationCertificate
+              ? certificateIsValid(fumigationCertificate.expiresAt)
+                ? "Issued"
+                : "Expired"
+              : "Not issued"}
           </Badge>
           <CardDescription>
             {fumigationCertificate
@@ -243,6 +408,9 @@ export function BusinessCertificatesPage() {
           <p className="text-sm text-muted-foreground">
             {fumigationCertificate?.id ?? "No Fumigation Certificate yet."}
           </p>
+          {fumigationReminder && (
+            <p className="mt-2 text-sm">{fumigationReminder}</p>
+          )}
         </CardContent>
         <CardFooter>
           <FumigationLink
@@ -263,6 +431,59 @@ export function BusinessCertificatesPage() {
           </FumigationLink>
         </CardFooter>
       </Card>
+      {(fumigation.history?.length ?? 0) > 0 && (
+        <section
+          aria-labelledby="fumigation-certificate-history"
+          className="space-y-3"
+        >
+          <h2
+            id="fumigation-certificate-history"
+            className="text-lg font-semibold"
+          >
+            Previous Fumigation certificates
+          </h2>
+          <ul className="divide-y rounded-lg border">
+            {[...(fumigation.history ?? [])]
+              .reverse()
+              .filter((item) => item.certificate)
+              .map((item) => (
+                <li key={item.id} className="p-4 text-sm">
+                  <details>
+                    <summary className="cursor-pointer font-medium">
+                      {item.certificate!.id} · expires{" "}
+                      <CertificateDate value={item.certificate!.expiresAt} />
+                    </summary>
+                    <div className="mt-3 space-y-1 text-muted-foreground">
+                      <p>Application: {item.id}</p>
+                      <p>
+                        Work date:{" "}
+                        <CertificateDate value={item.certificate!.workDate} />
+                      </p>
+                      <p>
+                        Issued:{" "}
+                        <CertificateDate value={item.certificate!.issuedAt} />
+                      </p>
+                      {item.paymentReference && (
+                        <p className="break-all">
+                          Payment reference: {item.paymentReference}
+                        </p>
+                      )}
+                      <DocumentDownloadButton
+                        document={fumigationCertificateDocument(
+                          item,
+                          businessState.profile,
+                          findLicensedProvider(item.providerId ?? "")?.name
+                        )}
+                      >
+                        Download certificate
+                      </DocumentDownloadButton>
+                    </div>
+                  </details>
+                </li>
+              ))}
+          </ul>
+        </section>
+      )}
       <Card>
         <CardHeader>
           <CardTitle>

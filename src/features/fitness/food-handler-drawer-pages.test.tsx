@@ -77,6 +77,7 @@ describe("food handler drawer routes", () => {
     mocks.navigate.mockClear()
     mocks.addHandler.mockClear()
     mocks.updateHandler.mockClear()
+    mocks.updateHandler.mockReturnValue({ ok: true, value: existingHandler })
   })
 
   it("shows the list behind the add drawer and validates before saving", async () => {
@@ -146,5 +147,22 @@ describe("food handler drawer routes", () => {
     expect(mocks.navigate).toHaveBeenCalledWith({
       to: "/business/food-handlers",
     })
+  })
+
+  it("keeps the edit drawer open when saving fails", async () => {
+    mocks.handlers = [existingHandler]
+    mocks.updateHandler.mockReturnValue({
+      ok: false,
+      error: "Unable to save handler",
+    })
+    const user = userEvent.setup()
+    render(<EditFoodHandlerDrawerPage handlerId="handler-ada" />)
+
+    await user.click(screen.getByRole("button", { name: "Save changes" }))
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Unable to save handler"
+    )
+    expect(mocks.navigate).not.toHaveBeenCalled()
   })
 })

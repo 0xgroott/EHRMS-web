@@ -2,6 +2,8 @@ import { useState } from "react"
 import { useNavigate } from "@tanstack/react-router"
 import { useBusinessSession } from "@/app/business-session"
 import { BusinessFormDrawer } from "@/components/business/business-form-drawer"
+import { notifySuccess } from "@/components/ui/app-toast"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { FoodHandlerForm } from "./food-handler-form"
 import { FoodHandlersPage } from "./food-handlers-page"
 import { useFitness } from "./fitness-context"
@@ -28,6 +30,7 @@ export function NewFoodHandlerDrawerPage() {
           premisesName={premisesName}
           onSave={(handler, destination) => {
             addHandler(handler)
+            notifySuccess("Food handler added")
             if (destination === "another") {
               setFormKey((current) => current + 1)
             } else {
@@ -47,6 +50,7 @@ export function EditFoodHandlerDrawerPage({
   handlerId: string
 }) {
   const navigate = useNavigate()
+  const [saveError, setSaveError] = useState("")
   const { state, isHydrated, updateHandler } = useFitness()
   const handler = state.handlers.find((record) => record.id === handlerId)
   const close = () => void navigate({ to: "/business/food-handlers" })
@@ -64,13 +68,21 @@ export function EditFoodHandlerDrawerPage({
           }
           onClose={close}
         >
+          {saveError && (
+            <Alert variant="destructive" role="alert">
+              <AlertDescription>{saveError}</AlertDescription>
+            </Alert>
+          )}
           {handler && (
             <FoodHandlerForm
               handler={handler}
               premisesName={handler.premisesName}
               onSave={(next) => {
-                updateHandler(handler.id, next)
-                close()
+                const result = updateHandler(handler.id, next)
+                if (result.ok) {
+                  notifySuccess("Food handler updated")
+                  close()
+                } else setSaveError(result.error)
               }}
               onCancel={close}
             />
