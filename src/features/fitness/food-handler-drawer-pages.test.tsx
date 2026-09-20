@@ -29,7 +29,11 @@ vi.mock("@tanstack/react-router", () => ({
 
 vi.mock("@/app/business-session", () => ({
   useBusinessSession: () => ({
-    state: { profile: { premises: { premisesName: "Riverside Kitchen" } } },
+    state: {
+      profile: {
+        premises: { premisesName: "Riverside Kitchen", ward: "Diobu" },
+      },
+    },
   }),
 }))
 
@@ -102,17 +106,16 @@ describe("food handler drawer routes", () => {
     })
   })
 
-  it("resets the form after save and add another without leaving the drawer", async () => {
-    const user = userEvent.setup()
+  it("shows the current branch in a disabled location dropdown", () => {
     render(<NewFoodHandlerDrawerPage />)
-    await user.type(screen.getByLabelText("Full name"), "Chidi Nwosu")
-    await user.click(
-      screen.getByRole("button", { name: "Save and add another" })
-    )
-
-    expect(mocks.addHandler).toHaveBeenCalledOnce()
-    expect(screen.getByLabelText("Full name")).toHaveValue("")
-    expect(mocks.navigate).not.toHaveBeenCalled()
+    expect(
+      screen.getByRole("combobox", { name: "Business branch/location" })
+    ).toBeDisabled()
+    expect(screen.getByText("Riverside Kitchen, Diobu")).toBeVisible()
+    expect(screen.queryByText("Food handler details")).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole("button", { name: "Save and add another" })
+    ).not.toBeInTheDocument()
   })
 
   it("shows the list behind the edit drawer and closes to the list", async () => {

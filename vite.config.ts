@@ -1,12 +1,19 @@
 import { configDefaults, defineConfig } from "vitest/config"
 import { devtools } from "@tanstack/devtools-vite"
 import { tanstackStart } from "@tanstack/react-start/plugin/vite"
+import { nitro } from "nitro/vite"
 import viteReact from "@vitejs/plugin-react"
 import tailwindcss from "@tailwindcss/vite"
 
-const config = defineConfig({
+const config = defineConfig(({ command }) => ({
   resolve: { tsconfigPaths: true },
-  plugins: [devtools(), tailwindcss(), tanstackStart(), viteReact()],
+  plugins: [
+    devtools(),
+    tailwindcss(),
+    tanstackStart(),
+    ...(command === "build" ? [nitro()] : []),
+    viteReact(),
+  ],
   test: {
     exclude: ["**/.worktrees/**", "**/e2e/**", ...configDefaults.exclude],
     environment: "jsdom",
@@ -14,6 +21,6 @@ const config = defineConfig({
     globals: true,
     passWithNoTests: true,
   },
-})
+}))
 
 export default config

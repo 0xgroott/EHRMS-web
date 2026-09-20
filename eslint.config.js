@@ -3,7 +3,7 @@
 import { tanstackConfig } from "@tanstack/eslint-config"
 
 export default [
-  { ignores: [".worktrees/**"] },
+  { ignores: [".worktrees/**", ".output/**", ".vercel/**"] },
   ...tanstackConfig,
   {
     rules: {

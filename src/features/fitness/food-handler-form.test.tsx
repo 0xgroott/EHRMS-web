@@ -19,6 +19,9 @@ const handler = {
   premisesName: "Riverside Kitchen",
   consent: true,
 }
+const singleBranch = [
+  { value: "Riverside Kitchen", label: "Riverside Kitchen, Diobu" },
+]
 
 describe("FoodHandlerForm", () => {
   it("keeps entered values and shows an inline error when a name is missing", async () => {
@@ -26,7 +29,7 @@ describe("FoodHandlerForm", () => {
     const user = userEvent.setup()
     render(
       <FoodHandlerForm
-        premisesName="Riverside Kitchen"
+        branchOptions={singleBranch}
         onSave={onSave}
         onCancel={vi.fn()}
       />
@@ -47,7 +50,7 @@ describe("FoodHandlerForm", () => {
     const user = userEvent.setup()
     render(
       <FoodHandlerForm
-        premisesName="Riverside Kitchen"
+        branchOptions={singleBranch}
         onSave={onSave}
         onCancel={vi.fn()}
       />
@@ -63,17 +66,16 @@ describe("FoodHandlerForm", () => {
         role: "",
         phone: "",
         consent: false,
-      }),
-      "list"
+      })
     )
   })
 
-  it("saves a complete handler and supports saving another record", async () => {
+  it("shows the only business branch as a disabled dropdown and saves it", async () => {
     const onSave = vi.fn()
     const user = userEvent.setup()
     render(
       <FoodHandlerForm
-        premisesName="Riverside Kitchen"
+        branchOptions={singleBranch}
         onSave={onSave}
         onCancel={vi.fn()}
       />
@@ -87,9 +89,14 @@ describe("FoodHandlerForm", () => {
       .getByRole("checkbox", { name: /Fitness Certificate process/i })
       .focus()
     await user.keyboard("[Space]")
-    await user.click(
-      screen.getByRole("button", { name: "Save and add another" })
-    )
+    expect(
+      screen.getByRole("combobox", { name: "Business branch/location" })
+    ).toBeDisabled()
+    expect(screen.getByText("Riverside Kitchen, Diobu")).toBeVisible()
+    expect(
+      screen.queryByRole("button", { name: "Save and add another" })
+    ).not.toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: "Save food handler" }))
 
     expect(onSave).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -97,9 +104,30 @@ describe("FoodHandlerForm", () => {
         role: "Kitchen assistant",
         premisesName: "Riverside Kitchen",
         consent: true,
-      }),
-      "another"
+      })
     )
+  })
+
+  it("enables branch selection when multiple locations are available", () => {
+    render(
+      <FoodHandlerForm
+        branchOptions={[
+          ...singleBranch,
+          {
+            value: "Riverside Kitchen, Rumuodara",
+            label: "Riverside Kitchen, Rumuodara",
+          },
+        ]}
+        onSave={vi.fn()}
+        onCancel={vi.fn()}
+      />
+    )
+
+    const branch = screen.getByRole("combobox", {
+      name: "Business branch/location",
+    })
+    expect(branch).toBeEnabled()
+    expect(branch).toHaveTextContent("Riverside Kitchen, Diobu")
   })
 
   it("prefills an existing handler and submits edits", async () => {
@@ -108,7 +136,7 @@ describe("FoodHandlerForm", () => {
     render(
       <FoodHandlerForm
         handler={handler}
-        premisesName="Riverside Kitchen"
+        branchOptions={singleBranch}
         onSave={onSave}
         onCancel={vi.fn()}
       />
@@ -120,8 +148,7 @@ describe("FoodHandlerForm", () => {
     await user.click(screen.getByRole("button", { name: "Save changes" }))
 
     expect(onSave).toHaveBeenCalledWith(
-      expect.objectContaining({ id: "handler-ada", role: "Head cook" }),
-      "list"
+      expect.objectContaining({ id: "handler-ada", role: "Head cook" })
     )
   })
 })
