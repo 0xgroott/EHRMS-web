@@ -100,8 +100,10 @@ function isFoodHandler(value: unknown): value is FoodHandler {
 function isFitnessApplication(value: unknown): value is FitnessApplication {
   if (!value || typeof value !== "object") return false
   const application = value as Partial<FitnessApplication>
+  const purpose: unknown = (value as { purpose?: unknown }).purpose
   return (
     typeof application.id === "string" &&
+    (purpose === undefined || purpose === "new-staff") &&
     Array.isArray(application.handlerIds) &&
     application.handlerIds.every((id) => typeof id === "string") &&
     (application.handlerSnapshots === undefined ||

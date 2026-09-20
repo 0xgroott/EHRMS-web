@@ -1,6 +1,7 @@
 import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router"
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
 import { TanStackDevtools } from "@tanstack/react-devtools"
+import { Agentation } from "agentation"
 
 import appCss from "../styles.css?url"
 import { Providers } from "@/app/providers"
@@ -54,6 +55,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
             },
           ]}
         />
+        {import.meta.env.DEV && <Agentation />}
         <Scripts />
       </body>
     </html>

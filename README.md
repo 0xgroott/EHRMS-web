@@ -40,8 +40,10 @@ only; `Not Found` never means non-compliant. The officer can sign out without
 deleting local drafts. From an inspection overview, **View notice** opens its
 notice reference, visit details, service, and acknowledgement record. The
 unserved `EIN-102` notice keeps **Start inspection** disabled; the served
-`EIN-101` notice links through to its checklist. From the `EIN-104` result, open the local findings
-summary and its seeded follow-up. Verify the previous issue as resolved,
+`EIN-101` notice links through to its checklist. The checklist shows read-only
+certificate statuses with links to each premises record; reviewing them does
+not change the officer's saved answers. From the `EIN-104` result, open the
+local findings summary and its seeded follow-up. Verify the previous issue as resolved,
 outstanding, or unable to verify; optionally add a new contravention. Follow-up
 entries save locally and survive reload. In **Fumigation supervision**, open
 `FUM-201` to review a completed provider report, record attendance and a note,
@@ -59,6 +61,21 @@ the type, printed reference, date seen, optional expiry and observation to this
 officer's local device record for that premises. Reload to reopen it. This does
 not create or verify a digital certificate, alter the displayed certificate
 status, upload a copy, or sync the observation to the council.
+**View certificate** opens the selected digital record's status, reference,
+premises, and expiry where available. A `Not Found` record is presented as no
+digital certificate found, without claiming the premises is non-compliant. The
+link remains usable after reload and returns to the originating premises or
+inspection context.
+From an inspection overview, **View inspection history** opens that premises'
+history tab. It lists completed local fieldwork and its finding count, keeps
+queued submissions marked as local, and links to saved results. Future scheduled
+seed rows do not appear as previous visits. The selected tab remains in the URL
+after reload; the history uses the signed-in officer's saved fieldwork.
+In a premises' **Findings** tab, the council outstanding count stays separate
+from submitted or queued findings captured on this officer's device. Captured
+findings show the recorded correction and deadline and link to the inspection
+findings summary. Seeded council counts have no linked detail records in this
+frontend fixture.
 In **Profile / Sync**, review the assigned account, connection state, inspection
 drafts, queued inspections, saved follow-ups, and report reviews. The page shows
 no successful sync timestamp. **Sync now** reports an unavailable or offline
@@ -108,9 +125,9 @@ profile images, never passwords, OTP values, or document contents. Signing out c
 business session. Saved edits to the seeded business profile and its images remain available when
 that account signs in again. Use fictional data.
 
-From the dashboard, open **Food handlers** to add or edit a handler. An incomplete
-handler can be saved, but cannot be selected for a Fitness application. Start an
-application, choose eligible handlers and a facility, review, and confirm a
+From the dashboard, open **Food handlers** to add or edit a handler. Complete every
+field and confirm consent before saving. Start a Fitness application, choose
+eligible handlers and a facility, review, and confirm a
 simulated payment. The tracker then lets you simulate the facility's Fit result
 and the council's certificate issuance. Open the issued certificate from
 the tracker or Certificates page; refresh to see the saved state persist.

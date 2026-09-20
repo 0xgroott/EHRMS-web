@@ -18,7 +18,7 @@ import { EmptyState } from "@/components/shared/empty-state"
 import { PageHeader } from "@/components/shared/page-header"
 import { StatusBadge } from "@/components/shared/status-badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -28,7 +28,12 @@ import { accountError, canStart, signInOfficer } from "./eho-state"
 import { followUpScenarios, readFollowUp } from "./eho-follow-up"
 import { fumigationJobs } from "./eho-fumigation"
 import { saveRecentPremises } from "./eho-premises-search"
+import { EhoCertificateDetail } from "./eho-certificate-detail"
+import { inspectionHistory } from "./eho-inspection-history"
+import { EhoInspectionHistoryPanel } from "./eho-inspection-history-panel"
 import { EhoPaperCertificatePanel } from "./eho-paper-certificate-panel"
+import { capturedPremisesFindings } from "./eho-premises-findings"
+import { EhoPremisesFindingsPanel } from "./eho-premises-findings-panel"
 import { useEho } from "./eho-session"
 
 function premisesFor(assignment: Assignment) {
@@ -582,10 +587,12 @@ export function EhoInspectionListPage() {
 export function InspectionOverviewCard({
   assignment,
   draft,
+  historyCount = 0,
   onStart,
 }: {
   assignment: Assignment
   draft: Fieldwork
+  historyCount?: number
   onStart: () => void
 }) {
   const premises = premisesFor(assignment)
@@ -612,10 +619,17 @@ export function InspectionOverviewCard({
               <p className="font-medium">{assignment.officers.join(", ")}</p>
             </div>
             <div>
-              <p className="text-muted-foreground">Previous inspections</p>
-              <p className="font-medium">
-                {premises?.inspections.length ?? 0} record(s)
-              </p>
+              <p className="text-muted-foreground">Inspection history</p>
+              <p className="font-medium">{historyCount} record(s)</p>
+              {premises && (
+                <a
+                  href={`/eho/premises/${encodeURIComponent(premises.id)}?inspection=${encodeURIComponent(assignment.id)}&tab=history`}
+                  className="mt-1 inline-flex min-h-11 items-center gap-1.5 font-medium text-primary underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                >
+                  View inspection history
+                  <ArrowRight className="size-4" aria-hidden="true" />
+                </a>
+              )}
             </div>
             <div>
               <p className="text-muted-foreground">Open findings</p>
@@ -692,7 +706,7 @@ export function InspectionOverviewCard({
 
 export function EhoOverviewPage({ inspectionId }: { inspectionId: string }) {
   const assignment = assignments.find((item) => item.id === inspectionId)
-  const { getDraft } = useEho()
+  const { getDraft, fieldwork } = useEho()
   if (!assignment)
     return (
       <EmptyState
@@ -724,6 +738,15 @@ export function EhoOverviewPage({ inspectionId }: { inspectionId: string }) {
       <InspectionOverviewCard
         assignment={assignment}
         draft={draft}
+        historyCount={
+          premises
+            ? inspectionHistory(
+                premises,
+                fieldwork,
+                new Date().toISOString().slice(0, 10)
+              ).length
+            : 0
+        }
         onStart={() =>
           window.location.assign(`/eho/inspections/${inspectionId}/checklist`)
         }
@@ -777,8 +800,20 @@ export function EhoOverviewPage({ inspectionId }: { inspectionId: string }) {
 }
 
 export function EhoCompliancePage({ premisesId }: { premisesId: string }) {
-  const { officer } = useEho()
+  const { officer, fieldwork } = useEho()
+  const [certificateId, setCertificateId] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState("certificates")
   const premises = seedDatabase.premises.find((item) => item.id === premisesId)
+  useEffect(() => {
+    const search = new URLSearchParams(window.location.search)
+    setCertificateId(search.get("certificate"))
+    const tab = search.get("tab")
+    setActiveTab(
+      tab === "history" || tab === "documents" || tab === "findings"
+        ? tab
+        : "certificates"
+    )
+  }, [premisesId])
   useEffect(() => {
     if (officer && premises?.councilId === officer.councilId) {
       try {
@@ -803,6 +838,47 @@ export function EhoCompliancePage({ premisesId }: { premisesId: string }) {
         description="This record may no longer be available on this device."
       />
     )
+  const backHref = `/eho/premises/${encodeURIComponent(premises.id)}${
+    from
+      ? `?inspection=${encodeURIComponent(from)}`
+      : source === "search"
+        ? "?source=search"
+        : ""
+  }`
+  const historyEntries = inspectionHistory(
+    premises,
+    fieldwork,
+    new Date().toISOString().slice(0, 10)
+  )
+  const findings = capturedPremisesFindings(premises.id, fieldwork)
+  if (certificateId !== null) {
+    const certificate = premises.certificates.find(
+      (item) => item.id === certificateId
+    )
+    if (!certificate)
+      return (
+        <div className="space-y-5">
+          <a
+            href={backHref}
+            className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-primary hover:underline"
+          >
+            <ArrowLeft className="size-4" aria-hidden="true" /> Back to premises
+            certificates
+          </a>
+          <EmptyState
+            title="Certificate record not found"
+            description="Return to the premises record to choose an available certificate."
+          />
+        </div>
+      )
+    return (
+      <EhoCertificateDetail
+        premises={premises}
+        certificate={certificate}
+        backHref={backHref}
+      />
+    )
+  }
   return (
     <div className="space-y-6">
       <Button
@@ -847,6 +923,12 @@ export function EhoCompliancePage({ premisesId }: { premisesId: string }) {
             <p className="text-2xl font-semibold">
               {premises.outstandingContraventions}
             </p>
+            <a
+              href={`${backHref}${backHref.includes("?") ? "&" : "?"}tab=findings`}
+              className="mt-2 inline-flex min-h-11 items-center text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            >
+              Review findings
+            </a>
           </CardContent>
         </Card>
         <Card>
@@ -866,11 +948,29 @@ export function EhoCompliancePage({ premisesId }: { premisesId: string }) {
           </CardContent>
         </Card>
       </div>
-      <Tabs defaultValue="certificates">
-        <TabsList>
-          <TabsTrigger value="certificates">Certificates</TabsTrigger>
-          <TabsTrigger value="history">Inspection history</TabsTrigger>
-          <TabsTrigger value="documents">Documents</TabsTrigger>
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => {
+          setActiveTab(value)
+          const url = new URL(window.location.href)
+          if (value === "certificates") url.searchParams.delete("tab")
+          else url.searchParams.set("tab", value)
+          window.history.replaceState(window.history.state, "", url)
+        }}
+      >
+        <TabsList className="h-auto flex-wrap justify-start gap-1">
+          <TabsTrigger value="certificates" className="min-h-11 flex-none">
+            Certificates
+          </TabsTrigger>
+          <TabsTrigger value="history" className="min-h-11 flex-none">
+            Inspection history
+          </TabsTrigger>
+          <TabsTrigger value="findings" className="min-h-11 flex-none">
+            Findings
+          </TabsTrigger>
+          <TabsTrigger value="documents" className="min-h-11 flex-none">
+            Documents
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="certificates">
           <Card>
@@ -886,7 +986,22 @@ export function EhoCompliancePage({ premisesId }: { premisesId: string }) {
                       {certificate.id} · Expires {certificate.expiresAt}
                     </p>
                   </div>
-                  <StatusBadge status={certificate.status} />
+                  <div className="flex flex-wrap items-center gap-3">
+                    <StatusBadge status={certificate.status} />
+                    {certificate.id && (
+                      <a
+                        href={`${backHref}${backHref.includes("?") ? "&" : "?"}certificate=${encodeURIComponent(certificate.id)}`}
+                        aria-label={`View ${certificate.type} certificate ${certificate.id}`}
+                        className={buttonVariants({
+                          variant: "outline",
+                          size: "sm",
+                          className: "min-h-11",
+                        })}
+                      >
+                        View certificate
+                      </a>
+                    )}
+                  </div>
                 </div>
               ))}
             </CardContent>
@@ -897,20 +1012,13 @@ export function EhoCompliancePage({ premisesId }: { premisesId: string }) {
           />
         </TabsContent>
         <TabsContent value="history">
-          <Card>
-            <CardContent className="divide-y p-5">
-              {premises.inspections.map((visit) => (
-                <div key={visit.id} className="py-3">
-                  <p className="font-medium">
-                    {visit.type} · {visit.status}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {visit.scheduledAt} · {visit.officer}
-                  </p>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+          <EhoInspectionHistoryPanel entries={historyEntries} />
+        </TabsContent>
+        <TabsContent value="findings">
+          <EhoPremisesFindingsPanel
+            councilOutstanding={premises.outstandingContraventions}
+            findings={findings}
+          />
         </TabsContent>
         <TabsContent value="documents">
           <Card>

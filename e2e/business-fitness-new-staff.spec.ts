@@ -1,0 +1,89 @@
+import { expect, test } from "@playwright/test"
+
+for (const width of [1440, 390]) {
+  test(`a business applies for new staff at ${width}px while keeping its issued Fitness certificate`, async ({
+    page,
+  }) => {
+    const browserErrors: string[] = []
+    page.on("pageerror", (error) => browserErrors.push(error.message))
+    page.on("console", (message) => {
+      if (message.type() === "error") browserErrors.push(message.text())
+    })
+
+    await page.setViewportSize({ width, height: width === 390 ? 844 : 819 })
+    await page.goto("/business/sign-in")
+    await expect(async () => {
+      await page
+        .getByRole("button", { name: "Sign in as Riverside Kitchen" })
+        .click()
+      await expect(page).toHaveURL(/\/business\/dashboard$/, { timeout: 1_000 })
+    }).toPass({ timeout: 15_000 })
+    await page.evaluate(() => {
+      localStorage.setItem(
+        "ehrcms:fitness:v1:BUS-001",
+        JSON.stringify({
+          handlers: [
+            {
+              id: "ada",
+              fullName: "Ada Okafor",
+              sex: "Female",
+              dateOfBirth: "1990-01-01",
+              role: "Cook",
+              identityNumber: "TEST-ADA",
+              phone: "08030000000",
+              premisesName: "Riverside Kitchen",
+              consent: true,
+            },
+            {
+              id: "bola",
+              fullName: "Bola James",
+              sex: "Female",
+              dateOfBirth: "1995-01-01",
+              role: "Server",
+              identityNumber: "TEST-BOLA",
+              phone: "08031111111",
+              premisesName: "Riverside Kitchen",
+              consent: true,
+            },
+          ],
+          application: {
+            id: "fitness-application-1",
+            handlerIds: ["ada"],
+            stage: "issued",
+            certificate: {
+              id: "FIT-CERT-1",
+              handlerIds: ["ada"],
+              councilId: "phc",
+              issuedAt: "2026-01-01",
+              expiresAt: "2099-01-01",
+            },
+          },
+        })
+      )
+    })
+
+    await page.goto("/business/applications")
+    await page.getByRole("button", { name: "Apply for new staff" }).click()
+    await expect(page).toHaveURL(/\/business\/fitness\/apply$/)
+    await expect(
+      page.getByRole("heading", { name: "Select new food handlers" })
+    ).toBeVisible()
+    const table = page.getByRole("table", { name: /Food handlers at/ })
+    await expect(table.getByRole("row", { name: /Bola James/ })).toBeVisible()
+    await expect(table.getByRole("row", { name: /Ada Okafor/ })).toHaveCount(0)
+    await page.getByRole("checkbox", { name: /Bola James/ }).check()
+    await page.getByRole("button", { name: "Next" }).click()
+    await expect(
+      page.getByRole("heading", { name: "Choose an approved facility" })
+    ).toBeVisible()
+
+    await page.goto("/business/applications")
+    await expect(
+      page.getByRole("link", { name: "Continue Fitness application" })
+    ).toBeVisible()
+    await expect(page.getByText("Certificate: FIT-CERT-1")).toBeVisible()
+    await page.goto("/business/fitness/certificate")
+    await expect(page.getByText("Ada Okafor")).toBeVisible()
+    expect(browserErrors).toEqual([])
+  })
+}

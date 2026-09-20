@@ -2,9 +2,11 @@ import { useState } from "react"
 import { Link } from "@tanstack/react-router"
 import {
   ArrowLeft,
+  ArrowRight,
   Camera,
   CheckCircle2,
   ClipboardCheck,
+  FileBadge2,
   Save,
 } from "lucide-react"
 import { seedDatabase } from "@/data/seeds"
@@ -105,6 +107,59 @@ export function EhoChecklistPage({ inspectionId }: { inspectionId: string }) {
           />
         </div>
       </div>
+      <section
+        aria-label="Certificate checks"
+        className="rounded-xl border bg-card p-4 sm:p-5"
+      >
+        <div className="flex items-start gap-3">
+          <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+            <FileBadge2 className="size-5" aria-hidden="true" />
+          </span>
+          <div>
+            <h2 className="font-semibold">Certificate checks</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Review the recorded status before assessing the premises.
+            </p>
+          </div>
+        </div>
+        {premises?.certificates.length ? (
+          <ul className="mt-4 divide-y border-t">
+            {premises.certificates.map((certificate) => (
+              <li
+                key={certificate.id}
+                className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-3"
+              >
+                <div>
+                  <p className="text-sm font-medium">{certificate.type}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {certificate.id ?? "Reference unavailable"}
+                    {certificate.expiresAt &&
+                      certificate.status !== "Not Found" &&
+                      ` · Expires ${certificate.expiresAt}`}
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <StatusBadge status={certificate.status} />
+                  {certificate.id && (
+                    <a
+                      href={`/eho/premises/${encodeURIComponent(assignment.premisesId)}?inspection=${encodeURIComponent(inspectionId)}&certificate=${encodeURIComponent(certificate.id)}`}
+                      aria-label={`View ${certificate.type} certificate`}
+                      className="inline-flex min-h-11 items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                    >
+                      View record{" "}
+                      <ArrowRight className="size-4" aria-hidden="true" />
+                    </a>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-4 border-t pt-4 text-sm text-muted-foreground">
+            No certificate records found for this premises.
+          </p>
+        )}
+      </section>
       <div className="grid gap-4">
         {checklist.map((item) => (
           <Card key={item.id}>

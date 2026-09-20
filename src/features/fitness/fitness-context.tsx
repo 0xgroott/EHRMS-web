@@ -10,10 +10,13 @@ import { useBusinessSession } from "@/app/business-session"
 import { findApprovedFitnessFacility } from "./fitness-seeds"
 import {
   beginApplication,
+  certifiedHandlerIds,
   chooseFacility as chooseFacilityRule,
   confirmDemoPayment as confirmDemoPaymentRule,
   issueDemoCertificate as issueDemoCertificateRule,
   recordFitResult as recordFitResultRule,
+  handlerReadiness,
+  newStaffHandlers,
 } from "./fitness-rules"
 import { createFitnessStore, emptyFitnessState } from "./fitness-store"
 import type {
@@ -44,6 +47,7 @@ type FitnessContextValue = {
   recordFitResult: () => FitnessRuleResult<FitnessApplication>
   issueDemoCertificate: () => FitnessRuleResult<FitnessApplication>
   startRenewal: () => FitnessRuleResult<null>
+  startNewStaffApplication: () => FitnessRuleResult<FitnessApplication>
 }
 
 const FitnessContext = createContext<FitnessContextValue | null>(null)
@@ -149,7 +153,8 @@ export function FitnessProvider({ children }: { children: React.ReactNode }) {
         handlerIds,
         state.application?.id ??
           `fitness-application-${(state.history?.length ?? 0) + 1}`,
-        state.application
+        state.application,
+        certifiedHandlerIds(state)
       )
       if (result.ok) save({ ...state, application: result.value })
       return result
@@ -179,7 +184,11 @@ export function FitnessProvider({ children }: { children: React.ReactNode }) {
       updateApplication((application) => {
         const facility = findApprovedFitnessFacility(facilityId)
         return facility
-          ? chooseFacilityRule(application, facility)
+          ? chooseFacilityRule(
+              application,
+              facility.id,
+              facility.priceNgn * application.handlerIds.length
+            )
           : { ok: false, error: "Choose an approved facility" }
       }),
     [updateApplication]
@@ -246,6 +255,49 @@ export function FitnessProvider({ children }: { children: React.ReactNode }) {
     return { ok: true, value: null }
   }, [noProfile, profileId, save, state])
 
+  const startNewStaffApplication =
+    useCallback((): FitnessRuleResult<FitnessApplication> => {
+      if (!profileId) return noProfile()
+      const issued = state.application
+      if (issued?.stage !== "issued" || !issued.certificate) {
+        return {
+          ok: false,
+          error:
+            "An issued Fitness certificate is required before applying for new staff",
+        }
+      }
+      if (
+        !newStaffHandlers(state).some(
+          (handler) => handlerReadiness(handler).ready
+        )
+      ) {
+        return {
+          ok: false,
+          error: "Add an eligible food handler without Fitness coverage first",
+        }
+      }
+      const application: FitnessApplication = {
+        id: `fitness-application-${(state.history?.length ?? 0) + 2}`,
+        handlerIds: [],
+        purpose: "new-staff",
+        stage: "draft",
+      }
+      save({
+        ...state,
+        application,
+        history: [
+          ...(state.history ?? []),
+          {
+            ...issued,
+            handlerSnapshots: state.handlers.filter((handler) =>
+              issued.handlerIds.includes(handler.id)
+            ),
+          },
+        ],
+      })
+      return { ok: true, value: application }
+    }, [noProfile, profileId, save, state])
+
   const value = useMemo(
     () => ({
       state,
@@ -259,6 +311,7 @@ export function FitnessProvider({ children }: { children: React.ReactNode }) {
       recordFitResult,
       issueDemoCertificate,
       startRenewal,
+      startNewStaffApplication,
     }),
     [
       addHandler,
@@ -266,6 +319,7 @@ export function FitnessProvider({ children }: { children: React.ReactNode }) {
       confirmDemoPayment,
       isHydrated,
       issueDemoCertificate,
+      startNewStaffApplication,
       startRenewal,
       recordFitResult,
       selectHandlers,
