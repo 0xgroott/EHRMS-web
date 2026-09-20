@@ -1,10 +1,17 @@
-import { render, screen } from "@testing-library/react"
+import { fireEvent, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import {
   EditFoodHandlerDrawerPage,
   NewFoodHandlerDrawerPage,
 } from "./food-handler-drawer-pages"
+
+vi.mock("@/components/ui/select", async () => import("./select-test-double"))
+
+Object.defineProperty(window, "PointerEvent", {
+  configurable: true,
+  value: MouseEvent,
+})
 
 const mocks = vi.hoisted(() => ({
   navigate: vi.fn(),
@@ -92,12 +99,35 @@ describe("food handler drawer routes", () => {
     expect(
       screen.getByRole("dialog", { name: "Add food handler" })
     ).toBeVisible()
-    await user.click(screen.getByRole("button", { name: "Save food handler" }))
-    expect(screen.getByText("Enter the handler's full name.")).toBeVisible()
+    const save = screen.getByRole("button", { name: "Save food handler" })
+    expect(save).toBeDisabled()
     expect(mocks.addHandler).not.toHaveBeenCalled()
 
-    await user.type(screen.getByLabelText("Full name"), "Chidi Nwosu")
-    await user.click(screen.getByRole("button", { name: "Save food handler" }))
+    fireEvent.change(screen.getByLabelText("Full name"), {
+      target: { value: "Chidi Nwosu" },
+    })
+    fireEvent.change(screen.getByRole("combobox", { name: "Sex" }), {
+      target: { value: "Male" },
+    })
+    fireEvent.change(screen.getByLabelText("Date of birth"), {
+      target: { value: "1990-06-15" },
+    })
+    fireEvent.change(screen.getByLabelText("Job role"), {
+      target: { value: "Cook" },
+    })
+    fireEvent.change(screen.getByLabelText("Identity number"), {
+      target: { value: "NIN-456" },
+    })
+    fireEvent.change(screen.getByLabelText("Phone number"), {
+      target: { value: "08030000000" },
+    })
+    expect(save).toBeDisabled()
+    screen
+      .getByRole("checkbox", { name: /Fitness Certificate process/i })
+      .focus()
+    await user.keyboard("[Space]")
+    expect(save).toBeEnabled()
+    await user.click(save)
     expect(mocks.addHandler).toHaveBeenCalledWith(
       expect.objectContaining({ fullName: "Chidi Nwosu" })
     )
@@ -138,9 +168,9 @@ describe("food handler drawer routes", () => {
     const user = userEvent.setup()
     render(<EditFoodHandlerDrawerPage handlerId="handler-ada" />)
 
-    const role = screen.getByLabelText("Job role")
-    await user.clear(role)
-    await user.type(role, "Head cook")
+    fireEvent.change(screen.getByLabelText("Job role"), {
+      target: { value: "Head cook" },
+    })
     await user.click(screen.getByRole("button", { name: "Save changes" }))
 
     expect(mocks.updateHandler).toHaveBeenCalledWith(

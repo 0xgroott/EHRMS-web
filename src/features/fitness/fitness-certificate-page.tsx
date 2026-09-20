@@ -91,7 +91,11 @@ export function FitnessCertificatePage() {
   const reminder = certificateReminder(
     certificate.expiresAt,
     new Date(),
-    Boolean(state.history?.length && state.application?.stage !== "issued")
+    Boolean(
+      state.history?.length &&
+      state.application?.stage !== "issued" &&
+      state.application?.purpose !== "new-staff"
+    )
   )
   return (
     <div className="flex max-w-4xl min-w-0 flex-col gap-6 break-words">
@@ -238,7 +242,11 @@ export function BusinessCertificatesPage() {
     ? certificateReminder(
         certificate.expiresAt,
         new Date(),
-        Boolean(state.history?.length && application?.stage !== "issued")
+        Boolean(
+          state.history?.length &&
+          application?.stage !== "issued" &&
+          application?.purpose !== "new-staff"
+        )
       )
     : null
   const fumigationReminder = fumigationCertificate

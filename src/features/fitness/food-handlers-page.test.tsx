@@ -57,14 +57,26 @@ describe("FoodHandlersPage", () => {
     ).toBeVisible()
     expect(screen.getByText("No Fitness coverage")).toBeVisible()
     expect(
-      screen.getByRole("link", { name: "Start Fitness application" })
-    ).toHaveAttribute("href", "/business/fitness/apply")
+      screen.getByRole("region", { name: "Food handler list" })
+    ).toBeVisible()
+    expect(
+      screen.queryByRole("heading", { name: "Food handler records" })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByText(/Readiness requires identity/)
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole("heading", { name: "Next step" })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole("link", { name: "Start Fitness application" })
+    ).not.toBeInTheDocument()
     expect(
       screen.getByRole("link", { name: "Edit Ada Okafor" })
     ).toHaveAttribute("href", "/business/food-handler/handler-ada")
   })
 
-  it("keeps a paid application on its tracking route instead of restarting it", () => {
+  it("keeps a paid application in the records without a next-step card", () => {
     mockedFitness.value = {
       isHydrated: true,
       state: {
@@ -94,14 +106,17 @@ describe("FoodHandlersPage", () => {
     render(<FoodHandlersPage />)
 
     expect(
-      screen.getByRole("link", { name: "Track Fitness application" })
-    ).toHaveAttribute("href", "/business/fitness/tracker")
+      screen.getByText("Included in active Fitness application")
+    ).toBeVisible()
+    expect(
+      screen.queryByRole("link", { name: "Track Fitness application" })
+    ).not.toBeInTheDocument()
     expect(
       screen.queryByRole("link", { name: "Start Fitness application" })
     ).not.toBeInTheDocument()
   })
 
-  it("links an issued application to its certificate instead of restarting it", () => {
+  it("shows issued coverage without a next-step card", () => {
     mockedFitness.value = {
       isHydrated: true,
       state: {
@@ -137,9 +152,10 @@ describe("FoodHandlersPage", () => {
     }
     render(<FoodHandlersPage />)
 
+    expect(screen.getByText("Covered by Fitness certificate")).toBeVisible()
     expect(
-      screen.getByRole("link", { name: "View Fitness certificate" })
-    ).toHaveAttribute("href", "/business/fitness/certificate")
+      screen.queryByRole("link", { name: "View Fitness certificate" })
+    ).not.toBeInTheDocument()
     expect(
       screen.queryByRole("link", { name: "Start Fitness application" })
     ).not.toBeInTheDocument()
@@ -186,5 +202,64 @@ describe("FoodHandlersPage", () => {
     render(<FoodHandlersPage />)
 
     expect(screen.getByText("Covered by Fitness certificate")).toBeVisible()
+  })
+
+  it("keeps earlier staff covered after a separate new-staff certificate is issued", () => {
+    const ada = {
+      id: "ada",
+      fullName: "Ada Okafor",
+      sex: "Female",
+      dateOfBirth: "1991-04-12",
+      role: "Cook",
+      identityNumber: "NIN-1",
+      phone: "08030000000",
+      premisesName: "Riverside Kitchen",
+      consent: true,
+    }
+    mockedFitness.value = {
+      isHydrated: true,
+      state: {
+        handlers: [ada, { ...ada, id: "bola", fullName: "Bola James" }],
+        application: {
+          id: "fitness-application-2",
+          handlerIds: ["bola"],
+          purpose: "new-staff",
+          stage: "issued",
+          certificate: {
+            id: "FIT-CERT-2",
+            handlerIds: ["bola"],
+            councilId: "phc",
+            issuedAt: "2026-09-01",
+            expiresAt: "2099-09-01",
+          },
+        },
+        history: [
+          {
+            id: "fitness-application-1",
+            handlerIds: ["ada"],
+            stage: "issued",
+            certificate: {
+              id: "FIT-CERT-1",
+              handlerIds: ["ada"],
+              councilId: "phc",
+              issuedAt: "2026-01-01",
+              expiresAt: "2099-01-01",
+            },
+          },
+        ],
+      },
+    }
+    render(<FoodHandlersPage />)
+
+    expect(
+      within(screen.getByRole("row", { name: /Ada Okafor/ })).getByText(
+        "Covered by Fitness certificate"
+      )
+    ).toBeVisible()
+    expect(
+      within(screen.getByRole("row", { name: /Bola James/ })).getByText(
+        "Covered by Fitness certificate"
+      )
+    ).toBeVisible()
   })
 })

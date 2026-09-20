@@ -1,7 +1,9 @@
-import { render, screen } from "@testing-library/react"
+import { fireEvent, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
 import { FoodHandlerForm } from "./food-handler-form"
+
+vi.mock("@/components/ui/select", async () => import("./select-test-double"))
 
 Object.defineProperty(window, "PointerEvent", {
   configurable: true,
@@ -24,9 +26,8 @@ const singleBranch = [
 ]
 
 describe("FoodHandlerForm", () => {
-  it("keeps entered values and shows an inline error when a name is missing", async () => {
+  it("keeps entered values while save is disabled for missing requirements", async () => {
     const onSave = vi.fn()
-    const user = userEvent.setup()
     render(
       <FoodHandlerForm
         branchOptions={singleBranch}
@@ -35,17 +36,23 @@ describe("FoodHandlerForm", () => {
       />
     )
 
-    await user.type(screen.getByLabelText("Job role"), "Kitchen assistant")
-    await user.type(screen.getByLabelText("Identity number"), "NIN-123")
-    await user.type(screen.getByLabelText("Phone number"), "08030000000")
-    await user.click(screen.getByRole("button", { name: "Save food handler" }))
-
-    expect(screen.getByText("Enter the handler's full name.")).toBeVisible()
+    fireEvent.change(screen.getByLabelText("Job role"), {
+      target: { value: "Kitchen assistant" },
+    })
+    fireEvent.change(screen.getByLabelText("Identity number"), {
+      target: { value: "NIN-123" },
+    })
+    fireEvent.change(screen.getByLabelText("Phone number"), {
+      target: { value: "08030000000" },
+    })
+    expect(
+      screen.getByRole("button", { name: "Save food handler" })
+    ).toBeDisabled()
     expect(screen.getByLabelText("Job role")).toHaveValue("Kitchen assistant")
     expect(onSave).not.toHaveBeenCalled()
   })
 
-  it("saves a named handler with incomplete Fitness details for follow-up", async () => {
+  it("enables save only after every field and consent are complete", async () => {
     const onSave = vi.fn()
     const user = userEvent.setup()
     render(
@@ -56,17 +63,37 @@ describe("FoodHandlerForm", () => {
       />
     )
 
-    await user.type(screen.getByLabelText("Full name"), "Chidi Nwosu")
-    await user.click(screen.getByRole("button", { name: "Save food handler" }))
-
+    fireEvent.change(screen.getByLabelText("Full name"), {
+      target: { value: "Chidi Nwosu" },
+    })
+    const save = screen.getByRole("button", { name: "Save food handler" })
+    expect(save).toBeDisabled()
+    fireEvent.change(screen.getByRole("combobox", { name: "Sex" }), {
+      target: { value: "Male" },
+    })
+    expect(save).toBeDisabled()
+    fireEvent.change(screen.getByLabelText("Date of birth"), {
+      target: { value: "1990-06-15" },
+    })
+    expect(save).toBeDisabled()
+    fireEvent.change(screen.getByLabelText("Job role"), {
+      target: { value: "Cook" },
+    })
+    fireEvent.change(screen.getByLabelText("Identity number"), {
+      target: { value: "NIN-456" },
+    })
+    fireEvent.change(screen.getByLabelText("Phone number"), {
+      target: { value: "08030000000" },
+    })
+    expect(save).toBeDisabled()
+    expect(onSave).not.toHaveBeenCalled()
+    await user.click(
+      screen.getByRole("checkbox", { name: /Fitness Certificate process/i })
+    )
+    expect(save).toBeEnabled()
+    await user.click(save)
     expect(onSave).toHaveBeenCalledWith(
-      expect.objectContaining({
-        fullName: "Chidi Nwosu",
-        identityNumber: "",
-        role: "",
-        phone: "",
-        consent: false,
-      })
+      expect.objectContaining({ fullName: "Chidi Nwosu", consent: true })
     )
   })
 
@@ -81,10 +108,24 @@ describe("FoodHandlerForm", () => {
       />
     )
 
-    await user.type(screen.getByLabelText("Full name"), "Ada Okafor")
-    await user.type(screen.getByLabelText("Job role"), "Kitchen assistant")
-    await user.type(screen.getByLabelText("Identity number"), "NIN-123")
-    await user.type(screen.getByLabelText("Phone number"), "08030000000")
+    fireEvent.change(screen.getByLabelText("Full name"), {
+      target: { value: "Ada Okafor" },
+    })
+    fireEvent.change(screen.getByRole("combobox", { name: "Sex" }), {
+      target: { value: "Female" },
+    })
+    fireEvent.change(screen.getByLabelText("Date of birth"), {
+      target: { value: "1991-04-12" },
+    })
+    fireEvent.change(screen.getByLabelText("Job role"), {
+      target: { value: "Kitchen assistant" },
+    })
+    fireEvent.change(screen.getByLabelText("Identity number"), {
+      target: { value: "NIN-123" },
+    })
+    fireEvent.change(screen.getByLabelText("Phone number"), {
+      target: { value: "08030000000" },
+    })
     screen
       .getByRole("checkbox", { name: /Fitness Certificate process/i })
       .focus()
@@ -106,6 +147,18 @@ describe("FoodHandlerForm", () => {
         consent: true,
       })
     )
+  })
+
+  it("requires a registered branch before saving", async () => {
+    const onSave = vi.fn()
+    render(
+      <FoodHandlerForm branchOptions={[]} onSave={onSave} onCancel={vi.fn()} />
+    )
+
+    expect(
+      screen.getByRole("button", { name: "Save food handler" })
+    ).toBeDisabled()
+    expect(onSave).not.toHaveBeenCalled()
   })
 
   it("enables branch selection when multiple locations are available", () => {
@@ -142,9 +195,9 @@ describe("FoodHandlerForm", () => {
       />
     )
 
-    const role = screen.getByLabelText("Job role")
-    await user.clear(role)
-    await user.type(role, "Head cook")
+    fireEvent.change(screen.getByLabelText("Job role"), {
+      target: { value: "Head cook" },
+    })
     await user.click(screen.getByRole("button", { name: "Save changes" }))
 
     expect(onSave).toHaveBeenCalledWith(

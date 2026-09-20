@@ -22,6 +22,7 @@ export interface FitnessFacility {
   location: string
   service: string
   contact: string
+  /** Approved fee per food handler, before multiplying by the application size. */
   priceNgn: number
 }
 
@@ -37,6 +38,7 @@ export interface FitnessCertificate {
 export interface FitnessApplication {
   id: string
   handlerIds: string[]
+  purpose?: "new-staff"
   facilityId?: string
   stage: FitnessStage
   totalNgn?: number

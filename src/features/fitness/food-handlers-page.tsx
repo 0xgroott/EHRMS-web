@@ -10,19 +10,9 @@ import {
 import { notifySuccess } from "@/components/ui/app-toast"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { PageHeader } from "@/components/shared/page-header"
-import {
-  certificateIsValid,
-  latestCertificateApplication,
-} from "@/domain/certificate-validity"
+import { certificateIsValid } from "@/domain/certificate-validity"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import {
   Empty,
   EmptyDescription,
@@ -81,16 +71,16 @@ function readinessBadge(handler: FoodHandler) {
 function coverageLabel(
   handler: FoodHandler,
   activeHandlerIds: string[],
-  certificateHandlerIds: string[],
-  certificateValid: boolean
+  validCertificateHandlerIds: ReadonlySet<string>,
+  expiredCertificateHandlerIds: ReadonlySet<string>
 ) {
-  if (certificateHandlerIds.includes(handler.id))
-    return certificateValid
-      ? "Covered by Fitness certificate"
-      : "Fitness certificate expired"
-  return activeHandlerIds.includes(handler.id)
-    ? "Included in active Fitness application"
-    : "No Fitness coverage"
+  if (validCertificateHandlerIds.has(handler.id))
+    return "Covered by Fitness certificate"
+  if (activeHandlerIds.includes(handler.id))
+    return "Included in active Fitness application"
+  if (expiredCertificateHandlerIds.has(handler.id))
+    return "Fitness certificate expired"
+  return "No Fitness coverage"
 }
 
 export function FoodHandlersPage() {
@@ -102,9 +92,6 @@ export function FoodHandlersPage() {
   const [actionError, setActionError] = useState("")
   const currentHandlers = state.handlers.filter(
     (handler) => !handler.archivedAt
-  )
-  const eligibleHandlers = state.handlers.filter(
-    (handler) => !handler.archivedAt && handlerReadiness(handler).ready
   )
   const normalizedSearch = search.trim().toLocaleLowerCase()
   const visibleHandlers = state.handlers.filter((handler) => {
@@ -126,32 +113,19 @@ export function FoodHandlersPage() {
     notifySuccess(archived ? "Food handler archived" : "Food handler restored")
   }
   const application = state.application
-  const certificate = latestCertificateApplication(
-    application,
-    state.history
-  )?.certificate
-  const certificateValid = certificate
-    ? certificateIsValid(certificate.expiresAt)
-    : false
-  const applicationAction =
-    application?.stage === "issued"
-      ? {
-          href: "/business/fitness/certificate",
-          label: "View Fitness certificate",
-        }
-      : application &&
-          application.stage !== "draft" &&
-          application.stage !== "review"
-        ? {
-            href: "/business/fitness/tracker",
-            label: "Track Fitness application",
-          }
-        : eligibleHandlers.length > 0
-          ? {
-              href: "/business/fitness/apply",
-              label: "Start Fitness application",
-            }
-          : null
+  const certificates = [application, ...(state.history ?? [])]
+    .map((item) => item?.certificate)
+    .filter((certificate) => certificate !== undefined)
+  const validCertificateHandlerIds = new Set(
+    certificates
+      .filter((certificate) => certificateIsValid(certificate.expiresAt))
+      .flatMap((certificate) => certificate.handlerIds)
+  )
+  const expiredCertificateHandlerIds = new Set(
+    certificates
+      .filter((certificate) => !certificateIsValid(certificate.expiresAt))
+      .flatMap((certificate) => certificate.handlerIds)
+  )
 
   if (!isHydrated) {
     return (
@@ -190,156 +164,129 @@ export function FoodHandlersPage() {
           </EmptyHeader>
         </Empty>
       ) : (
-        <Card className="min-w-0">
-          <CardHeader>
-            <CardTitle>Food handler records</CardTitle>
-            <CardDescription>
-              {currentHandlers.length} current ·{" "}
-              {state.handlers.length - currentHandlers.length} archived.
-              Readiness requires identity, role, phone, and consent.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="min-w-0 gap-4">
-            {actionError && (
-              <Alert variant="destructive" role="alert">
-                <AlertDescription>{actionError}</AlertDescription>
-              </Alert>
-            )}
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <label className="relative block w-full sm:max-w-xs">
-                <span className="sr-only">Search food handlers</span>
-                <Search
-                  aria-hidden="true"
-                  className="pointer-events-none absolute top-2.5 left-3 size-4 text-muted-foreground"
-                />
-                <Input
-                  type="search"
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search name or role"
-                  className="pl-9"
-                />
-              </label>
-              <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span className="shrink-0">Show</span>
-                <select
-                  value={status}
-                  onChange={(event) =>
-                    setStatus(event.target.value as typeof status)
-                  }
-                  className="h-9 min-w-40 rounded-md border border-input bg-background px-2.5 text-sm text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                >
-                  <option value="current">Current staff</option>
-                  <option value="ready">Ready to apply</option>
-                  <option value="needs-details">Needs details</option>
-                  <option value="archived">Archived staff</option>
-                </select>
-              </label>
-            </div>
-            <p role="status" className="text-sm text-muted-foreground">
-              {visibleHandlers.length}{" "}
-              {visibleHandlers.length === 1 ? "record" : "records"} shown
-            </p>
-            {visibleHandlers.length === 0 ? (
-              <div className="rounded-lg border border-dashed px-5 py-8 text-center text-sm text-muted-foreground">
-                {status === "current" &&
-                !search.trim() &&
-                !currentHandlers.length
-                  ? "No current staff. Choose Archived staff to restore a record, or add a food handler."
-                  : "No food handlers match this search and status. Try another name or filter."}
-              </div>
-            ) : (
-              <Table className="min-w-[42rem]">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Food handler</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Readiness</TableHead>
-                    <TableHead>Fitness coverage</TableHead>
-                    <TableHead>
-                      <span className="sr-only">Actions</span>
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {visibleHandlers.map((handler) => (
-                    <TableRow key={handler.id}>
-                      <TableCell className="font-medium">
-                        {handler.fullName}
-                      </TableCell>
-                      <TableCell>{handler.role || "Not recorded"}</TableCell>
-                      <TableCell>{readinessBadge(handler)}</TableCell>
-                      <TableCell>
-                        {coverageLabel(
-                          handler,
-                          application?.handlerIds ?? [],
-                          certificate?.handlerIds ?? [],
-                          certificateValid
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          {!handler.archivedAt && (
-                            <AppLink
-                              href={`/business/food-handler/${handler.id}`}
-                              variant="link"
-                              ariaLabel={`Edit ${handler.fullName}`}
-                            >
-                              <Pencil
-                                data-icon="inline-start"
-                                aria-hidden="true"
-                              />
-                              Edit
-                            </AppLink>
-                          )}
-                          <Button
-                            type="button"
-                            variant="link"
-                            aria-label={`${handler.archivedAt ? "Restore" : "Archive"} ${handler.fullName}`}
-                            onClick={() => changeArchiveStatus(handler)}
-                          >
-                            {handler.archivedAt ? (
-                              <RotateCcw
-                                data-icon="inline-start"
-                                aria-hidden="true"
-                              />
-                            ) : (
-                              <Archive
-                                data-icon="inline-start"
-                                aria-hidden="true"
-                              />
-                            )}
-                            {handler.archivedAt ? "Restore" : "Archive"}
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {currentHandlers.length > 0 && (
-        <Card size="sm">
-          <CardHeader>
-            <CardTitle>Next step</CardTitle>
-            <CardDescription>
-              {eligibleHandlers.length
-                ? `${eligibleHandlers.length} ${eligibleHandlers.length === 1 ? "handler is" : "handlers are"} ready to be selected.`
-                : "Complete the missing details and consent on a staff record before starting an application."}
-            </CardDescription>
-          </CardHeader>
-          {applicationAction && (
-            <CardContent>
-              <AppLink href={applicationAction.href}>
-                {applicationAction.label}
-              </AppLink>
-            </CardContent>
+        <section
+          aria-label="Food handler list"
+          className="flex min-w-0 flex-col gap-4"
+        >
+          {actionError && (
+            <Alert variant="destructive" role="alert">
+              <AlertDescription>{actionError}</AlertDescription>
+            </Alert>
           )}
-        </Card>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <label className="relative block w-full sm:max-w-xs">
+              <span className="sr-only">Search food handlers</span>
+              <Search
+                aria-hidden="true"
+                className="pointer-events-none absolute top-2.5 left-3 size-4 text-muted-foreground"
+              />
+              <Input
+                type="search"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search name or role"
+                className="pl-9"
+              />
+            </label>
+            <label className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span className="shrink-0">Show</span>
+              <select
+                value={status}
+                onChange={(event) =>
+                  setStatus(event.target.value as typeof status)
+                }
+                className="h-9 min-w-40 rounded-md border border-input bg-background px-2.5 text-sm text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              >
+                <option value="current">Current staff</option>
+                <option value="ready">Ready to apply</option>
+                <option value="needs-details">Needs details</option>
+                <option value="archived">Archived staff</option>
+              </select>
+            </label>
+          </div>
+          <p role="status" className="text-sm text-muted-foreground">
+            {visibleHandlers.length}{" "}
+            {visibleHandlers.length === 1 ? "record" : "records"} shown
+          </p>
+          {visibleHandlers.length === 0 ? (
+            <div className="rounded-lg border border-dashed px-5 py-8 text-center text-sm text-muted-foreground">
+              {status === "current" && !search.trim() && !currentHandlers.length
+                ? "No current staff. Choose Archived staff to restore a record, or add a food handler."
+                : "No food handlers match this search and status. Try another name or filter."}
+            </div>
+          ) : (
+            <Table className="min-w-[42rem]">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Food handler</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Readiness</TableHead>
+                  <TableHead>Fitness coverage</TableHead>
+                  <TableHead>
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {visibleHandlers.map((handler) => (
+                  <TableRow key={handler.id}>
+                    <TableCell className="font-medium">
+                      {handler.fullName}
+                    </TableCell>
+                    <TableCell>{handler.role || "Not recorded"}</TableCell>
+                    <TableCell>{readinessBadge(handler)}</TableCell>
+                    <TableCell>
+                      {coverageLabel(
+                        handler,
+                        application && application.stage !== "issued"
+                          ? application.handlerIds
+                          : [],
+                        validCertificateHandlerIds,
+                        expiredCertificateHandlerIds
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        {!handler.archivedAt && (
+                          <AppLink
+                            href={`/business/food-handler/${handler.id}`}
+                            variant="link"
+                            ariaLabel={`Edit ${handler.fullName}`}
+                          >
+                            <Pencil
+                              data-icon="inline-start"
+                              aria-hidden="true"
+                            />
+                            Edit
+                          </AppLink>
+                        )}
+                        <Button
+                          type="button"
+                          variant="link"
+                          aria-label={`${handler.archivedAt ? "Restore" : "Archive"} ${handler.fullName}`}
+                          onClick={() => changeArchiveStatus(handler)}
+                        >
+                          {handler.archivedAt ? (
+                            <RotateCcw
+                              data-icon="inline-start"
+                              aria-hidden="true"
+                            />
+                          ) : (
+                            <Archive
+                              data-icon="inline-start"
+                              aria-hidden="true"
+                            />
+                          )}
+                          {handler.archivedAt ? "Restore" : "Archive"}
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </section>
       )}
     </div>
   )

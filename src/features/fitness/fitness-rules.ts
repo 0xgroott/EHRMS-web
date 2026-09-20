@@ -1,8 +1,8 @@
 import type {
   FitnessApplication,
   FitnessCertificate,
-  FitnessFacility,
   FitnessRuleResult,
+  FitnessState,
   FoodHandler,
   HandlerReadiness,
 } from "./fitness-types"
@@ -18,11 +18,27 @@ export function handlerReadiness(handler: FoodHandler): HandlerReadiness {
   return { ready: reasons.length === 0, reasons }
 }
 
+export function certifiedHandlerIds(state: FitnessState): Set<string> {
+  return new Set(
+    [state.application, ...(state.history ?? [])].flatMap(
+      (application) => application?.certificate?.handlerIds ?? []
+    )
+  )
+}
+
+export function newStaffHandlers(state: FitnessState): FoodHandler[] {
+  const certified = certifiedHandlerIds(state)
+  return state.handlers.filter(
+    (handler) => !handler.archivedAt && !certified.has(handler.id)
+  )
+}
+
 export function beginApplication(
   handlers: readonly FoodHandler[],
   handlerIds: readonly string[],
   id = "fitness-application-1",
-  currentApplication: FitnessApplication | null = null
+  currentApplication: FitnessApplication | null = null,
+  certifiedIds: ReadonlySet<string> = new Set()
 ): FitnessRuleResult<FitnessApplication> {
   if (
     currentApplication &&
@@ -37,6 +53,15 @@ export function beginApplication(
   const selectedIds = [...new Set(handlerIds)]
   if (selectedIds.length === 0) {
     return { ok: false, error: "Select at least one eligible food handler" }
+  }
+  if (
+    currentApplication?.purpose === "new-staff" &&
+    selectedIds.some((handlerId) => certifiedIds.has(handlerId))
+  ) {
+    return {
+      ok: false,
+      error: "Select only food handlers without a Fitness certificate",
+    }
   }
 
   const handlersById = new Map(handlers.map((handler) => [handler.id, handler]))
@@ -54,14 +79,21 @@ export function beginApplication(
 
   return {
     ok: true,
-    value: { id, handlerIds: selectedIds, stage: "draft" },
+    value: {
+      id,
+      handlerIds: selectedIds,
+      stage: "draft",
+      ...(currentApplication?.purpose && {
+        purpose: currentApplication.purpose,
+      }),
+    },
   }
 }
 
 export function chooseFacility(
   application: FitnessApplication,
-  facility: Pick<FitnessFacility, "id" | "priceNgn"> | string,
-  totalNgn?: number
+  facilityId: string,
+  totalNgn: number
 ): FitnessRuleResult<FitnessApplication> {
   if (application.stage !== "draft" && application.stage !== "review") {
     return {
@@ -70,9 +102,7 @@ export function chooseFacility(
     }
   }
 
-  const facilityId = typeof facility === "string" ? facility : facility.id
-  const price = typeof facility === "string" ? totalNgn : facility.priceNgn
-  if (!facilityId || !Number.isFinite(price) || (price ?? 0) <= 0) {
+  if (!facilityId || !Number.isFinite(totalNgn) || totalNgn <= 0) {
     return {
       ok: false,
       error: "Choose an approved facility with a valid price",
@@ -84,7 +114,7 @@ export function chooseFacility(
     value: {
       ...application,
       facilityId,
-      totalNgn: price,
+      totalNgn,
       stage: "review",
     },
   }

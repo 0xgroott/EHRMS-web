@@ -210,7 +210,6 @@ This document defines the business-facing screens required to register a premise
 
 - Edit food handler
 - Archive former staff
-- Start Fitness application
 - Import records if later approved
 
 **Edge cases:**
@@ -242,6 +241,11 @@ This document defines the business-facing screens required to register a premise
 **Empty state:** Blank form for a new record or existing information when editing.
 
 **Primary CTA:** `Save food handler`
+
+All listed fields and the consent confirmation are required before a new or edited
+record can be saved. Keep the Save action disabled until the form is complete,
+explain the requirement beside it, and retain entered details while the user fills
+the form.
 
 **Alternative actions:**
 

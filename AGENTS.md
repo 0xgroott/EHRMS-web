@@ -17,7 +17,7 @@
 
 ## Verification
 
-- Run focused unit and component tests while iterating. Run `corepack pnpm test` separately from browser tests.
-- Use the saved headless Playwright Test CLI suite for browser checks: `corepack pnpm test:e2e`. During iteration, run the relevant spec or filter test titles with `--grep`; assert the changed element with Playwright locators instead of reading a whole-page snapshot. `--grep` filters tests, not page content. For exploratory page inspection, search the relevant element or region; use a full snapshot only when the structure is unknown.
-- Add focused tests under `e2e/` for browser-visible flow changes. Check rendered state plus console and page errors. Run the full suite before handoff. Keep runs headless; do not open a browser window or capture screenshots.
-- Before handing off code changes, run `corepack pnpm check`, `corepack pnpm lint`, `corepack pnpm typecheck`, `corepack pnpm test`, `corepack pnpm build`, and `corepack pnpm test:e2e`. Report any failing check and its cause.
+- For simple, focused changes, perform the requested work directly and run only checks relevant to the affected code. Do not run full-repository checks or investigate unrelated failures unless the user asks or the change makes them necessary. Report back promptly.
+- Run focused unit and component tests when behavior changes. Keep unit tests separate from browser tests.
+- For browser-visible flow changes, add focused tests under `e2e/` when needed and run the relevant spec or test title with the saved headless Playwright Test CLI suite. Check rendered state plus console and page errors. Assert the changed element with Playwright locators instead of reading a whole-page snapshot. `--grep` filters tests, not page content. For exploratory page inspection, search the relevant element or region; use a full snapshot only when the structure is unknown. Do not open a browser window or capture screenshots.
+- Run the full `check`, `lint`, `typecheck`, `test`, `build`, and `test:e2e` gates only when the user requests them or the scope and risk of the change warrant them. Run `corepack pnpm test` separately from browser tests. Flag the need for full gates early and report any failing check and its cause.

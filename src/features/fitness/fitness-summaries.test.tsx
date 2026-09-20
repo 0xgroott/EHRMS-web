@@ -52,6 +52,63 @@ it("shows an active Fitness summary and Fumigation start action", async () => {
   ).toHaveAttribute("href", "/business/fumigation/apply")
 })
 
+it("offers a separate application when new staff join after Fitness issuance", async () => {
+  createFitnessStore().write("BUS-001", {
+    handlers: [
+      {
+        id: "ada",
+        fullName: "Ada Okafor",
+        role: "Cook",
+        sex: "Female",
+        dateOfBirth: "1990-01-01",
+        identityNumber: "TEST-ADA",
+        phone: "08030000000",
+        premisesName: "Riverside Kitchen",
+        consent: true,
+      },
+      {
+        id: "bola",
+        fullName: "Bola James",
+        role: "Server",
+        sex: "Female",
+        dateOfBirth: "1995-01-01",
+        identityNumber: "TEST-BOLA",
+        phone: "08031111111",
+        premisesName: "Riverside Kitchen",
+        consent: true,
+      },
+    ],
+    application: {
+      id: "fitness-application-1",
+      handlerIds: ["ada"],
+      stage: "issued",
+      certificate: {
+        id: "FIT-CERT-1",
+        handlerIds: ["ada"],
+        councilId: "phc",
+        issuedAt: "2026-01-01",
+        expiresAt: "2027-01-01",
+      },
+    },
+  })
+  render(
+    <FitnessProvider>
+      <FumigationProvider>
+        <InspectionProvider>
+          <BusinessApplicationsPage />
+        </InspectionProvider>
+      </FumigationProvider>
+    </FitnessProvider>
+  )
+
+  expect(
+    await screen.findByRole("button", { name: "Apply for new staff" })
+  ).toBeVisible()
+  expect(
+    screen.getByRole("link", { name: "View Fitness Certificate or renew" })
+  ).toBeVisible()
+})
+
 it("shows issued Fitness and Fumigation certificates in certificates navigation", async () => {
   createFitnessStore().write("BUS-001", {
     handlers: [],

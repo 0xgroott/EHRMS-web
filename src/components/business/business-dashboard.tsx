@@ -151,7 +151,9 @@ export function BusinessDashboard({
     fitnessApplication && fitnessApplication.stage !== "issued"
   )
   const fitnessRenewing = Boolean(
-    fitness.history?.length && fitnessApplication?.stage !== "issued"
+    fitness.history?.length &&
+    fitnessApplication?.stage !== "issued" &&
+    fitnessApplication?.purpose !== "new-staff"
   )
   const fumigationApplication = fumigation.application
   const fumigationIssuedApplication = latestCertificateApplication(

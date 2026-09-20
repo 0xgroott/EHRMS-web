@@ -57,6 +57,16 @@ export function FoodHandlerForm({
   const [errors, setErrors] = useState<
     Partial<Record<keyof FormValues, string>>
   >({})
+  const canSave = Boolean(
+    values.fullName.trim() &&
+    values.sex &&
+    values.dateOfBirth &&
+    values.role.trim() &&
+    values.identityNumber.trim() &&
+    values.phone.trim() &&
+    branchOptions.some((branch) => branch.value === values.premisesName) &&
+    values.consent
+  )
 
   const update = <TKey extends keyof FormValues>(
     field: TKey,
@@ -70,6 +80,17 @@ export function FoodHandlerForm({
     const nextErrors: Partial<Record<keyof FormValues, string>> = {}
     if (!values.fullName.trim())
       nextErrors.fullName = "Enter the handler's full name."
+    if (!values.sex) nextErrors.sex = "Select the handler's sex."
+    if (!values.dateOfBirth)
+      nextErrors.dateOfBirth = "Enter the handler's date of birth."
+    if (!values.role.trim()) nextErrors.role = "Enter the handler's job role."
+    if (!values.identityNumber.trim())
+      nextErrors.identityNumber = "Enter the handler's identity number."
+    if (!values.phone.trim())
+      nextErrors.phone = "Enter the handler's phone number."
+    if (!values.premisesName.trim())
+      nextErrors.premisesName = "Select a business branch/location."
+    if (!values.consent) nextErrors.consent = "Confirm the handler's consent."
     if (Object.keys(nextErrors).length) {
       setErrors(nextErrors)
       return
@@ -88,6 +109,13 @@ export function FoodHandlerForm({
   }
 
   const fullName = field("fullName")
+  const sex = field("sex")
+  const dateOfBirth = field("dateOfBirth")
+  const role = field("role")
+  const identityNumber = field("identityNumber")
+  const phone = field("phone")
+  const premisesName = field("premisesName")
+  const consent = field("consent")
 
   return (
     <form
@@ -107,6 +135,7 @@ export function FoodHandlerForm({
             onChange={(event) => update("fullName", event.target.value)}
             aria-invalid={fullName.invalid}
             aria-describedby={fullName.describedBy}
+            required
             className="min-h-11"
           />
           {fullName.error && (
@@ -114,7 +143,7 @@ export function FoodHandlerForm({
           )}
         </Field>
         <div className="grid min-w-0 grid-cols-2 gap-4">
-          <Field className="min-w-0">
+          <Field className="min-w-0" data-invalid={sex.invalid}>
             <FieldLabel htmlFor={`${formId}-sex`}>Sex</FieldLabel>
             <Select
               value={values.sex}
@@ -123,6 +152,9 @@ export function FoodHandlerForm({
               <SelectTrigger
                 id={`${formId}-sex`}
                 className="min-h-11 w-full min-w-0"
+                aria-invalid={sex.invalid}
+                aria-describedby={sex.describedBy}
+                aria-required="true"
               >
                 <SelectValue placeholder="Select sex" />
               </SelectTrigger>
@@ -134,8 +166,11 @@ export function FoodHandlerForm({
                 </SelectGroup>
               </SelectContent>
             </Select>
+            {sex.error && (
+              <FieldError id={sex.describedBy}>{sex.error}</FieldError>
+            )}
           </Field>
-          <Field className="min-w-0">
+          <Field className="min-w-0" data-invalid={dateOfBirth.invalid}>
             <FieldLabel htmlFor={`${formId}-date-of-birth`}>
               Date of birth
             </FieldLabel>
@@ -145,19 +180,33 @@ export function FoodHandlerForm({
               value={values.dateOfBirth}
               onChange={(event) => update("dateOfBirth", event.target.value)}
               className="min-h-11 w-full min-w-0"
+              aria-invalid={dateOfBirth.invalid}
+              aria-describedby={dateOfBirth.describedBy}
+              required
             />
+            {dateOfBirth.error && (
+              <FieldError id={dateOfBirth.describedBy}>
+                {dateOfBirth.error}
+              </FieldError>
+            )}
           </Field>
         </div>
-        <Field>
+        <Field data-invalid={role.invalid}>
           <FieldLabel htmlFor={`${formId}-role`}>Job role</FieldLabel>
           <Input
             id={`${formId}-role`}
             value={values.role}
             onChange={(event) => update("role", event.target.value)}
             className="min-h-11"
+            aria-invalid={role.invalid}
+            aria-describedby={role.describedBy}
+            required
           />
+          {role.error && (
+            <FieldError id={role.describedBy}>{role.error}</FieldError>
+          )}
         </Field>
-        <Field>
+        <Field data-invalid={identityNumber.invalid}>
           <FieldLabel htmlFor={`${formId}-identity-number`}>
             Identity number
           </FieldLabel>
@@ -166,9 +215,17 @@ export function FoodHandlerForm({
             value={values.identityNumber}
             onChange={(event) => update("identityNumber", event.target.value)}
             className="min-h-11"
+            aria-invalid={identityNumber.invalid}
+            aria-describedby={identityNumber.describedBy}
+            required
           />
+          {identityNumber.error && (
+            <FieldError id={identityNumber.describedBy}>
+              {identityNumber.error}
+            </FieldError>
+          )}
         </Field>
-        <Field>
+        <Field data-invalid={phone.invalid}>
           <FieldLabel htmlFor={`${formId}-phone`}>Phone number</FieldLabel>
           <Input
             id={`${formId}-phone`}
@@ -176,9 +233,15 @@ export function FoodHandlerForm({
             value={values.phone}
             onChange={(event) => update("phone", event.target.value)}
             className="min-h-11"
+            aria-invalid={phone.invalid}
+            aria-describedby={phone.describedBy}
+            required
           />
+          {phone.error && (
+            <FieldError id={phone.describedBy}>{phone.error}</FieldError>
+          )}
         </Field>
-        <Field>
+        <Field data-invalid={premisesName.invalid}>
           <FieldLabel htmlFor={`${formId}-branch`}>
             Business branch/location
           </FieldLabel>
@@ -191,6 +254,9 @@ export function FoodHandlerForm({
             <SelectTrigger
               id={`${formId}-branch`}
               className="min-h-11 w-full min-w-0"
+              aria-invalid={premisesName.invalid}
+              aria-describedby={premisesName.describedBy}
+              aria-required="true"
             >
               <SelectValue placeholder="Select branch/location" />
             </SelectTrigger>
@@ -204,15 +270,27 @@ export function FoodHandlerForm({
               </SelectGroup>
             </SelectContent>
           </Select>
+          {premisesName.error && (
+            <FieldError id={premisesName.describedBy}>
+              {premisesName.error}
+            </FieldError>
+          )}
         </Field>
       </FieldGroup>
 
-      <Field orientation="horizontal" className="min-w-0">
+      <Field
+        orientation="horizontal"
+        className="min-w-0"
+        data-invalid={consent.invalid}
+      >
         <Checkbox
           id={`${formId}-consent`}
           checked={values.consent}
           onCheckedChange={(checked) => update("consent", checked)}
           aria-label="I confirm this food handler consents to use these details for the Fitness Certificate process."
+          aria-invalid={consent.invalid}
+          aria-describedby={consent.describedBy}
+          aria-required="true"
         />
         <FieldContent className="min-w-0">
           <FieldLabel
@@ -222,9 +300,17 @@ export function FoodHandlerForm({
             I confirm this food handler consents to use these details for the
             Fitness Certificate process.
           </FieldLabel>
+          {consent.error && (
+            <FieldError id={consent.describedBy}>{consent.error}</FieldError>
+          )}
         </FieldContent>
       </Field>
 
+      {!canSave && (
+        <p className="text-sm text-muted-foreground">
+          Complete all fields and confirm consent to save.
+        </p>
+      )}
       <div className="flex flex-col-reverse gap-3 border-t pt-6 sm:flex-row sm:justify-end">
         <Button
           type="button"
@@ -234,7 +320,11 @@ export function FoodHandlerForm({
         >
           Cancel
         </Button>
-        <Button type="submit" className="min-h-11 w-full sm:w-auto">
+        <Button
+          type="submit"
+          disabled={!canSave}
+          className="min-h-11 w-full sm:w-auto"
+        >
           {handler ? "Save changes" : "Save food handler"}
         </Button>
       </div>

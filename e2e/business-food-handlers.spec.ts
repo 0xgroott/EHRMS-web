@@ -53,6 +53,30 @@ test("business user can find, archive, and restore a food handler", async ({
   })
 
   await page.goto("/business/food-handlers")
+  const records = page.getByRole("region", { name: "Food handler list" })
+  await expect(records).toBeVisible()
+  await expect(
+    page.getByRole("heading", { name: "Food handler records" })
+  ).toHaveCount(0)
+  await expect(page.getByText(/Readiness requires identity/)).toHaveCount(0)
+  await expect(page.getByRole("heading", { name: "Next step" })).toHaveCount(0)
+  await expect(
+    page.getByRole("link", { name: "Start Fitness application" })
+  ).toHaveCount(0)
+  expect(
+    await records.evaluate((element) => {
+      const style = getComputedStyle(element)
+      return [style.paddingLeft, style.paddingRight, style.borderTopWidth]
+    })
+  ).toEqual(["0px", "0px", "0px"])
+  await page.setViewportSize({ width: 390, height: 844 })
+  await expect(records).toBeVisible()
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth
+    )
+  ).toBe(true)
+  await page.setViewportSize({ width: 1280, height: 800 })
   const search = page.getByRole("searchbox", { name: "Search food handlers" })
   const filter = page.getByRole("combobox", { name: "Show" })
   await expect(page.getByText("Ada Okafor")).toBeVisible()
@@ -184,7 +208,24 @@ test("food handler drawer shows the branch and fits a 390px screen", async ({
   await page.getByRole("option", { name: "Female", exact: true }).click()
 
   await drawer.getByRole("textbox", { name: "Full name" }).fill("Chidi Nwosu")
-  await drawer.getByRole("button", { name: "Save food handler" }).click()
+  const save = drawer.getByRole("button", { name: "Save food handler" })
+  await expect(save).toBeDisabled()
+  await expect(
+    drawer.getByText("Complete all fields and confirm consent to save.")
+  ).toBeVisible()
+  await expect(page).toHaveURL(/\/business\/food-handler\/new$/)
+
+  await drawer.getByLabel("Date of birth").fill("1991-04-12")
+  await drawer.getByRole("textbox", { name: "Job role" }).fill("Cook")
+  await drawer.getByRole("textbox", { name: "Identity number" }).fill("NIN-123")
+  await drawer
+    .getByRole("textbox", { name: "Phone number" })
+    .fill("08030000000")
+  await drawer
+    .getByRole("checkbox", { name: /Fitness Certificate process/i })
+    .check()
+  await expect(save).toBeEnabled()
+  await save.click()
   await expect(page).toHaveURL(/\/business\/food-handlers$/)
   await expect(page.getByText("Chidi Nwosu")).toBeVisible()
   expect(browserErrors).toEqual([])

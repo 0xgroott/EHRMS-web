@@ -5,6 +5,25 @@ import { BusinessSidebar } from "./business-sidebar"
 
 export function BusinessShell() {
   const pathname = useLocation({ select: (location) => location.pathname })
+  if (pathname === "/business/fitness/apply") {
+    return (
+      <>
+        <a
+          href="#business-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-30 focus:rounded-md focus:bg-background focus:p-3"
+        >
+          Skip to content
+        </a>
+        <main
+          id="business-content"
+          tabIndex={-1}
+          className="min-h-screen outline-none"
+        >
+          <Outlet />
+        </main>
+      </>
+    )
+  }
   return (
     <SidebarProvider>
       <a
