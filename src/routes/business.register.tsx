@@ -4,6 +4,7 @@ import { AccountForm } from "@/components/business/account-form"
 import { SavedRegistration } from "@/components/business/saved-registration"
 import { OnboardingShell } from "@/components/business/onboarding-shell"
 import { Button } from "@/components/ui/button"
+import { notifySuccessAfterNavigation } from "@/components/ui/app-toast"
 import { createBusinessRepository } from "@/services/business-repository"
 import { createBusinessStorage } from "@/services/business-storage"
 
@@ -33,6 +34,7 @@ function BusinessRegister() {
                 "Unable to create your account. Please try again.",
             }
           await session.refresh()
+          notifySuccessAfterNavigation("Business account created")
           // This destination is supplied by the verification slice.
           window.location.assign("/business/verify")
         }}

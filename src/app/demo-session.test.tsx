@@ -9,7 +9,7 @@ function Harness() {
     <>
       <span data-testid="role-label">{session.roleLabel}</span>
       <label>
-        Demo role
+        Role
         <select
           value={session.role}
           onChange={(event) =>
@@ -33,6 +33,6 @@ it("updates the selected demo role", async () => {
   expect(screen.getByTestId("role-label")).toHaveTextContent("Admin")
   await userEvent
     .setup()
-    .selectOptions(screen.getByLabelText("Demo role"), "super-admin")
+    .selectOptions(screen.getByLabelText("Role"), "super-admin")
   expect(screen.getByTestId("role-label")).toHaveTextContent("Super Admin")
 })

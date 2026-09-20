@@ -1,9 +1,11 @@
 import { useState } from "react"
 import { useBusinessSession } from "@/app/business-session"
+import { DocumentDownloadButton } from "@/components/business/document-download-button"
+import { paymentReceiptDocument } from "@/domain/business-document-downloads"
 import { PageHeader } from "@/components/shared/page-header"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { notifySuccess } from "@/components/ui/app-toast"
 import {
   Card,
   CardContent,
@@ -78,10 +80,12 @@ export function FumigationTrackerPage() {
     },
   ]
   function advance(
-    action: () => { ok: true; value: unknown } | { ok: false; error: string }
+    action: () => { ok: true; value: unknown } | { ok: false; error: string },
+    successMessage: string
   ) {
     const result = action()
     setError(result.ok ? "" : result.error)
+    if (result.ok) notifySuccess(successMessage)
   }
   return (
     <div className="flex max-w-5xl min-w-0 flex-col gap-7 pb-12">
@@ -166,10 +170,17 @@ export function FumigationTrackerPage() {
                 </dd>
               </div>
             </dl>
-            <p className="mt-6 border-t pt-4 text-sm text-muted-foreground">
-              This payment reference records a simulated confirmation. No money
-              was collected.
-            </p>
+            <div className="mt-4">
+              <DocumentDownloadButton
+                document={paymentReceiptDocument(
+                  "Fumigation",
+                  application,
+                  businessState.profile
+                )}
+              >
+                Download payment record
+              </DocumentDownloadButton>
+            </div>
           </CardContent>
         </Card>
         <section aria-label="Application progress" className="min-w-0">
@@ -201,16 +212,14 @@ export function FumigationTrackerPage() {
           </ol>
         </section>
       </div>
-      <section aria-labelledby="simulation-controls" className="border-t pt-6">
+      <section aria-labelledby="external-actions" className="border-t pt-6">
         <div className="max-w-3xl space-y-4">
-          <Badge variant="outline">Simulation controls</Badge>
-          <h2 id="simulation-controls" className="text-lg font-semibold">
-            External actions
+          <h2 id="external-actions" className="text-lg font-semibold">
+            Provider and council updates
           </h2>
           <p className="text-sm leading-6 text-muted-foreground">
-            These controls demonstrate actions performed outside the business
-            portal. They do not send a provider report, record an official EHO
-            confirmation, or issue a council certificate.
+            The provider, EHO, and council complete these steps. View each
+            outcome as the application progresses.
           </p>
           {error && (
             <Alert variant="destructive">
@@ -221,23 +230,27 @@ export function FumigationTrackerPage() {
             <Button
               variant="outline"
               disabled={application.stage !== "awaiting-provider"}
-              onClick={() => advance(recordProviderReport)}
+              onClick={() =>
+                advance(recordProviderReport, "Provider report recorded")
+              }
             >
-              Simulate provider report
+              Show provider report
             </Button>
             <Button
               variant="outline"
               disabled={application.stage !== "report-submitted"}
-              onClick={() => advance(confirmEho)}
+              onClick={() => advance(confirmEho, "EHO confirmation recorded")}
             >
-              Simulate EHO confirmation
+              Show EHO confirmation
             </Button>
             <Button
               variant="outline"
               disabled={application.stage !== "eho-confirmed"}
-              onClick={() => advance(issueCertificate)}
+              onClick={() =>
+                advance(issueCertificate, "Fumigation certificate issued")
+              }
             >
-              Simulate council decision
+              Show council decision
             </Button>
           </div>
         </div>

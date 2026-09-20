@@ -827,6 +827,27 @@ This document defines the business-facing screens required to register a premise
 
 ---
 
+# D. Ongoing Account Use
+
+## 23. Business Settings
+
+**Purpose:** Let a signed-in business review account identity and save notification choices.
+
+**Components:**
+
+- Verified email and phone, assigned council, and business reference shown read-only
+- Business profile, Account, and Notifications tabs
+- Editable business and premises fields shown directly on the Business profile tab with a `Save changes` action
+- Business avatar and premises photos managed on the Business profile tab
+- Separate choices for application and inspection email updates
+- Preferences are saved locally; email delivery is outside the current implementation
+
+**Primary CTAs:** `Save changes` on Business profile; `Save preferences` on Notifications.
+
+**Rules:** A completed account cannot use the onboarding contact-change action. A new email or phone requires a separate verification process. Changing council requires review of the premises assignment. In-portal notices and application status remain visible regardless of email choices.
+
+---
+
 # Recommended Shared Status Labels
 
 | Flow | Internal stage | Business-facing label |
@@ -854,6 +875,6 @@ This document defines the business-facing screens required to register a premise
 - Partner submission form field specifications
 - EHO checklist and field-work screens
 - MOH decision and certificate issuance controls
-- Admin, finance, reporting, and settings screens
+- Admin, finance, reporting, and staff settings screens
 - Public certificate verification
 - Final legal objection and appeal procedure

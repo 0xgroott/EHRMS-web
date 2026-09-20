@@ -91,7 +91,9 @@ it("takes eligible people through review and simulated payment, then separate ex
   expect(screen.getByText("Ada Okafor")).toBeVisible()
   expect(screen.getByText("₦12,500")).toBeVisible()
   await user.click(screen.getByRole("button", { name: "Proceed to payment" }))
-  expect(screen.getByText(/No money will move/)).toBeVisible()
+  expect(
+    screen.getByText(/Check the amount and selected facility/)
+  ).toBeVisible()
   await user.click(screen.getByRole("button", { name: "Confirm payment" }))
   expect(onPaid).toHaveBeenCalledOnce()
   expect(
@@ -103,21 +105,21 @@ it("takes eligible people through review and simulated payment, then separate ex
     screen.getByRole("heading", { name: "Awaiting facility result" })
   ).toBeVisible()
   const controls = screen.getByRole("region", {
-    name: "Facility and council actions",
+    name: "Facility and council updates",
   })
   expect(
-    within(controls).getByRole("button", { name: "Simulate council issuance" })
+    within(controls).getByRole("button", { name: "Show council decision" })
   ).toBeDisabled()
   await user.click(
     within(controls).getByRole("button", {
-      name: "Simulate facility Fit result",
+      name: "Show facility Fit result",
     })
   )
   expect(
     screen.getByRole("heading", { name: "Facility result received: Fit" })
   ).toBeVisible()
   await user.click(
-    within(controls).getByRole("button", { name: "Simulate council issuance" })
+    within(controls).getByRole("button", { name: "Show council decision" })
   )
   expect(
     screen.getByRole("link", { name: "View Fitness Certificate" })
@@ -131,7 +133,9 @@ it("takes eligible people through review and simulated payment, then separate ex
   expect(screen.getByText("Port Harcourt City")).toBeVisible()
   expect(screen.getByText("Issue date")).toBeVisible()
   expect(screen.getByText("Expiry date")).toBeVisible()
-  expect(screen.getByText(/Not valid for regulatory use/)).toBeVisible()
+  expect(
+    screen.getByRole("button", { name: "Download certificate" })
+  ).toBeVisible()
   expect(
     screen.queryByRole("link", { name: /download/i })
   ).not.toBeInTheDocument()

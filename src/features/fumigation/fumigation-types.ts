@@ -1,3 +1,5 @@
+import type { CertificatePremisesSnapshot } from "@/domain/business-types"
+
 export type FumigationStage =
   | "draft"
   | "review"
@@ -22,6 +24,7 @@ export interface FumigationCertificate {
   issuedAt: string
   expiresAt: string
   workDate: string
+  premisesSnapshot?: CertificatePremisesSnapshot
 }
 
 export interface FumigationApplication {
@@ -38,6 +41,7 @@ export interface FumigationApplication {
 
 export interface FumigationState {
   application: FumigationApplication | null
+  history?: FumigationApplication[]
 }
 
 export type FumigationRuleResult<T> =

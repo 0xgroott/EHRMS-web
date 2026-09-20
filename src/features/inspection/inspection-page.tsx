@@ -1,9 +1,15 @@
 import { useState } from "react"
 import { BusinessFormDrawer } from "@/components/business/business-form-drawer"
+import { DocumentDownloadButton } from "@/components/business/document-download-button"
+import {
+  findingsNoticeDocument,
+  inspectionNoticeDocument,
+} from "@/domain/business-document-downloads"
 import { PageHeader } from "@/components/shared/page-header"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { notifySuccess } from "@/components/ui/app-toast"
 import {
   Field,
   FieldError,
@@ -90,7 +96,6 @@ export function InspectionPage() {
     null
   )
   const [correctionNote, setCorrectionNote] = useState("")
-  const [correctionSaved, setCorrectionSaved] = useState("")
   const [correctionError, setCorrectionError] = useState("")
   const [error, setError] = useState("")
   const [fieldError, setFieldError] = useState(false)
@@ -131,9 +136,10 @@ export function InspectionPage() {
     (finding) => finding.id === selectedFindingId
   )
 
-  function advance(action: () => TransitionResult) {
+  function advance(action: () => TransitionResult, successMessage: string) {
     const result = action()
     setError(result.ok ? "" : result.error)
+    if (result.ok) notifySuccess(successMessage)
   }
 
   function closeCorrection() {
@@ -152,7 +158,7 @@ export function InspectionPage() {
     const result = recordCorrection(findingId, note)
     if (result.ok) {
       setFieldError(false)
-      setCorrectionSaved(`Correction recorded for ${selectedFinding?.title}.`)
+      notifySuccess(`Correction recorded for ${selectedFinding?.title}`)
       closeCorrection()
     } else {
       setCorrectionError(result.error)
@@ -216,8 +222,15 @@ export function InspectionPage() {
           Please make the premises and relevant records available for inspection
           at the scheduled time.
         </p>
+        <DocumentDownloadButton document={inspectionNoticeDocument(inspection)}>
+          Download notice
+        </DocumentDownloadButton>
         {inspection.stage === "notice-served" && (
-          <Button onClick={() => advance(acknowledgeNotice)}>
+          <Button
+            onClick={() =>
+              advance(acknowledgeNotice, "Inspection notice acknowledged")
+            }
+          >
             Acknowledge notice
           </Button>
         )}
@@ -242,6 +255,9 @@ export function InspectionPage() {
               remains subject to council review at the follow-up inspection.
             </p>
           </div>
+          <DocumentDownloadButton document={findingsNoticeDocument(inspection)}>
+            Download findings notice
+          </DocumentDownloadButton>
           <ol className="divide-y border-y">
             {inspection.findings.map((finding, index) => (
               <li
@@ -289,7 +305,6 @@ export function InspectionPage() {
                     <Button
                       variant="outline"
                       onClick={() => {
-                        setCorrectionSaved("")
                         setCorrectionNote("")
                         setCorrectionError("")
                         setFieldError(false)
@@ -303,11 +318,6 @@ export function InspectionPage() {
               </li>
             ))}
           </ol>
-          {correctionSaved && (
-            <p role="status" className="text-sm text-muted-foreground">
-              {correctionSaved}
-            </p>
-          )}
           {allCorrectionsRecorded && (
             <p className="text-sm text-muted-foreground">
               All corrections are recorded. The council must schedule and
@@ -350,8 +360,17 @@ export function InspectionPage() {
             The follow-up will review the corrections recorded against the
             original findings. This notice requires a separate acknowledgement.
           </p>
+          <DocumentDownloadButton
+            document={inspectionNoticeDocument(inspection, true)}
+          >
+            Download follow-up notice
+          </DocumentDownloadButton>
           {inspection.stage === "follow-up-served" && (
-            <Button onClick={() => advance(acknowledgeFollowUp)}>
+            <Button
+              onClick={() =>
+                advance(acknowledgeFollowUp, "Follow-up notice acknowledged")
+              }
+            >
               Acknowledge follow-up notice
             </Button>
           )}
@@ -381,20 +400,15 @@ export function InspectionPage() {
       )}
 
       <section
-        aria-labelledby="inspection-simulation-controls"
+        aria-labelledby="inspection-council-updates"
         className="space-y-4 border-t pt-7"
       >
-        <Badge variant="outline">Simulation controls</Badge>
-        <h2
-          id="inspection-simulation-controls"
-          className="text-lg font-semibold"
-        >
-          Council actions
+        <h2 id="inspection-council-updates" className="text-lg font-semibold">
+          Council updates
         </h2>
         <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-          These controls show steps performed by council staff outside the
-          business portal. They do not serve an official notice, perform an
-          inspection, or record a council decision.
+          Council staff complete these steps outside the business portal. View
+          each update as the case progresses.
         </p>
         {error && (
           <Alert variant="destructive">
@@ -405,30 +419,34 @@ export function InspectionPage() {
           <Button
             variant="outline"
             disabled={inspection.stage !== "notice-acknowledged"}
-            onClick={() => advance(issueFindings)}
+            onClick={() => advance(issueFindings, "Inspection findings issued")}
           >
-            Simulate inspection findings
+            Show inspection findings
           </Button>
           <Button
             variant="outline"
             disabled={inspection.stage !== "corrections-recorded"}
-            onClick={() => advance(scheduleFollowUp)}
+            onClick={() =>
+              advance(scheduleFollowUp, "Follow-up notice scheduled")
+            }
           >
-            Simulate follow-up notice
+            Show follow-up notice
           </Button>
           <Button
             variant="outline"
             disabled={inspection.stage !== "follow-up-acknowledged"}
-            onClick={() => advance(resolveFollowUp)}
+            onClick={() =>
+              advance(resolveFollowUp, "Follow-up findings resolved")
+            }
           >
-            Simulate findings resolved
+            Show resolved outcome
           </Button>
           <Button
             variant="outline"
             disabled={inspection.stage !== "follow-up-acknowledged"}
-            onClick={() => advance(escalateFollowUp)}
+            onClick={() => advance(escalateFollowUp, "Further action recorded")}
           >
-            Simulate further action
+            Show further action
           </Button>
         </div>
       </section>

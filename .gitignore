@@ -12,6 +12,8 @@ dist-ssr
 .vinxi
 __unconfig*
 todos.json
+test-results/
+playwright-report/
 
 # TypeScript
 *.tsbuildinfo

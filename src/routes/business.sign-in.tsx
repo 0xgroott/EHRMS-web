@@ -16,6 +16,12 @@ function BusinessSignIn() {
       title="Sign in to your business"
       description="Continue managing your applications, certificates and inspections."
     >
+      <Link
+        to="/"
+        className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+      >
+        Choose another account type
+      </Link>
       <SavedRegistration />
       <SignInForm
         onSubmit={({ contact, password }) => {

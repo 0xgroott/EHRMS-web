@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/shared/page-header"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { notifySuccess } from "@/components/ui/app-toast"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
@@ -70,15 +71,28 @@ export function FumigationApplicationPage({
   }
   if (!isHydrated) return <FumigationLoading />
   if (application && !["draft", "review"].includes(application.stage)) {
+    const issued = application.stage === "issued"
     return (
       <div className="max-w-3xl space-y-5">
         <PageHeader
           eyebrow="Fumigation Certificate"
-          title="Application underway"
-          description="Follow the service report and decision for your premises."
+          title={
+            issued ? "Fumigation certificate issued" : "Application underway"
+          }
+          description={
+            issued
+              ? "Your certificate is available. Start a renewal from its details when you are ready."
+              : "Follow the service report and decision for your premises."
+          }
         />
-        <FumigationLink href="/business/fumigation/tracker">
-          Track application
+        <FumigationLink
+          href={
+            issued
+              ? "/business/fumigation/certificate"
+              : "/business/fumigation/tracker"
+          }
+        >
+          {issued ? "View Fumigation Certificate" : "Track application"}
         </FumigationLink>
       </div>
     )
@@ -102,6 +116,7 @@ export function FumigationApplicationPage({
   function pay() {
     const result = confirmPayment()
     if (!result.ok) return setError(result.error)
+    notifySuccess("Fumigation application submitted")
     onPaid?.()
   }
 
@@ -341,11 +356,10 @@ export function FumigationApplicationPage({
               </CardContent>
             </Card>
             <Alert>
-              <AlertTitle>Payment simulation</AlertTitle>
+              <AlertTitle>Payment</AlertTitle>
               <AlertDescription>
-                Confirming this step records a payment in this browser only. No
-                money moves and no provider is booked. The provider, EHO, and
-                council steps are also simulated separately.
+                Check the amount and provider before confirming payment. The
+                provider's work and council review follow as separate steps.
               </AlertDescription>
             </Alert>
             <div className="flex flex-wrap gap-3">

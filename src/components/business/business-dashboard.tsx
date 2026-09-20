@@ -1,8 +1,25 @@
-import { ArrowRight, BellRing, CheckCircle2 } from "lucide-react"
+import {
+  ArrowRight,
+  BellRing,
+  CalendarClock,
+  CheckCircle2,
+  ClipboardList,
+  FileBadge2,
+  ReceiptText,
+  ShieldCheck,
+  SprayCan,
+  Users,
+} from "lucide-react"
+import type { LucideIcon } from "lucide-react"
 import type { BusinessPortalState } from "@/domain/business-types"
 import type { FitnessState } from "@/features/fitness/fitness-types"
 import type { FumigationState } from "@/features/fumigation/fumigation-types"
 import type { InspectionState } from "@/features/inspection/inspection-types"
+import {
+  certificateIsValid,
+  certificateReminder,
+  latestCertificateApplication,
+} from "@/domain/certificate-validity"
 import { fumigationStageLabel } from "@/features/fumigation/fumigation-shared"
 import { formatFitnessReference } from "@/features/fitness/fitness-tracker-page"
 import {
@@ -26,8 +43,10 @@ import {
   Empty,
   EmptyDescription,
   EmptyHeader,
+  EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 function QuietLink({
   href,
@@ -55,11 +74,13 @@ function EmptySection({
   title,
   emptyTitle,
   description,
+  icon: Icon,
 }: {
   id: string
   title: string
   emptyTitle: string
   description: string
+  icon: LucideIcon
 }) {
   return (
     <section aria-labelledby={id} className="min-w-0">
@@ -68,6 +89,9 @@ function EmptySection({
       </h2>
       <Empty className="border px-5 py-6">
         <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <Icon aria-hidden="true" />
+          </EmptyMedia>
           <EmptyTitle>{emptyTitle}</EmptyTitle>
           <EmptyDescription>{description}</EmptyDescription>
         </EmptyHeader>
@@ -114,13 +138,60 @@ export function BusinessDashboard({
   )
   const urgentAlerts = getUrgentBusinessAlerts(state.alerts)
   const fitnessApplication = fitness.application
-  const fitnessIssued = fitnessApplication?.stage === "issued"
-  const fitnessInProgress = Boolean(fitnessApplication && !fitnessIssued)
-  const fumigationApplication = fumigation.application
-  const fumigationIssued = fumigationApplication?.stage === "issued"
-  const fumigationInProgress = Boolean(
-    fumigationApplication && !fumigationIssued
+  const fitnessIssuedApplication = latestCertificateApplication(
+    fitnessApplication,
+    fitness.history
   )
+  const fitnessCertificate = fitnessIssuedApplication?.certificate
+  const fitnessIssued = fitnessCertificate
+    ? certificateIsValid(fitnessCertificate.expiresAt)
+    : fitnessApplication?.stage === "issued"
+  const fitnessExpired = Boolean(fitnessCertificate && !fitnessIssued)
+  const fitnessInProgress = Boolean(
+    fitnessApplication && fitnessApplication.stage !== "issued"
+  )
+  const fitnessRenewing = Boolean(
+    fitness.history?.length && fitnessApplication?.stage !== "issued"
+  )
+  const fumigationApplication = fumigation.application
+  const fumigationIssuedApplication = latestCertificateApplication(
+    fumigationApplication,
+    fumigation.history
+  )
+  const fumigationCertificate = fumigationIssuedApplication?.certificate
+  const fumigationIssued = fumigationCertificate
+    ? certificateIsValid(fumigationCertificate.expiresAt)
+    : fumigationApplication?.stage === "issued"
+  const fumigationExpired = Boolean(fumigationCertificate && !fumigationIssued)
+  const fumigationInProgress = Boolean(
+    fumigationApplication && fumigationApplication.stage !== "issued"
+  )
+  const fumigationRenewing = Boolean(
+    fumigation.history?.length && fumigationApplication?.stage !== "issued"
+  )
+  const fitnessReminder = fitnessCertificate
+    ? certificateReminder(
+        fitnessCertificate.expiresAt,
+        new Date(),
+        fitnessRenewing
+      )
+    : null
+  const fumigationReminder = fumigationCertificate
+    ? certificateReminder(
+        fumigationCertificate.expiresAt,
+        new Date(),
+        fumigationRenewing
+      )
+    : null
+  const recentFitnessPayment =
+    fitnessApplication?.paymentReference ??
+    [...(fitness.history ?? [])].reverse().find((item) => item.paymentReference)
+      ?.paymentReference
+  const recentFumigationPayment =
+    fumigationApplication?.paymentReference ??
+    [...(fumigation.history ?? [])]
+      .reverse()
+      .find((item) => item.paymentReference)?.paymentReference
   const inspectionCase = inspection.inspection
   const healthEligible = fitnessIssued && fumigationIssued
   const healthStage = healthEligible
@@ -140,17 +211,21 @@ export function BusinessDashboard({
     profileComplete,
     alerts: state.alerts,
     foodHandlerCount: fitness.handlers.length,
-    fitness: fitnessIssued
-      ? "active"
-      : fitnessInProgress
-        ? "in-progress"
-        : "not-started",
+    fitness: fitnessInProgress
+      ? "in-progress"
+      : fitnessIssued
+        ? "active"
+        : fitnessExpired
+          ? "expired"
+          : "not-started",
     fitnessActionHref,
-    fumigation: fumigationIssued
-      ? "active"
-      : fumigationInProgress
-        ? "in-progress"
-        : "not-started",
+    fumigation: fumigationInProgress
+      ? "in-progress"
+      : fumigationIssued
+        ? "active"
+        : fumigationExpired
+          ? "expired"
+          : "not-started",
     fumigationActionHref,
     missingHealthApprovalRequirement: !healthEligible,
     healthApprovalStage: healthStage,
@@ -158,49 +233,75 @@ export function BusinessDashboard({
   const statuses = [
     {
       title: "Fitness",
-      status: fitnessIssued
-        ? "Issued"
-        : fitnessInProgress
-          ? fitnessApplication?.stage === "awaiting-facility"
-            ? "Awaiting facility result"
-            : "Application in progress"
-          : "Not started",
-      description: fitnessIssued
-        ? "Your selected food handlers are covered by a Fitness Certificate."
-        : fitnessInProgress
-          ? "Track the assessment and council decision for your selected food handlers."
-          : "Covers the food handlers at your premises. Add their records before beginning an assessment.",
-      href: fitnessIssued
-        ? "/business/fitness/certificate"
-        : fitnessInProgress
-          ? fitnessActionHref
-          : "/business/food-handlers",
-      label: fitnessIssued
-        ? "View Fitness certificate"
-        : fitnessInProgress
-          ? "Track Fitness application"
-          : "Manage food handlers",
+      icon: Users,
+      status: fitnessRenewing
+        ? "Renewal in progress"
+        : fitnessExpired
+          ? "Expired"
+          : fitnessIssued
+            ? "Issued"
+            : fitnessInProgress
+              ? fitnessApplication?.stage === "awaiting-facility"
+                ? "Awaiting facility result"
+                : "Application in progress"
+              : "Not started",
+      description: fitnessRenewing
+        ? "Previous certificate saved in history."
+        : fitnessExpired
+          ? "Renew to restore coverage."
+          : fitnessIssued
+            ? "Food handlers covered."
+            : fitnessInProgress
+              ? "Assessment and council decision pending."
+              : "Add food handlers to begin.",
+      href: fitnessRenewing
+        ? fitnessActionHref
+        : fitnessExpired || fitnessIssued
+          ? "/business/fitness/certificate"
+          : fitnessInProgress
+            ? fitnessActionHref
+            : "/business/food-handlers",
+      label: fitnessRenewing
+        ? "Track Fitness renewal"
+        : fitnessExpired
+          ? "Renew Fitness certificate"
+          : fitnessIssued
+            ? "View Fitness certificate"
+            : fitnessInProgress
+              ? "Track Fitness application"
+              : "Manage food handlers",
     },
     {
       title: "Fumigation",
-      status: fumigationApplication
-        ? fumigationStageLabel[fumigationApplication.stage]
-        : "Not started",
-      description:
-        "Covers fumigation of your premises by an approved provider.",
-      href: fumigationIssued
-        ? "/business/fumigation/certificate"
-        : fumigationInProgress
-          ? fumigationActionHref
-          : "/business/fumigation/apply",
-      label: fumigationIssued
-        ? "View Fumigation Certificate"
-        : fumigationInProgress
-          ? "Track Fumigation application"
-          : "Start Fumigation application",
+      icon: SprayCan,
+      status: fumigationRenewing
+        ? "Renewal in progress"
+        : fumigationExpired
+          ? "Expired"
+          : fumigationApplication
+            ? fumigationStageLabel[fumigationApplication.stage]
+            : "Not started",
+      description: "Premises treatment by an approved provider.",
+      href: fumigationRenewing
+        ? fumigationActionHref
+        : fumigationExpired || fumigationIssued
+          ? "/business/fumigation/certificate"
+          : fumigationInProgress
+            ? fumigationActionHref
+            : "/business/fumigation/apply",
+      label: fumigationRenewing
+        ? "Track Fumigation renewal"
+        : fumigationExpired
+          ? "Renew Fumigation Certificate"
+          : fumigationIssued
+            ? "View Fumigation Certificate"
+            : fumigationInProgress
+              ? "Track Fumigation application"
+              : "Start Fumigation application",
     },
     {
       title: "Health Approval",
+      icon: ShieldCheck,
       status: !healthEligible
         ? "Requirements incomplete"
         : inspectionCase?.stage === "approval-issued"
@@ -216,10 +317,10 @@ export function BusinessDashboard({
                   ? "Acknowledgement required"
                   : "Inspection pending",
       description: !healthEligible
-        ? "Requires Fitness and Fumigation Certificates, followed by eligibility checks and inspection."
+        ? "Fitness and Fumigation required first."
         : inspectionCase?.stage === "approval-issued"
-          ? "Your Health Approval outcome is available for these premises."
-          : "Follow the inspection, findings, and council decision for your premises.",
+          ? "Approval available for these premises."
+          : "Track inspection and council decision.",
       href: "/business/health-approval",
       label: healthEligible
         ? "View Health Approval"
@@ -228,11 +329,7 @@ export function BusinessDashboard({
   ]
   return (
     <div className="flex min-w-0 flex-col gap-8 break-words">
-      <PageHeader
-        eyebrow="Business portal"
-        title="Business dashboard"
-        description="Your premises, certificate progress, and the next step to take."
-      />
+      <PageHeader eyebrow="Business portal" title="Business dashboard" />
       <section
         aria-label="Business profile"
         className="flex min-w-0 flex-col justify-between gap-3 sm:flex-row sm:items-start"
@@ -254,6 +351,9 @@ export function BusinessDashboard({
                 ? `${profile.premises.premisesName} · ${profile.premises.address}`
                 : "Premises details still needed"}
             </p>
+            <QuietLink href="/business/settings">
+              Update business profile
+            </QuietLink>
           </div>
         </div>
         <Badge variant="outline" className="shrink-0 self-start">
@@ -270,8 +370,7 @@ export function BusinessDashboard({
             attention
           </AlertTitle>
           <AlertDescription>
-            Review inspection notices and corrective actions below to see what
-            is due.
+            Check deadlines in the Activity tab.
           </AlertDescription>
         </Alert>
       )}
@@ -304,228 +403,324 @@ export function BusinessDashboard({
           </CardFooter>
         </Card>
       </section>
-      <section
-        aria-labelledby="certificate-status"
-        className="flex flex-col gap-4"
-      >
-        <h2 id="certificate-status" className="font-semibold">
-          Certificate status
-        </h2>
-        <div className="grid min-w-0 gap-4 lg:grid-cols-3">
-          {statuses.map((item) => (
-            <Card key={item.title} size="sm" className="min-w-0">
-              <CardHeader>
-                <CardTitle>
-                  <h3>{item.title}</h3>
-                </CardTitle>
-                <Badge variant="secondary" className="mt-2">
-                  {item.status}
-                </Badge>
-              </CardHeader>
-              <CardContent className="flex-1">
-                <p className="text-sm leading-6 text-muted-foreground">
-                  {item.description}
-                </p>
-              </CardContent>
-              <CardFooter>
-                <QuietLink href={item.href}>{item.label}</QuietLink>
-              </CardFooter>
-            </Card>
-          ))}
+      <Tabs defaultValue="overview" className="min-w-0 gap-6">
+        <div className="w-full overflow-x-auto border-b">
+          <TabsList
+            variant="line"
+            aria-label="Dashboard sections"
+            className="h-11! min-w-max! justify-start gap-1 rounded-none p-0"
+          >
+            {[
+              ["overview", "Overview"],
+              ["activity", "Activity"],
+              ["records", "Records"],
+            ].map(([value, label]) => (
+              <TabsTrigger
+                key={value}
+                value={value}
+                className="min-h-11 flex-none rounded-none border-b-2 border-b-transparent px-4 transition-none after:hidden data-active:border-b-primary"
+              >
+                {label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
         </div>
-      </section>
-      <div className="grid min-w-0 gap-8 lg:grid-cols-2">
-        <div className="flex min-w-0 flex-col gap-2">
-          {fitnessInProgress || fumigationInProgress ? (
-            <section aria-labelledby="active-applications" className="min-w-0">
-              <h2 id="active-applications" className="mb-3 font-semibold">
-                Active applications
-              </h2>
-              <div className="space-y-3">
-                {fitnessInProgress && (
-                  <Card size="sm">
-                    <CardHeader>
-                      <CardTitle>Fitness application</CardTitle>
-                      <CardDescription>
-                        {fitnessApplication?.handlerIds.length} food handler(s)
-                        ·{" "}
-                        {fitnessApplication?.stage === "awaiting-facility"
-                          ? "Awaiting facility result"
-                          : fitnessApplication?.stage === "result-received"
-                            ? "Facility result received"
-                            : "Draft in progress"}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardFooter>
-                      <QuietLink href={fitnessActionHref}>
-                        Track Fitness application
-                      </QuietLink>
-                    </CardFooter>
-                  </Card>
-                )}
-                {fumigationInProgress && (
-                  <Card size="sm">
-                    <CardHeader>
-                      <CardTitle>Fumigation application</CardTitle>
-                      <CardDescription>
-                        {fumigationApplication
-                          ? fumigationStageLabel[fumigationApplication.stage]
-                          : ""}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardFooter>
-                      <QuietLink href={fumigationActionHref}>
-                        Track Fumigation application
-                      </QuietLink>
-                    </CardFooter>
-                  </Card>
-                )}
-              </div>
-            </section>
-          ) : (
-            <EmptySection
-              id="active-applications"
-              title="Active applications"
-              emptyTitle="No active applications"
-              description="Begin with Fitness for your food handlers and Fumigation for your premises. Application progress will appear here."
-            />
-          )}
-          <QuietLink href="/business/applications">View applications</QuietLink>
-        </div>
-        <section aria-labelledby="reminders" className="min-w-0">
-          <h2 id="reminders" className="mb-3 font-semibold">
-            Reminders and deadlines
-          </h2>
-          {state.alerts.length ? (
-            <ul className="flex flex-col divide-y rounded-lg border px-4">
-              {[
-                ...urgentAlerts,
-                ...state.alerts.filter((alert) => !alert.urgent),
-              ].map((alert) => (
-                <li key={alert.id} className="flex min-w-0 flex-col gap-1 py-3">
-                  <p className="font-medium">{alert.title}</p>
-                  <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                    <Badge variant={alert.urgent ? "destructive" : "outline"}>
-                      {alert.kind === "inspection"
-                        ? "Acknowledgement required"
-                        : "Corrective action required"}
+        <TabsContent value="overview">
+          <section
+            aria-labelledby="certificate-status"
+            className="flex flex-col gap-4"
+          >
+            <h2 id="certificate-status" className="font-semibold">
+              Certificate status
+            </h2>
+            <div className="grid min-w-0 gap-4 lg:grid-cols-3">
+              {statuses.map((item) => (
+                <Card key={item.title} size="sm" className="min-w-0">
+                  <CardHeader>
+                    <CardTitle>
+                      <h3 className="flex items-center gap-2">
+                        <item.icon
+                          className="size-4 text-primary"
+                          aria-hidden="true"
+                        />
+                        {item.title}
+                      </h3>
+                    </CardTitle>
+                    <Badge variant="secondary" className="mt-2">
+                      {item.status}
                     </Badge>
-                    <span>
-                      Due <Deadline value={alert.dueAt} />
-                    </span>
-                  </div>
-                  <QuietLink href="/business/inspections">
-                    {alert.kind === "inspection"
-                      ? "View inspection notice"
-                      : "View findings"}
-                  </QuietLink>
-                </li>
+                  </CardHeader>
+                  <CardContent className="flex-1">
+                    <p className="text-sm leading-6 text-muted-foreground">
+                      {item.description}
+                    </p>
+                  </CardContent>
+                  <CardFooter>
+                    <QuietLink href={item.href}>{item.label}</QuietLink>
+                  </CardFooter>
+                </Card>
               ))}
-            </ul>
-          ) : (
-            <Empty className="border px-5 py-6">
-              <EmptyHeader>
-                <EmptyTitle>No reminders yet</EmptyTitle>
-                <EmptyDescription>
-                  Inspection deadlines and certificate renewal reminders will
-                  appear here when available.
-                </EmptyDescription>
-              </EmptyHeader>
-            </Empty>
-          )}
-        </section>
-        {fumigationApplication?.paymentReference ||
-        fitnessApplication?.paymentReference ? (
-          <section aria-labelledby="recent-receipts" className="min-w-0">
-            <h2 id="recent-receipts" className="mb-3 font-semibold">
-              Recent receipts
-            </h2>
-            <Card size="sm">
-              <CardHeader>
-                <CardTitle>
-                  {fumigationApplication?.paymentReference
-                    ? "Fumigation service"
-                    : "Fitness assessment"}
-                </CardTitle>
-                <CardDescription>
-                  {fumigationApplication?.paymentReference ??
-                    formatFitnessReference(
-                      fitnessApplication?.paymentReference ?? ""
-                    )}{" "}
-                  · No money moved
-                </CardDescription>
-              </CardHeader>
-              <CardFooter>
-                <QuietLink
-                  href={
-                    fumigationApplication?.paymentReference
-                      ? "/business/fumigation/tracker"
-                      : "/business/fitness/tracker"
-                  }
-                >
-                  View application
-                </QuietLink>
-              </CardFooter>
-            </Card>
+            </div>
           </section>
-        ) : (
-          <EmptySection
-            id="recent-receipts"
-            title="Recent receipts"
-            emptyTitle="No receipts yet"
-            description="Receipts will appear after payments for certificate services. No payment is needed for account setup."
-          />
-        )}
-        {fumigationApplication?.certificate ||
-        fitnessApplication?.certificate ? (
-          <section aria-labelledby="recent-certificates" className="min-w-0">
-            <h2 id="recent-certificates" className="mb-3 font-semibold">
-              Recent certificates
-            </h2>
-            <Card size="sm">
-              <CardHeader>
-                <CardTitle>
-                  {fumigationApplication?.certificate
-                    ? "Fumigation Certificate"
-                    : "Fitness Certificate"}
-                </CardTitle>
-                <CardDescription>
-                  {fumigationApplication?.certificate?.id ??
-                    formatFitnessReference(
-                      fitnessApplication?.certificate?.id ?? ""
+        </TabsContent>
+        <TabsContent value="activity">
+          <div className="grid min-w-0 gap-8 lg:grid-cols-2">
+            <div className="flex min-w-0 flex-col gap-2">
+              {fitnessInProgress || fumigationInProgress ? (
+                <section
+                  aria-labelledby="active-applications"
+                  className="min-w-0"
+                >
+                  <h2 id="active-applications" className="mb-3 font-semibold">
+                    Active applications
+                  </h2>
+                  <div className="space-y-3">
+                    {fitnessInProgress && (
+                      <Card size="sm">
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <Users
+                              className="size-4 text-primary"
+                              aria-hidden="true"
+                            />
+                            Fitness application
+                          </CardTitle>
+                          <CardDescription>
+                            {fitnessApplication?.handlerIds.length} food
+                            handler(s) ·{" "}
+                            {fitnessApplication?.stage === "awaiting-facility"
+                              ? "Awaiting facility result"
+                              : fitnessApplication?.stage === "result-received"
+                                ? "Facility result received"
+                                : "Draft in progress"}
+                          </CardDescription>
+                        </CardHeader>
+                        <CardFooter>
+                          <QuietLink href={fitnessActionHref}>
+                            Track Fitness application
+                          </QuietLink>
+                        </CardFooter>
+                      </Card>
                     )}
-                </CardDescription>
-              </CardHeader>
-              <CardFooter>
-                <QuietLink
-                  href={
-                    fumigationApplication?.certificate
-                      ? "/business/fumigation/certificate"
-                      : "/business/fitness/certificate"
-                  }
-                >
-                  View certificate
-                </QuietLink>
-              </CardFooter>
-            </Card>
-          </section>
-        ) : (
-          <EmptySection
-            id="recent-certificates"
-            title="Recent certificates"
-            emptyTitle="No certificates yet"
-            description="Issued certificates will appear here after assessment and approval. Completing your profile does not issue a certificate."
-          />
-        )}
-      </div>
-      <nav
-        aria-label="Business dashboard shortcuts"
-        className="flex flex-wrap gap-x-6 gap-y-2"
-      >
-        <QuietLink href="/business/inspections">View inspections</QuietLink>
-        <QuietLink href="/business/profile">Update business profile</QuietLink>
-        <QuietLink href="/business/certificates">View certificates</QuietLink>
-      </nav>
+                    {fumigationInProgress && (
+                      <Card size="sm">
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <SprayCan
+                              className="size-4 text-primary"
+                              aria-hidden="true"
+                            />
+                            Fumigation application
+                          </CardTitle>
+                          <CardDescription>
+                            {fumigationApplication
+                              ? fumigationStageLabel[
+                                  fumigationApplication.stage
+                                ]
+                              : ""}
+                          </CardDescription>
+                        </CardHeader>
+                        <CardFooter>
+                          <QuietLink href={fumigationActionHref}>
+                            Track Fumigation application
+                          </QuietLink>
+                        </CardFooter>
+                      </Card>
+                    )}
+                  </div>
+                </section>
+              ) : (
+                <EmptySection
+                  id="active-applications"
+                  title="Active applications"
+                  emptyTitle="No active applications"
+                  description="Start Fitness or Fumigation when ready."
+                  icon={ClipboardList}
+                />
+              )}
+              <QuietLink href="/business/applications">
+                View applications
+              </QuietLink>
+            </div>
+            <section aria-labelledby="reminders" className="min-w-0">
+              <h2 id="reminders" className="mb-3 font-semibold">
+                Reminders and deadlines
+              </h2>
+              {state.alerts.length || fitnessReminder || fumigationReminder ? (
+                <ul className="flex flex-col divide-y rounded-lg border px-4">
+                  {fitnessReminder && (
+                    <li className="py-3">
+                      <p className="flex items-center gap-2 font-medium">
+                        <CalendarClock
+                          className="size-4 text-primary"
+                          aria-hidden="true"
+                        />
+                        Fitness Certificate
+                      </p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {fitnessReminder}
+                      </p>
+                      <QuietLink href="/business/fitness/certificate">
+                        View certificate
+                      </QuietLink>
+                    </li>
+                  )}
+                  {fumigationReminder && (
+                    <li className="py-3">
+                      <p className="flex items-center gap-2 font-medium">
+                        <CalendarClock
+                          className="size-4 text-primary"
+                          aria-hidden="true"
+                        />
+                        Fumigation Certificate
+                      </p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {fumigationReminder}
+                      </p>
+                      <QuietLink href="/business/fumigation/certificate">
+                        View certificate
+                      </QuietLink>
+                    </li>
+                  )}
+                  {[
+                    ...urgentAlerts,
+                    ...state.alerts.filter((alert) => !alert.urgent),
+                  ].map((alert) => (
+                    <li
+                      key={alert.id}
+                      className="flex min-w-0 flex-col gap-1 py-3"
+                    >
+                      <p className="flex items-center gap-2 font-medium">
+                        <BellRing
+                          className="size-4 text-primary"
+                          aria-hidden="true"
+                        />
+                        {alert.title}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                        <Badge
+                          variant={alert.urgent ? "destructive" : "outline"}
+                        >
+                          {alert.kind === "inspection"
+                            ? "Acknowledgement required"
+                            : "Corrective action required"}
+                        </Badge>
+                        <span>
+                          Due <Deadline value={alert.dueAt} />
+                        </span>
+                      </div>
+                      <QuietLink href="/business/inspections">
+                        {alert.kind === "inspection"
+                          ? "View inspection notice"
+                          : "View findings"}
+                      </QuietLink>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <Empty className="border px-5 py-6">
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <CalendarClock aria-hidden="true" />
+                    </EmptyMedia>
+                    <EmptyTitle>No reminders yet</EmptyTitle>
+                    <EmptyDescription>
+                      Deadlines and renewals will appear here.
+                    </EmptyDescription>
+                  </EmptyHeader>
+                </Empty>
+              )}
+            </section>
+          </div>
+        </TabsContent>
+        <TabsContent value="records">
+          <div className="grid min-w-0 gap-8 lg:grid-cols-2">
+            {recentFumigationPayment || recentFitnessPayment ? (
+              <section aria-labelledby="recent-receipts" className="min-w-0">
+                <h2 id="recent-receipts" className="mb-3 font-semibold">
+                  Recent receipts
+                </h2>
+                <Card size="sm">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <ReceiptText
+                        className="size-4 text-primary"
+                        aria-hidden="true"
+                      />
+                      {recentFumigationPayment
+                        ? "Fumigation service"
+                        : "Fitness assessment"}
+                    </CardTitle>
+                    <CardDescription>
+                      {recentFumigationPayment ??
+                        formatFitnessReference(recentFitnessPayment ?? "")}{" "}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardFooter>
+                    <QuietLink href="/business/applications">
+                      View application
+                    </QuietLink>
+                  </CardFooter>
+                </Card>
+              </section>
+            ) : (
+              <EmptySection
+                id="recent-receipts"
+                title="Recent receipts"
+                emptyTitle="No receipts yet"
+                description="Payment records will appear here."
+                icon={ReceiptText}
+              />
+            )}
+            {fumigationCertificate || fitnessCertificate ? (
+              <section
+                aria-labelledby="recent-certificates"
+                className="min-w-0"
+              >
+                <h2 id="recent-certificates" className="mb-3 font-semibold">
+                  Recent certificates
+                </h2>
+                <Card size="sm">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <FileBadge2
+                        className="size-4 text-primary"
+                        aria-hidden="true"
+                      />
+                      {fumigationCertificate
+                        ? "Fumigation Certificate"
+                        : "Fitness Certificate"}
+                    </CardTitle>
+                    <CardDescription>
+                      {fumigationCertificate?.id ??
+                        formatFitnessReference(fitnessCertificate?.id ?? "")}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardFooter>
+                    <QuietLink
+                      href={
+                        fumigationCertificate
+                          ? "/business/fumigation/certificate"
+                          : "/business/fitness/certificate"
+                      }
+                    >
+                      View certificate
+                    </QuietLink>
+                  </CardFooter>
+                </Card>
+              </section>
+            ) : (
+              <EmptySection
+                id="recent-certificates"
+                title="Recent certificates"
+                emptyTitle="No certificates yet"
+                description="Issued certificates will appear here."
+                icon={FileBadge2}
+              />
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

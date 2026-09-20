@@ -68,7 +68,11 @@ function isFumigationState(value: unknown): value is FumigationState {
     return false
   const state = value as FumigationState
   return (
-    state.application === null || isFumigationApplication(state.application)
+    (state.application === null ||
+      isFumigationApplication(state.application)) &&
+    (state.history === undefined ||
+      (Array.isArray(state.history) &&
+        state.history.every(isFumigationApplication)))
   )
 }
 
@@ -81,6 +85,19 @@ function isFumigationApplication(
     typeof application.id === "string" &&
     typeof application.requestedPeriod === "string" &&
     typeof application.declaration === "boolean" &&
+    (application.certificate === undefined ||
+      (typeof application.certificate.id === "string" &&
+        typeof application.certificate.councilId === "string" &&
+        (application.certificate.premisesSnapshot === undefined ||
+          (typeof application.certificate.premisesSnapshot.businessName ===
+            "string" &&
+            typeof application.certificate.premisesSnapshot.premisesName ===
+              "string" &&
+            typeof application.certificate.premisesSnapshot.address ===
+              "string")) &&
+        typeof application.certificate.workDate === "string" &&
+        Number.isFinite(Date.parse(application.certificate.issuedAt)) &&
+        Number.isFinite(Date.parse(application.certificate.expiresAt)))) &&
     [
       "draft",
       "review",

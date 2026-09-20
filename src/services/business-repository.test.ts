@@ -268,6 +268,21 @@ describe("business repository", () => {
     })
   })
 
+  it("does not change verified contact on a completed account through onboarding", () => {
+    const storage = createBusinessStorage(localStorage)
+    storage.write(structuredClone(returningBusinessState))
+    const repository = createBusinessRepository(storage)
+    const before = repository.getState()
+
+    expect(
+      repository.updateContact({
+        email: "new-contact@riverside.ng",
+        phone: "+234 809 876 5433",
+      })
+    ).toMatchObject({ ok: false, errors: { state: expect.any(String) } })
+    expect(repository.getState()).toEqual(before)
+  })
+
   it("saves premises drafts without completing onboarding", () => {
     const repository = createBusinessRepository(
       createBusinessStorage(localStorage)

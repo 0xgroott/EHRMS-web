@@ -3,6 +3,10 @@ import { useBusinessSession } from "@/app/business-session"
 import { VerificationForm } from "@/components/business/verification-form"
 import { ContactForm } from "@/components/business/contact-form"
 import { OnboardingShell } from "@/components/business/onboarding-shell"
+import {
+  notifySuccess,
+  notifySuccessAfterNavigation,
+} from "@/components/ui/app-toast"
 import { createBusinessRepository } from "@/services/business-repository"
 import type { BusinessRepositoryResult } from "@/services/business-repository"
 import { createBusinessStorage } from "@/services/business-storage"
@@ -85,6 +89,7 @@ export function BusinessVerify() {
               return { fieldErrors: result.errors, error: result.errors.state }
             await session.refresh()
             setEditingContact(false)
+            notifySuccess("Contact details updated")
           }}
         />
       ) : (
@@ -99,6 +104,7 @@ export function BusinessVerify() {
             if (error) return { error }
             completionInProgress.current = true
             await session.refresh()
+            notifySuccessAfterNavigation("Contact verified")
             globalThis.location.assign("/business/setup")
           }}
           onResend={async () => {
@@ -107,6 +113,7 @@ export function BusinessVerify() {
             ).resendVerification()
             if (!result.ok) return { error: errorMessage(result) }
             await session.refresh()
+            notifySuccess("Verification code resent")
             return { expiresAt: result.state.verificationExpiresAt }
           }}
           onChangeContact={() => setEditingContact(true)}

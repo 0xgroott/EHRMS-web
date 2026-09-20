@@ -32,6 +32,10 @@ type FitnessContextValue = {
     id: string,
     changes: Partial<FoodHandlerInput>
   ) => FitnessRuleResult<FoodHandler>
+  setHandlerArchived: (
+    id: string,
+    archived: boolean
+  ) => FitnessRuleResult<FoodHandler>
   selectHandlers: (
     handlerIds: string[]
   ) => FitnessRuleResult<FitnessApplication>
@@ -39,6 +43,7 @@ type FitnessContextValue = {
   confirmDemoPayment: () => FitnessRuleResult<FitnessApplication>
   recordFitResult: () => FitnessRuleResult<FitnessApplication>
   issueDemoCertificate: () => FitnessRuleResult<FitnessApplication>
+  startRenewal: () => FitnessRuleResult<null>
 }
 
 const FitnessContext = createContext<FitnessContextValue | null>(null)
@@ -106,13 +111,44 @@ export function FitnessProvider({ children }: { children: React.ReactNode }) {
     [save, state]
   )
 
+  const setHandlerArchived = useCallback(
+    (id: string, archived: boolean): FitnessRuleResult<FoodHandler> => {
+      const existing = state.handlers.find((handler) => handler.id === id)
+      if (!existing) return { ok: false, error: "Food handler not found" }
+      if (
+        archived &&
+        state.application?.stage !== "issued" &&
+        state.application?.handlerIds.includes(id)
+      ) {
+        return {
+          ok: false,
+          error:
+            "This person is in an active Fitness application. Remove them from the application or finish it before archiving.",
+        }
+      }
+      const updated = {
+        ...existing,
+        archivedAt: archived ? new Date().toISOString() : undefined,
+      }
+      save({
+        ...state,
+        handlers: state.handlers.map((handler) =>
+          handler.id === id ? updated : handler
+        ),
+      })
+      return { ok: true, value: updated }
+    },
+    [save, state]
+  )
+
   const selectHandlers = useCallback(
     (handlerIds: string[]): FitnessRuleResult<FitnessApplication> => {
       if (!profileId) return noProfile()
       const result = beginApplication(
         state.handlers,
         handlerIds,
-        "fitness-application-1",
+        state.application?.id ??
+          `fitness-application-${(state.history?.length ?? 0) + 1}`,
         state.application
       )
       if (result.ok) save({ ...state, application: result.value })
@@ -162,14 +198,53 @@ export function FitnessProvider({ children }: { children: React.ReactNode }) {
   )
   const issueDemoCertificate = useCallback(
     () =>
-      updateApplication((application) =>
-        issueDemoCertificateRule(
+      updateApplication((application) => {
+        const result = issueDemoCertificateRule(
           application,
           profile?.premises?.councilId ?? ""
         )
-      ),
-    [profile?.premises?.councilId, updateApplication]
+        if (!result.ok || !result.value.certificate || !profile?.premises)
+          return result
+        return {
+          ok: true,
+          value: {
+            ...result.value,
+            certificate: {
+              ...result.value.certificate,
+              premisesSnapshot: {
+                businessName: profile.businessName,
+                premisesName: profile.premises.premisesName,
+                address: profile.premises.address,
+              },
+            },
+          },
+        }
+      }),
+    [profile, updateApplication]
   )
+
+  const startRenewal = useCallback((): FitnessRuleResult<null> => {
+    if (!profileId) return noProfile()
+    if (state.application?.stage !== "issued" || !state.application.certificate)
+      return {
+        ok: false,
+        error: "An issued Fitness certificate is required before renewal",
+      }
+    save({
+      ...state,
+      history: [
+        ...(state.history ?? []),
+        {
+          ...state.application,
+          handlerSnapshots: state.handlers.filter((handler) =>
+            state.application?.handlerIds.includes(handler.id)
+          ),
+        },
+      ],
+      application: null,
+    })
+    return { ok: true, value: null }
+  }, [noProfile, profileId, save, state])
 
   const value = useMemo(
     () => ({
@@ -177,11 +252,13 @@ export function FitnessProvider({ children }: { children: React.ReactNode }) {
       isHydrated,
       addHandler,
       updateHandler,
+      setHandlerArchived,
       selectHandlers,
       chooseFacility,
       confirmDemoPayment,
       recordFitResult,
       issueDemoCertificate,
+      startRenewal,
     }),
     [
       addHandler,
@@ -189,9 +266,11 @@ export function FitnessProvider({ children }: { children: React.ReactNode }) {
       confirmDemoPayment,
       isHydrated,
       issueDemoCertificate,
+      startRenewal,
       recordFitResult,
       selectHandlers,
       state,
+      setHandlerArchived,
       updateHandler,
     ]
   )

@@ -1,32 +1,20 @@
 import { useRef, useState } from "react"
 import { ImagePlus, Trash2, Upload } from "lucide-react"
 import { useBusinessSession } from "@/app/business-session"
-import { PageHeader } from "@/components/shared/page-header"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { notifySuccess } from "@/components/ui/app-toast"
+import { Field, FieldGroup } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
-import { seedDatabase } from "@/data/seeds"
 import { useBusinessMedia } from "./business-media-context"
 import type { BusinessMediaItem } from "./business-media-store"
-import { BusinessProfileEditDrawer } from "./business-profile-edit-drawer"
+import { BusinessProfileForm } from "./business-profile-form"
 
 const acceptedImages = "image/png,image/jpeg,image/webp"
 const photoLabels = ["Premises photo 1", "Premises photo 2", "Premises photo 3"]
-
-function Detail({ label, value }: { label: string; value?: string }) {
-  return (
-    <div className="min-w-0 border-t pt-3">
-      <dt className="text-sm text-muted-foreground">{label}</dt>
-      <dd className="mt-1 font-medium break-words">
-        {value || "Not recorded"}
-      </dd>
-    </div>
-  )
-}
 
 function PhotoSlot({
   index,
@@ -45,7 +33,7 @@ function PhotoSlot({
   const label = photoLabels[index]
   return (
     <li className="min-w-0 border bg-background">
-      <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden bg-muted/40">
+      <div className="relative flex aspect-[2/1] items-center justify-center overflow-hidden bg-muted/40 sm:aspect-[4/3]">
         {item ? (
           <img
             src={item.dataUrl}
@@ -73,15 +61,15 @@ function PhotoSlot({
         </div>
         <FieldGroup>
           <Field>
-            <FieldLabel htmlFor={`premises-photo-${index}`} className="sr-only">
-              {item
-                ? `Replace ${label.toLowerCase()}`
-                : `Upload ${label.toLowerCase()}`}
-            </FieldLabel>
             <Input
               ref={inputRef}
               id={`premises-photo-${index}`}
               type="file"
+              aria-label={
+                item
+                  ? `Replace ${label.toLowerCase()}`
+                  : `Upload ${label.toLowerCase()}`
+              }
               accept={acceptedImages}
               className="sr-only max-w-px"
               disabled={busy}
@@ -128,8 +116,6 @@ export function BusinessProfilePage() {
   const [busy, setBusy] = useState(false)
   const [avatarError, setAvatarError] = useState("")
   const [photoError, setPhotoError] = useState("")
-  const [editing, setEditing] = useState(false)
-  const [saveNotice, setSaveNotice] = useState("")
 
   if (!businessReady || !mediaReady) {
     return (
@@ -144,9 +130,6 @@ export function BusinessProfilePage() {
   const profile = business.profile
   if (!profile) return null
   const premises = profile.premises
-  const council = seedDatabase.councils.find(
-    (item) => item.id === premises?.councilId
-  )
   const initials = profile.businessName
     .split(/\s+/)
     .filter(Boolean)
@@ -160,6 +143,7 @@ export function BusinessProfilePage() {
     setAvatarError("")
     const result = await uploadAvatar(file)
     if (!result.ok) setAvatarError(result.error)
+    else notifySuccess("Business logo updated")
     setBusy(false)
   }
 
@@ -168,41 +152,15 @@ export function BusinessProfilePage() {
     setPhotoError("")
     const result = await uploadPhoto(index, file)
     if (!result.ok) setPhotoError(result.error)
+    else notifySuccess("Premises photo saved")
     setBusy(false)
   }
 
   return (
-    <div className="flex max-w-6xl min-w-0 flex-col gap-9 pb-12">
-      <PageHeader
-        eyebrow="Business account"
-        title="Business profile"
-        description="Your registered business and premises details."
-        actions={
-          <Button variant="outline" onClick={() => setEditing(true)}>
-            Edit profile
-          </Button>
-        }
-      />
-      {saveNotice && (
-        <Alert role="status">
-          <AlertDescription>{saveNotice}</AlertDescription>
-        </Alert>
-      )}
-      {editing && premises && (
-        <BusinessProfileEditDrawer
-          profile={profile}
-          councilName={council?.name ?? premises.councilId}
-          onClose={() => setEditing(false)}
-          onSaved={() => {
-            setEditing(false)
-            setSaveNotice("Profile changes saved.")
-          }}
-        />
-      )}
-
+    <div className="flex min-w-0 flex-col gap-8 pb-12">
       <section
         aria-labelledby="business-identity"
-        className="grid min-w-0 gap-6 border-y py-7 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center sm:gap-8"
+        className="grid min-w-0 gap-6 border-b pb-7 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center sm:gap-8"
       >
         <Avatar className="size-24 sm:size-28">
           {media.avatar && (
@@ -227,13 +185,11 @@ export function BusinessProfilePage() {
           </p>
           <FieldGroup className="mt-5 max-w-md">
             <Field>
-              <FieldLabel htmlFor="business-avatar" className="sr-only">
-                Upload business avatar or logo
-              </FieldLabel>
               <Input
                 ref={avatarInputRef}
                 id="business-avatar"
                 type="file"
+                aria-label="Upload business avatar or logo"
                 accept={acceptedImages}
                 className="sr-only max-w-px"
                 disabled={busy}
@@ -259,6 +215,7 @@ export function BusinessProfilePage() {
                     onClick={() => {
                       const result = removeAvatar()
                       setAvatarError(result.ok ? "" : result.error)
+                      if (result.ok) notifySuccess("Business logo removed")
                     }}
                   >
                     <Trash2 data-icon="inline-start" aria-hidden="true" />
@@ -279,38 +236,7 @@ export function BusinessProfilePage() {
         </div>
       </section>
 
-      <div className="grid gap-9 lg:grid-cols-2 lg:gap-12">
-        <section aria-labelledby="account-details" className="min-w-0">
-          <h2 id="account-details" className="text-lg font-semibold">
-            Account details
-          </h2>
-          <dl className="mt-4 grid gap-4 sm:grid-cols-2">
-            <Detail label="Contact person" value={profile.contactName} />
-            <Detail label="Phone number" value={profile.phone} />
-            <Detail label="Email address" value={profile.email} />
-            <Detail label="Business reference" value={profile.id} />
-          </dl>
-        </section>
-        <section aria-labelledby="premises-details" className="min-w-0">
-          <h2 id="premises-details" className="text-lg font-semibold">
-            Registered premises
-          </h2>
-          <dl className="mt-4 grid gap-4 sm:grid-cols-2">
-            <Detail label="Premises name" value={premises?.premisesName} />
-            <Detail label="Business type" value={premises?.businessType} />
-            <Detail label="Address" value={premises?.address} />
-            <Detail label="Ward" value={premises?.ward} />
-            <Detail
-              label="Council"
-              value={council?.name ?? premises?.councilId}
-            />
-            <Detail
-              label="Registration number"
-              value={premises?.registrationNumber}
-            />
-          </dl>
-        </section>
-      </div>
+      <BusinessProfileForm profile={profile} />
 
       <section
         aria-labelledby="premises-images"
@@ -343,6 +269,7 @@ export function BusinessProfilePage() {
               onRemove={() => {
                 const result = removePhoto(index)
                 setPhotoError(result.ok ? "" : result.error)
+                if (result.ok) notifySuccess("Premises photo removed")
               }}
             />
           ))}

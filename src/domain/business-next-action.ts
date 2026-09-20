@@ -94,8 +94,14 @@ export function getBusinessNextAction(
           : "Start your Fitness application",
       description:
         "Choose eligible food handlers and a facility for their assessment.",
-      href: "/business/fitness/apply",
-      label: "Start Fitness application",
+      href:
+        input.fitness === "expired"
+          ? "/business/fitness/certificate"
+          : "/business/fitness/apply",
+      label:
+        input.fitness === "expired"
+          ? "View certificate to renew"
+          : "Start Fitness application",
     }
   if (input.fitness === "in-progress")
     return {
@@ -115,8 +121,14 @@ export function getBusinessNextAction(
           : "Start your Fumigation application",
       description:
         "Choose a provider to arrange fumigation for your registered premises.",
-      href: "/business/fumigation/apply",
-      label: "Start Fumigation application",
+      href:
+        input.fumigation === "expired"
+          ? "/business/fumigation/certificate"
+          : "/business/fumigation/apply",
+      label:
+        input.fumigation === "expired"
+          ? "View certificate to renew"
+          : "Start Fumigation application",
     }
   if (input.fumigation === "in-progress")
     return {

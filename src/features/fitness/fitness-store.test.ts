@@ -58,4 +58,32 @@ describe("fitness store", () => {
 
     expect(businessA).toHaveBeenCalledTimes(1)
   })
+
+  it("rejects malformed historical certificates without exposing bad dates", () => {
+    localStorage.setItem(
+      fitnessStorageKey("business-a"),
+      JSON.stringify({
+        handlers: [],
+        application: null,
+        history: [
+          {
+            id: "old",
+            handlerIds: [],
+            stage: "issued",
+            certificate: {
+              id: "bad",
+              handlerIds: [],
+              councilId: "phc",
+              issuedAt: "invalid",
+              expiresAt: "invalid",
+            },
+          },
+        ],
+      })
+    )
+    expect(createFitnessStore(localStorage).read("business-a")).toEqual({
+      handlers: [],
+      application: null,
+    })
+  })
 })

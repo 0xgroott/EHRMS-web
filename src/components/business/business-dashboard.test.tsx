@@ -1,4 +1,5 @@
 import { render, screen, within } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { describe, expect, it } from "vitest"
 import { returningBusinessState } from "@/data/business-seeds"
 import type { FitnessState } from "@/features/fitness/fitness-types"
@@ -59,14 +60,16 @@ describe("business dashboard", () => {
       screen.getByRole("link", { name: "View Health Approval requirements" })
     ).toHaveAttribute("href", "/business/health-approval")
   })
-  it("shows honest empty applications, receipts, certificates and reminders", () => {
+  it("separates concise empty states into text-only dashboard tabs", async () => {
+    const user = userEvent.setup()
     render(<BusinessDashboard state={returningBusinessState} />)
-    for (const name of [
-      "No active applications",
-      "No receipts yet",
-      "No certificates yet",
-      "No reminders yet",
-    ]) {
+    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
+      "Overview",
+      "Activity",
+      "Records",
+    ])
+    await user.click(screen.getByRole("tab", { name: "Activity" }))
+    for (const name of ["No active applications", "No reminders yet"]) {
       expect(screen.getByText(name)).toBeInTheDocument()
     }
     expect(
@@ -74,9 +77,14 @@ describe("business dashboard", () => {
     ).toHaveAttribute("href", "/business/applications")
     expect(
       screen.getByRole("link", { name: "Update business profile" })
-    ).toHaveAttribute("href", "/business/profile")
+    ).toHaveAttribute("href", "/business/settings")
+    await user.click(screen.getByRole("tab", { name: "Records" }))
+    for (const name of ["No receipts yet", "No certificates yet"]) {
+      expect(screen.getByText(name)).toBeInTheDocument()
+    }
   })
-  it("renders persisted urgent and secondary alerts with safe links and one prioritized action", () => {
+  it("renders persisted urgent and secondary alerts with safe links and one prioritized action", async () => {
+    const user = userEvent.setup()
     render(
       <BusinessDashboard
         state={{
@@ -119,6 +127,7 @@ describe("business dashboard", () => {
       })
     ).toBeInTheDocument()
     expect(within(nextAction).getAllByRole("link")).toHaveLength(1)
+    await user.click(screen.getByRole("tab", { name: "Activity" }))
     expect(screen.getByText("Resolve kitchen findings")).toBeInTheDocument()
     expect(screen.getByText("Follow-up visit")).toBeInTheDocument()
     expect(screen.getByRole("alert")).toHaveTextContent(
@@ -182,7 +191,8 @@ describe("business dashboard", () => {
       screen.getAllByText(/Awaiting facility result/i).length
     ).toBeGreaterThan(0)
   })
-  it("shows issued demo certificate and makes Fumigation next action", () => {
+  it("shows issued certificate and makes Fumigation next action", async () => {
+    const user = userEvent.setup()
     render(
       <BusinessDashboard
         state={returningBusinessState}
@@ -214,11 +224,12 @@ describe("business dashboard", () => {
         name: "Start your Fumigation application",
       })
     ).toBeInTheDocument()
-    expect(screen.getByText("FIT-CERT-001")).toBeInTheDocument()
     expect(screen.getByText("Issued")).toBeInTheDocument()
     expect(
       screen.getAllByRole("link", { name: /view fitness certificate/i }).length
     ).toBeGreaterThan(0)
+    await user.click(screen.getByRole("tab", { name: "Records" }))
+    expect(screen.getByText("FIT-CERT-001")).toBeInTheDocument()
   })
   it("opens Health Approval eligibility after both certificates are issued", () => {
     render(
@@ -263,5 +274,46 @@ describe("business dashboard", () => {
       within(nextAction).getByRole("link", { name: "View Health Approval" })
     ).toHaveAttribute("href", "/business/health-approval")
     expect(screen.getByText("Inspection pending")).toBeInTheDocument()
+  })
+
+  it("shows an expired certificate renewal and keeps its receipt in history", async () => {
+    const user = userEvent.setup()
+    render(
+      <BusinessDashboard
+        state={returningBusinessState}
+        fitness={{
+          handlers: [handler],
+          application: {
+            id: "fitness-application-1",
+            handlerIds: [handler.id],
+            stage: "issued",
+            paymentReference: "FIT-PAY-1",
+            certificate: {
+              id: "FIT-CERT-1",
+              handlerIds: [handler.id],
+              councilId: "phc",
+              issuedAt: "2020-01-01",
+              expiresAt: "2021-01-01",
+            },
+          },
+        }}
+      />
+    )
+    const nextAction = screen.getByRole("region", {
+      name: "Next required action",
+    })
+    expect(
+      within(nextAction).getByRole("link", {
+        name: "View certificate to renew",
+      })
+    ).toHaveAttribute("href", "/business/fitness/certificate")
+    expect(screen.getByText("Expired")).toBeVisible()
+    await user.click(screen.getByRole("tab", { name: "Activity" }))
+    const reminders = screen.getByRole("region", {
+      name: "Reminders and deadlines",
+    })
+    expect(within(reminders).getByText(/Certificate expired/)).toBeVisible()
+    await user.click(screen.getByRole("tab", { name: "Records" }))
+    expect(screen.getByText(/FIT-PAY-1/)).toBeVisible()
   })
 })

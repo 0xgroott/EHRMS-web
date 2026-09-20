@@ -9,6 +9,7 @@ import type {
 
 export function handlerReadiness(handler: FoodHandler): HandlerReadiness {
   const reasons: string[] = []
+  if (handler.archivedAt) reasons.push("Restore this former staff member")
   if (!handler.identityNumber.trim()) reasons.push("Add an identity number")
   if (!handler.role.trim()) reasons.push("Add a job role")
   if (!handler.phone.trim()) reasons.push("Add a phone number")

@@ -1,6 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router"
-import { BusinessProfilePage } from "@/features/business-media/business-profile-page"
+import { createFileRoute, Navigate } from "@tanstack/react-router"
 
 export const Route = createFileRoute("/business/_portal/profile")({
-  component: BusinessProfilePage,
+  component: () => <Navigate to="/business/settings" replace />,
 })

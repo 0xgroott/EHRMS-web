@@ -1,8 +1,11 @@
+import type { CertificatePremisesSnapshot } from "@/domain/business-types"
+
 export type FitnessStage =
   "draft" | "review" | "awaiting-facility" | "result-received" | "issued"
 
 export interface FoodHandler {
   id: string
+  archivedAt?: string
   fullName: string
   sex: string
   dateOfBirth: string
@@ -28,6 +31,7 @@ export interface FitnessCertificate {
   councilId: string
   issuedAt: string
   expiresAt: string
+  premisesSnapshot?: CertificatePremisesSnapshot
 }
 
 export interface FitnessApplication {
@@ -38,11 +42,13 @@ export interface FitnessApplication {
   totalNgn?: number
   paymentReference?: string
   certificate?: FitnessCertificate
+  handlerSnapshots?: FoodHandler[]
 }
 
 export interface FitnessState {
   handlers: FoodHandler[]
   application: FitnessApplication | null
+  history?: FitnessApplication[]
 }
 
 export type FitnessRuleResult<T> =
@@ -53,4 +59,4 @@ export interface HandlerReadiness {
   reasons: string[]
 }
 
-export type FoodHandlerInput = Omit<FoodHandler, "id">
+export type FoodHandlerInput = Omit<FoodHandler, "id" | "archivedAt">

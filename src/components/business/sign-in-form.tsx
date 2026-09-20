@@ -143,7 +143,7 @@ export function SignInForm({ onSubmit, createAccountLink }: SignInFormProps) {
                 void form.handleSubmit()
               }}
             >
-              Preview as business user
+              Sign in as Riverside Kitchen
             </Button>
           </div>
         )}

@@ -23,3 +23,11 @@ it("selecting a staff role updates the role without business navigation", () => 
   expect(setRole).toHaveBeenCalledWith("admin")
   expect(navigate).not.toHaveBeenCalled()
 })
+
+it("routes the EHO role through assigned-account sign-in", () => {
+  const setRole = vi.fn()
+  const navigate = vi.fn()
+  handleDemoRoleSelection("eho", setRole, navigate)
+  expect(setRole).toHaveBeenCalledWith("eho")
+  expect(navigate).toHaveBeenCalledWith("/eho/sign-in")
+})

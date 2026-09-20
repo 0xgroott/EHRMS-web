@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react"
 import { useBusinessSession } from "@/app/business-session"
 import { BusinessSetupForm } from "@/components/business/business-setup-form"
+import { notifySuccessAfterNavigation } from "@/components/ui/app-toast"
 import { OnboardingShell } from "@/components/business/onboarding-shell"
 import type { BusinessPremisesInput } from "@/domain/business-types"
 import { createBusinessRepository } from "@/services/business-repository"
@@ -113,6 +114,7 @@ export function BusinessSetup() {
             if (error) return { error }
             await session.refresh()
             completed.current = true
+            notifySuccessAfterNavigation("Business setup completed")
             globalThis.location.assign("/business/dashboard")
           } catch {
             return {

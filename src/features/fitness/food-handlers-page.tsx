@@ -1,5 +1,19 @@
-import { Pencil, Plus, UsersRound } from "lucide-react"
+import { useState } from "react"
+import {
+  Archive,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Search,
+  UsersRound,
+} from "lucide-react"
+import { notifySuccess } from "@/components/ui/app-toast"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { PageHeader } from "@/components/shared/page-header"
+import {
+  certificateIsValid,
+  latestCertificateApplication,
+} from "@/domain/certificate-validity"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -17,6 +31,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Input } from "@/components/ui/input"
 import {
   Table,
   TableBody,
@@ -54,6 +69,7 @@ function AppLink({
 }
 
 function readinessBadge(handler: FoodHandler) {
+  if (handler.archivedAt) return <Badge variant="outline">Archived</Badge>
   const readiness = handlerReadiness(handler)
   return readiness.ready ? (
     <Badge>Ready to apply</Badge>
@@ -64,21 +80,59 @@ function readinessBadge(handler: FoodHandler) {
 
 function coverageLabel(
   handler: FoodHandler,
-  handlerIds: string[],
-  stage?: string
+  activeHandlerIds: string[],
+  certificateHandlerIds: string[],
+  certificateValid: boolean
 ) {
-  if (!handlerIds.includes(handler.id)) return "No Fitness coverage"
-  return stage === "issued"
-    ? "Covered by Fitness certificate"
-    : "Included in active Fitness application"
+  if (certificateHandlerIds.includes(handler.id))
+    return certificateValid
+      ? "Covered by Fitness certificate"
+      : "Fitness certificate expired"
+  return activeHandlerIds.includes(handler.id)
+    ? "Included in active Fitness application"
+    : "No Fitness coverage"
 }
 
 export function FoodHandlersPage() {
-  const { state, isHydrated } = useFitness()
-  const eligibleHandlers = state.handlers.filter(
-    (handler) => handlerReadiness(handler).ready
+  const { state, isHydrated, setHandlerArchived } = useFitness()
+  const [search, setSearch] = useState("")
+  const [status, setStatus] = useState<
+    "current" | "ready" | "needs-details" | "archived"
+  >("current")
+  const [actionError, setActionError] = useState("")
+  const currentHandlers = state.handlers.filter(
+    (handler) => !handler.archivedAt
   )
+  const eligibleHandlers = state.handlers.filter(
+    (handler) => !handler.archivedAt && handlerReadiness(handler).ready
+  )
+  const normalizedSearch = search.trim().toLocaleLowerCase()
+  const visibleHandlers = state.handlers.filter((handler) => {
+    const matchesSearch = `${handler.fullName} ${handler.role}`
+      .toLocaleLowerCase()
+      .includes(normalizedSearch)
+    if (!matchesSearch) return false
+    if (status === "archived") return Boolean(handler.archivedAt)
+    if (handler.archivedAt) return false
+    if (status === "ready") return handlerReadiness(handler).ready
+    if (status === "needs-details") return !handlerReadiness(handler).ready
+    return true
+  })
+  function changeArchiveStatus(handler: FoodHandler) {
+    setActionError("")
+    const archived = !handler.archivedAt
+    const result = setHandlerArchived(handler.id, archived)
+    if (!result.ok) return setActionError(result.error)
+    notifySuccess(archived ? "Food handler archived" : "Food handler restored")
+  }
   const application = state.application
+  const certificate = latestCertificateApplication(
+    application,
+    state.history
+  )?.certificate
+  const certificateValid = certificate
+    ? certificateIsValid(certificate.expiresAt)
+    : false
   const applicationAction =
     application?.stage === "issued"
       ? {
@@ -113,7 +167,7 @@ export function FoodHandlersPage() {
       <PageHeader
         eyebrow="Fitness Certificate"
         title="Food handlers"
-        description="Register the staff who handle food before starting a Fitness Certificate application."
+        description="Keep current staff ready for Fitness applications and retain former staff records."
         actions={
           <AppLink href="/business/food-handler/new">
             <Plus data-icon="inline-start" aria-hidden="true" />
@@ -138,59 +192,137 @@ export function FoodHandlersPage() {
       ) : (
         <Card className="min-w-0">
           <CardHeader>
-            <CardTitle>Registered food handlers</CardTitle>
+            <CardTitle>Food handler records</CardTitle>
             <CardDescription>
-              Readiness is based on the identity, role, phone number, and
-              consent required for a Fitness Certificate application.
+              {currentHandlers.length} current ·{" "}
+              {state.handlers.length - currentHandlers.length} archived.
+              Readiness requires identity, role, phone, and consent.
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Table className="min-w-[42rem]">
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Food handler</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Readiness</TableHead>
-                  <TableHead>Fitness coverage</TableHead>
-                  <TableHead>
-                    <span className="sr-only">Actions</span>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {state.handlers.map((handler) => (
-                  <TableRow key={handler.id}>
-                    <TableCell className="font-medium">
-                      {handler.fullName}
-                    </TableCell>
-                    <TableCell>{handler.role || "Not recorded"}</TableCell>
-                    <TableCell>{readinessBadge(handler)}</TableCell>
-                    <TableCell>
-                      {coverageLabel(
-                        handler,
-                        application?.handlerIds ?? [],
-                        application?.stage
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <AppLink
-                        href={`/business/food-handler/${handler.id}`}
-                        variant="link"
-                        ariaLabel={`Edit ${handler.fullName}`}
-                      >
-                        <Pencil data-icon="inline-start" aria-hidden="true" />
-                        Edit
-                      </AppLink>
-                    </TableCell>
+          <CardContent className="min-w-0 gap-4">
+            {actionError && (
+              <Alert variant="destructive" role="alert">
+                <AlertDescription>{actionError}</AlertDescription>
+              </Alert>
+            )}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <label className="relative block w-full sm:max-w-xs">
+                <span className="sr-only">Search food handlers</span>
+                <Search
+                  aria-hidden="true"
+                  className="pointer-events-none absolute top-2.5 left-3 size-4 text-muted-foreground"
+                />
+                <Input
+                  type="search"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Search name or role"
+                  className="pl-9"
+                />
+              </label>
+              <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span className="shrink-0">Show</span>
+                <select
+                  value={status}
+                  onChange={(event) =>
+                    setStatus(event.target.value as typeof status)
+                  }
+                  className="h-9 min-w-40 rounded-md border border-input bg-background px-2.5 text-sm text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                >
+                  <option value="current">Current staff</option>
+                  <option value="ready">Ready to apply</option>
+                  <option value="needs-details">Needs details</option>
+                  <option value="archived">Archived staff</option>
+                </select>
+              </label>
+            </div>
+            <p role="status" className="text-sm text-muted-foreground">
+              {visibleHandlers.length}{" "}
+              {visibleHandlers.length === 1 ? "record" : "records"} shown
+            </p>
+            {visibleHandlers.length === 0 ? (
+              <div className="rounded-lg border border-dashed px-5 py-8 text-center text-sm text-muted-foreground">
+                {status === "current" &&
+                !search.trim() &&
+                !currentHandlers.length
+                  ? "No current staff. Choose Archived staff to restore a record, or add a food handler."
+                  : "No food handlers match this search and status. Try another name or filter."}
+              </div>
+            ) : (
+              <Table className="min-w-[42rem]">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Food handler</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Readiness</TableHead>
+                    <TableHead>Fitness coverage</TableHead>
+                    <TableHead>
+                      <span className="sr-only">Actions</span>
+                    </TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {visibleHandlers.map((handler) => (
+                    <TableRow key={handler.id}>
+                      <TableCell className="font-medium">
+                        {handler.fullName}
+                      </TableCell>
+                      <TableCell>{handler.role || "Not recorded"}</TableCell>
+                      <TableCell>{readinessBadge(handler)}</TableCell>
+                      <TableCell>
+                        {coverageLabel(
+                          handler,
+                          application?.handlerIds ?? [],
+                          certificate?.handlerIds ?? [],
+                          certificateValid
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          {!handler.archivedAt && (
+                            <AppLink
+                              href={`/business/food-handler/${handler.id}`}
+                              variant="link"
+                              ariaLabel={`Edit ${handler.fullName}`}
+                            >
+                              <Pencil
+                                data-icon="inline-start"
+                                aria-hidden="true"
+                              />
+                              Edit
+                            </AppLink>
+                          )}
+                          <Button
+                            type="button"
+                            variant="link"
+                            aria-label={`${handler.archivedAt ? "Restore" : "Archive"} ${handler.fullName}`}
+                            onClick={() => changeArchiveStatus(handler)}
+                          >
+                            {handler.archivedAt ? (
+                              <RotateCcw
+                                data-icon="inline-start"
+                                aria-hidden="true"
+                              />
+                            ) : (
+                              <Archive
+                                data-icon="inline-start"
+                                aria-hidden="true"
+                              />
+                            )}
+                            {handler.archivedAt ? "Restore" : "Archive"}
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
       )}
 
-      {state.handlers.length > 0 && (
+      {currentHandlers.length > 0 && (
         <Card size="sm">
           <CardHeader>
             <CardTitle>Next step</CardTitle>

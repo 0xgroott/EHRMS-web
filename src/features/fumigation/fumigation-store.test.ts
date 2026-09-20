@@ -39,4 +39,31 @@ describe("fumigation store", () => {
     store.write("business-a", emptyFumigationState())
     expect(listener).toHaveBeenCalledTimes(1)
   })
+
+  it("rejects malformed historical certificates", () => {
+    localStorage.setItem(
+      "ehrcms:fumigation:v1:business-a",
+      JSON.stringify({
+        application: null,
+        history: [
+          {
+            id: "old",
+            requestedPeriod: "September 2026",
+            declaration: true,
+            stage: "issued",
+            certificate: {
+              id: "bad",
+              councilId: "phc",
+              workDate: "2026-09-01",
+              issuedAt: "invalid",
+              expiresAt: "invalid",
+            },
+          },
+        ],
+      })
+    )
+    expect(createFumigationStore(localStorage).read("business-a")).toEqual(
+      emptyFumigationState()
+    )
+  })
 })

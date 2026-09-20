@@ -3,10 +3,12 @@ import type { ReactNode } from "react"
 import { useBusinessSession } from "@/app/business-session"
 
 export function BusinessPortalAccess({ children }: { children: ReactNode }) {
-  const { state, isHydrated } = useBusinessSession()
+  const { state, isHydrated, signedOut } = useBusinessSession()
   const redirecting = useRef(false)
   const destination = !state.profile
-    ? "/business/sign-in"
+    ? signedOut
+      ? "/"
+      : "/business/sign-in"
     : state.stage === "account"
       ? "/business/register"
       : !state.profile.verified || state.stage === "verification"

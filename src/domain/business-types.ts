@@ -32,6 +32,12 @@ export interface BusinessDocument {
   category: string
 }
 
+export interface CertificatePremisesSnapshot {
+  businessName: string
+  premisesName: string
+  address: string
+}
+
 export interface BusinessProfile {
   id: string
   businessName: string

@@ -1,8 +1,18 @@
+import { useState } from "react"
 import { useBusinessSession } from "@/app/business-session"
+import { DocumentDownloadButton } from "@/components/business/document-download-button"
+import {
+  certificateIsValid,
+  certificateReminder,
+  latestCertificateApplication,
+} from "@/domain/certificate-validity"
+import { notifySuccessAfterNavigation } from "@/components/ui/app-toast"
 import { seedDatabase } from "@/data/seeds"
+import { fumigationCertificateDocument } from "@/domain/business-document-downloads"
 import { PageHeader } from "@/components/shared/page-header"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useFumigation } from "./fumigation-context"
 import { findLicensedProvider } from "./fumigation-seeds"
@@ -22,12 +32,15 @@ function CertificateDate({ value }: { value: string }) {
 }
 
 export function FumigationCertificatePage() {
-  const { state, isHydrated } = useFumigation()
+  const { state, isHydrated, startRenewal } = useFumigation()
+  const [renewalError, setRenewalError] = useState("")
   const { state: businessState } = useBusinessSession()
   if (!isHydrated) return <FumigationLoading />
-  const application = state.application
-  const certificate =
-    application?.stage === "issued" ? application.certificate : undefined
+  const application = latestCertificateApplication(
+    state.application,
+    state.history
+  )
+  const certificate = application?.certificate
   if (!certificate)
     return (
       <div className="space-y-5">
@@ -38,19 +51,25 @@ export function FumigationCertificatePage() {
         />
         <FumigationLink
           href={
-            application
+            state.application &&
+            !["draft", "review"].includes(state.application.stage)
               ? "/business/fumigation/tracker"
               : "/business/fumigation/apply"
           }
         >
-          {application ? "Track application" : "Start application"}
+          {state.application ? "Continue application" : "Start application"}
         </FumigationLink>
       </div>
     )
   const premises = businessState.profile?.premises
-  const provider = findLicensedProvider(application?.providerId ?? "")
+  const provider = findLicensedProvider(application.providerId ?? "")
   const council = seedDatabase.councils.find(
     (item) => item.id === certificate.councilId
+  )
+  const reminder = certificateReminder(
+    certificate.expiresAt,
+    new Date(),
+    Boolean(state.history?.length && state.application?.stage !== "issued")
   )
   return (
     <div className="flex max-w-4xl min-w-0 flex-col gap-6 pb-12">
@@ -59,13 +78,16 @@ export function FumigationCertificatePage() {
         title="Fumigation Certificate"
         description="Certificate coverage for your registered premises."
       />
-      <Alert>
-        <AlertTitle>Certificate simulation</AlertTitle>
-        <AlertDescription>
-          This record shows the issued outcome in the prototype. It is not an
-          official council document and cannot be used for regulatory purposes.
-        </AlertDescription>
-      </Alert>
+      {reminder && (
+        <Alert>
+          <AlertDescription>{reminder}</AlertDescription>
+        </Alert>
+      )}
+      {renewalError && (
+        <Alert variant="destructive" role="alert">
+          <AlertDescription>{renewalError}</AlertDescription>
+        </Alert>
+      )}
       <Card className="overflow-hidden">
         <CardHeader className="border-b bg-accent/40">
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -77,7 +99,9 @@ export function FumigationCertificatePage() {
                 <h2 className="text-2xl">Fumigation Certificate</h2>
               </CardTitle>
             </div>
-            <Badge variant="secondary">Issued</Badge>
+            <Badge variant="secondary">
+              {certificateIsValid(certificate.expiresAt) ? "Issued" : "Expired"}
+            </Badge>
           </div>
           <p className="mt-2 text-sm break-all text-muted-foreground">
             {certificate.id}
@@ -127,7 +151,43 @@ export function FumigationCertificatePage() {
         </CardContent>
       </Card>
       <div className="flex flex-wrap gap-3">
-        <FumigationLink href="/business/fumigation/tracker" variant="outline">
+        <DocumentDownloadButton
+          document={fumigationCertificateDocument(
+            application,
+            businessState.profile,
+            provider?.name
+          )}
+          variant="default"
+        >
+          Download certificate
+        </DocumentDownloadButton>
+        {state.application?.stage === "issued" && (
+          <Button
+            variant="outline"
+            onClick={() => {
+              const result = startRenewal()
+              if (!result.ok) return setRenewalError(result.error)
+              notifySuccessAfterNavigation("Fumigation renewal started")
+              globalThis.location.assign("/business/fumigation/apply")
+            }}
+          >
+            Start renewal
+          </Button>
+        )}
+        {!state.application && Boolean(state.history?.length) && (
+          <FumigationLink href="/business/fumigation/apply">
+            Continue renewal
+          </FumigationLink>
+        )}
+        <FumigationLink
+          href={
+            state.application &&
+            !["draft", "review"].includes(state.application.stage)
+              ? "/business/fumigation/tracker"
+              : "/business/applications"
+          }
+          variant="outline"
+        >
           View application
         </FumigationLink>
         <FumigationLink href="/business/certificates" variant="link">
