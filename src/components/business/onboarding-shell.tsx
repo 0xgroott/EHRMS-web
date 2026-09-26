@@ -6,11 +6,22 @@ import { cn } from "cn"
 type OnboardingShellProps = {
   title: string
   description: string
-  step?: 1 | 2 | 3
+  step?: number
+  steps?: readonly string[]
   children: ReactNode
 }
 
-const steps = ["Account", "Verify contact", "Business and premises"]
+export const BUSINESS_REGISTRATION_STEPS = [
+  "Business details",
+  "Account access",
+  "Verify contact",
+  "Business and premises",
+] as const
+const defaultSteps = BUSINESS_REGISTRATION_STEPS
+export const VERIFIED_BUSINESS_ONBOARDING_STEPS = [
+  "Business identity",
+  "Business and premises",
+] as const
 const benefits = [
   { icon: ClipboardCheck, text: "Track your applications in one place." },
   { icon: FileCheck2, text: "Keep your certificates within reach." },
@@ -21,14 +32,15 @@ export function OnboardingShell({
   title,
   description,
   step,
+  steps = defaultSteps,
   children,
 }: OnboardingShellProps) {
   const id = useId()
   return (
-    <main className="min-h-svh bg-background md:grid md:grid-cols-[minmax(18rem,0.85fr)_minmax(0,1.15fr)]">
+    <main className="min-h-svh bg-background md:grid md:h-svh md:grid-cols-[minmax(18rem,0.85fr)_minmax(0,1.15fr)] md:overflow-hidden">
       <section
         aria-label="EHRCMS Business Portal"
-        className="flex flex-col bg-primary px-6 py-5 text-primary-foreground md:px-10 md:py-10 lg:px-16"
+        className="flex flex-col bg-primary px-6 py-5 text-primary-foreground md:sticky md:top-0 md:h-svh md:overflow-hidden md:px-10 md:py-10 lg:px-16"
       >
         <div className="flex items-center gap-3">
           <ShieldCheck aria-hidden="true" className="size-7 shrink-0" />
@@ -67,15 +79,16 @@ export function OnboardingShell({
       </section>
       <section
         aria-labelledby={`${id}-title`}
-        className="flex min-w-0 items-center justify-center px-6 py-9 md:px-10 md:py-12 lg:px-16"
+        className="min-w-0 px-6 md:h-svh md:overflow-y-auto md:px-10 lg:px-16"
       >
-        <div className="flex w-full max-w-md flex-col gap-8">
+        <div className="mx-auto flex min-h-full w-full max-w-md flex-col justify-center gap-8 py-9 md:py-12">
           {step && (
             <nav aria-label="Account setup progress">
               <ol className="flex gap-4">
                 {steps.map((label, index) => (
                   <li
                     key={label}
+                    aria-label={`Step ${index + 1} of ${steps.length}: ${label}`}
                     aria-current={step === index + 1 ? "step" : undefined}
                     className={cn(
                       "flex-1 border-t-2 pt-3 text-xs leading-relaxed",
@@ -84,10 +97,9 @@ export function OnboardingShell({
                         : "border-border text-muted-foreground"
                     )}
                   >
-                    <span className="mb-1 block" aria-hidden="true">
-                      0{index + 1}
+                    <span aria-hidden="true">
+                      Step {String(index + 1).padStart(2, "0")}
                     </span>
-                    {label}
                   </li>
                 ))}
               </ol>

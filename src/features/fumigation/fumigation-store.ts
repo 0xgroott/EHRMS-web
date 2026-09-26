@@ -83,6 +83,8 @@ function isFumigationApplication(
   const application = value as Partial<FumigationApplication>
   return (
     typeof application.id === "string" &&
+    (application.premisesName === undefined ||
+      typeof application.premisesName === "string") &&
     typeof application.requestedPeriod === "string" &&
     typeof application.declaration === "boolean" &&
     (application.certificate === undefined ||

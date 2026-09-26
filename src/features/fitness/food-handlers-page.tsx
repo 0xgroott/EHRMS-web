@@ -10,7 +10,6 @@ import {
 import { notifySuccess } from "@/components/ui/app-toast"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { PageHeader } from "@/components/shared/page-header"
-import { certificateIsValid } from "@/domain/certificate-validity"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -30,7 +29,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { handlerReadiness } from "./fitness-rules"
+import { fitnessTestStatus } from "./fitness-test-status"
 import { useFitness } from "./fitness-context"
 import type { FoodHandler } from "./fitness-types"
 
@@ -58,37 +57,10 @@ function AppLink({
   )
 }
 
-function readinessBadge(handler: FoodHandler) {
-  if (handler.archivedAt) return <Badge variant="outline">Archived</Badge>
-  const readiness = handlerReadiness(handler)
-  return readiness.ready ? (
-    <Badge>Ready to apply</Badge>
-  ) : (
-    <Badge variant="outline">Needs details</Badge>
-  )
-}
-
-function coverageLabel(
-  handler: FoodHandler,
-  activeHandlerIds: string[],
-  validCertificateHandlerIds: ReadonlySet<string>,
-  expiredCertificateHandlerIds: ReadonlySet<string>
-) {
-  if (validCertificateHandlerIds.has(handler.id))
-    return "Covered by Fitness certificate"
-  if (activeHandlerIds.includes(handler.id))
-    return "Included in active Fitness application"
-  if (expiredCertificateHandlerIds.has(handler.id))
-    return "Fitness certificate expired"
-  return "No Fitness coverage"
-}
-
 export function FoodHandlersPage() {
   const { state, isHydrated, setHandlerArchived } = useFitness()
   const [search, setSearch] = useState("")
-  const [status, setStatus] = useState<
-    "current" | "ready" | "needs-details" | "archived"
-  >("current")
+  const [status, setStatus] = useState<"active" | "archived">("active")
   const [actionError, setActionError] = useState("")
   const currentHandlers = state.handlers.filter(
     (handler) => !handler.archivedAt
@@ -99,33 +71,17 @@ export function FoodHandlersPage() {
       .toLocaleLowerCase()
       .includes(normalizedSearch)
     if (!matchesSearch) return false
-    if (status === "archived") return Boolean(handler.archivedAt)
-    if (handler.archivedAt) return false
-    if (status === "ready") return handlerReadiness(handler).ready
-    if (status === "needs-details") return !handlerReadiness(handler).ready
-    return true
+    return status === "archived"
+      ? Boolean(handler.archivedAt)
+      : !handler.archivedAt
   })
   function changeArchiveStatus(handler: FoodHandler) {
     setActionError("")
     const archived = !handler.archivedAt
     const result = setHandlerArchived(handler.id, archived)
     if (!result.ok) return setActionError(result.error)
-    notifySuccess(archived ? "Food handler archived" : "Food handler restored")
+    notifySuccess(archived ? "Staff member archived" : "Staff member restored")
   }
-  const application = state.application
-  const certificates = [application, ...(state.history ?? [])]
-    .map((item) => item?.certificate)
-    .filter((certificate) => certificate !== undefined)
-  const validCertificateHandlerIds = new Set(
-    certificates
-      .filter((certificate) => certificateIsValid(certificate.expiresAt))
-      .flatMap((certificate) => certificate.handlerIds)
-  )
-  const expiredCertificateHandlerIds = new Set(
-    certificates
-      .filter((certificate) => !certificateIsValid(certificate.expiresAt))
-      .flatMap((certificate) => certificate.handlerIds)
-  )
 
   if (!isHydrated) {
     return (
@@ -140,12 +96,12 @@ export function FoodHandlersPage() {
     <div className="flex min-w-0 flex-col gap-8">
       <PageHeader
         eyebrow="Fitness Certificate"
-        title="Food handlers"
-        description="Keep current staff ready for Fitness applications and retain former staff records."
+        title="Staff"
+        description="Manage active and archived staff records for Fitness applications."
         actions={
           <AppLink href="/business/food-handler/new">
             <Plus data-icon="inline-start" aria-hidden="true" />
-            Add food handler
+            Add staff
           </AppLink>
         }
       />
@@ -156,7 +112,7 @@ export function FoodHandlersPage() {
             <EmptyMedia variant="icon">
               <UsersRound aria-hidden="true" />
             </EmptyMedia>
-            <EmptyTitle>No food handlers registered yet</EmptyTitle>
+            <EmptyTitle>No staff registered yet</EmptyTitle>
             <EmptyDescription>
               Add each person who handles food at this premises so they can be
               included in a Fitness Certificate application.
@@ -165,7 +121,7 @@ export function FoodHandlersPage() {
         </Empty>
       ) : (
         <section
-          aria-label="Food handler list"
+          aria-label="Staff list"
           className="flex min-w-0 flex-col gap-4"
         >
           {actionError && (
@@ -175,7 +131,7 @@ export function FoodHandlersPage() {
           )}
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <label className="relative block w-full sm:max-w-xs">
-              <span className="sr-only">Search food handlers</span>
+              <span className="sr-only">Search staff</span>
               <Search
                 aria-hidden="true"
                 className="pointer-events-none absolute top-2.5 left-3 size-4 text-muted-foreground"
@@ -197,10 +153,8 @@ export function FoodHandlersPage() {
                 }
                 className="h-9 min-w-40 rounded-md border border-input bg-background px-2.5 text-sm text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
               >
-                <option value="current">Current staff</option>
-                <option value="ready">Ready to apply</option>
-                <option value="needs-details">Needs details</option>
-                <option value="archived">Archived staff</option>
+                <option value="active">Active</option>
+                <option value="archived">Archived</option>
               </select>
             </label>
           </div>
@@ -210,18 +164,18 @@ export function FoodHandlersPage() {
           </p>
           {visibleHandlers.length === 0 ? (
             <div className="rounded-lg border border-dashed px-5 py-8 text-center text-sm text-muted-foreground">
-              {status === "current" && !search.trim() && !currentHandlers.length
-                ? "No current staff. Choose Archived staff to restore a record, or add a food handler."
-                : "No food handlers match this search and status. Try another name or filter."}
+              {status === "active" && !search.trim() && !currentHandlers.length
+                ? "No active staff. Choose Archived to restore a record, or add a staff member."
+                : "No staff match this search and status. Try another name or filter."}
             </div>
           ) : (
             <Table className="min-w-[42rem]">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Food handler</TableHead>
+                  <TableHead>Staff member</TableHead>
                   <TableHead>Role</TableHead>
-                  <TableHead>Readiness</TableHead>
-                  <TableHead>Fitness coverage</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Fitness test</TableHead>
                   <TableHead>
                     <span className="sr-only">Actions</span>
                   </TableHead>
@@ -234,16 +188,15 @@ export function FoodHandlersPage() {
                       {handler.fullName}
                     </TableCell>
                     <TableCell>{handler.role || "Not recorded"}</TableCell>
-                    <TableCell>{readinessBadge(handler)}</TableCell>
                     <TableCell>
-                      {coverageLabel(
-                        handler,
-                        application && application.stage !== "issued"
-                          ? application.handlerIds
-                          : [],
-                        validCertificateHandlerIds,
-                        expiredCertificateHandlerIds
-                      )}
+                      <Badge
+                        variant={handler.archivedAt ? "outline" : "secondary"}
+                      >
+                        {handler.archivedAt ? "Archived" : "Active"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {fitnessTestStatus(state, handler.id)}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">

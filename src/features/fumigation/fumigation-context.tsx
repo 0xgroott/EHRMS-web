@@ -30,7 +30,8 @@ type FumigationContextValue = {
   isHydrated: boolean
   startApplication: (
     requestedPeriod: string,
-    declaration: boolean
+    declaration: boolean,
+    premisesName?: string
   ) => ApplicationResult
   chooseProvider: (id: string) => ApplicationResult
   confirmPayment: () => ApplicationResult
@@ -38,6 +39,7 @@ type FumigationContextValue = {
   confirmEho: () => ApplicationResult
   issueCertificate: () => ApplicationResult
   startRenewal: () => FumigationRuleResult<null>
+  resetApplications: () => void
 }
 
 const FumigationContext = createContext<FumigationContextValue | null>(null)
@@ -79,19 +81,24 @@ export function FumigationProvider({
   )
 
   const startApplication = useCallback(
-    (requestedPeriod: string, declaration: boolean): ApplicationResult => {
+    (
+      requestedPeriod: string,
+      declaration: boolean,
+      premisesName = profile?.premises?.premisesName ?? ""
+    ): ApplicationResult => {
       if (!profileId) return noProfile()
       const result = beginFumigationApplication(
         requestedPeriod,
         declaration,
         state.application,
         state.application?.id ??
-          `fumigation-application-${(state.history?.length ?? 0) + 1}`
+          `fumigation-application-${(state.history?.length ?? 0) + 1}`,
+        premisesName
       )
       if (result.ok) save({ ...state, application: result.value })
       return result
     },
-    [noProfile, profileId, save, state]
+    [noProfile, profile, profileId, save, state]
   )
 
   const updateApplication = useCallback(
@@ -135,12 +142,17 @@ export function FumigationProvider({
   const issueCertificate = useCallback(
     () =>
       updateApplication((application) => {
+        const selectedPremises = [
+          ...(profile?.premises ? [profile.premises] : []),
+          ...(profile?.branches ?? []),
+        ].find((premises) => premises.premisesName === application.premisesName)
         const result = issueFumigationCertificate(
           application,
-          profile?.premises?.councilId ?? ""
+          selectedPremises?.councilId ?? profile?.premises?.councilId ?? ""
         )
         if (!result.ok || !result.value.certificate || !profile?.premises)
           return result
+        const certificatePremises = selectedPremises ?? profile.premises
         return {
           ok: true,
           value: {
@@ -149,8 +161,8 @@ export function FumigationProvider({
               ...result.value.certificate,
               premisesSnapshot: {
                 businessName: profile.businessName,
-                premisesName: profile.premises.premisesName,
-                address: profile.premises.address,
+                premisesName: certificatePremises.premisesName,
+                address: certificatePremises.address,
               },
             },
           },
@@ -175,6 +187,10 @@ export function FumigationProvider({
     return { ok: true, value: null }
   }, [profileId, save, state])
 
+  const resetApplications = useCallback(() => {
+    save(emptyFumigationState())
+  }, [save])
+
   const value = useMemo(
     () => ({
       state,
@@ -186,6 +202,7 @@ export function FumigationProvider({
       confirmEho,
       issueCertificate,
       startRenewal,
+      resetApplications,
     }),
     [
       state,
@@ -197,6 +214,7 @@ export function FumigationProvider({
       confirmEho,
       issueCertificate,
       startRenewal,
+      resetApplications,
     ]
   )
 

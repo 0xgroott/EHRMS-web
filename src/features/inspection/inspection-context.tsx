@@ -39,6 +39,7 @@ interface InspectionContextValue {
   resolveFollowUp: () => CaseResult
   escalateFollowUp: () => CaseResult
   issueApproval: () => CaseResult
+  resetInspection: () => void
 }
 
 const InspectionContext = createContext<InspectionContextValue | null>(null)
@@ -64,7 +65,7 @@ export function InspectionProvider({
   }, [businessIsHydrated, profileId, store])
 
   const save = useCallback(
-    (inspection: InspectionCase) => {
+    (inspection: InspectionCase | null) => {
       const nextState = { inspection }
       if (profileId) store.write(profileId, nextState)
       setState(nextState)
@@ -140,6 +141,7 @@ export function InspectionProvider({
     () => updateInspection(issueHealthApproval),
     [updateInspection]
   )
+  const resetInspection = useCallback(() => save(null), [save])
 
   const value = useMemo(
     () => ({
@@ -154,6 +156,7 @@ export function InspectionProvider({
       resolveFollowUp,
       escalateFollowUp,
       issueApproval,
+      resetInspection,
     }),
     [
       state,
@@ -167,6 +170,7 @@ export function InspectionProvider({
       resolveFollowUp,
       escalateFollowUp,
       issueApproval,
+      resetInspection,
     ]
   )
 

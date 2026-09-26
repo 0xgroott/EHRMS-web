@@ -95,11 +95,16 @@ describe("food handler drawer routes", () => {
     const user = userEvent.setup()
     render(<NewFoodHandlerDrawerPage />)
 
-    expect(screen.getByRole("heading", { name: "Food handlers" })).toBeVisible()
-    expect(
-      screen.getByRole("dialog", { name: "Add food handler" })
-    ).toBeVisible()
-    const save = screen.getByRole("button", { name: "Save food handler" })
+    const dialog = screen.getByRole("dialog", { name: "Add staff" })
+    expect(dialog).toBeVisible()
+    expect(dialog).toHaveClass(
+      "sm:max-w-[456px]!",
+      "max-h-[600px]",
+      "overflow-hidden",
+      "rounded-xl"
+    )
+    expect(dialog.querySelector(".staff-dialog-scroll")).toBeInTheDocument()
+    const save = screen.getByRole("button", { name: "Save staff member" })
     expect(save).toBeDisabled()
     expect(mocks.addHandler).not.toHaveBeenCalled()
 
@@ -122,10 +127,9 @@ describe("food handler drawer routes", () => {
       target: { value: "08030000000" },
     })
     expect(save).toBeDisabled()
-    screen
-      .getByRole("checkbox", { name: /Fitness Certificate process/i })
-      .focus()
-    await user.keyboard("[Space]")
+    await user.click(
+      screen.getByRole("checkbox", { name: /Fitness Certificate process/i })
+    )
     expect(save).toBeEnabled()
     await user.click(save)
     expect(mocks.addHandler).toHaveBeenCalledWith(
@@ -153,9 +157,9 @@ describe("food handler drawer routes", () => {
     const user = userEvent.setup()
     render(<EditFoodHandlerDrawerPage handlerId="handler-ada" />)
 
-    expect(screen.getByRole("heading", { name: "Food handlers" })).toBeVisible()
+    expect(screen.getByRole("heading", { name: "Staff" })).toBeVisible()
     expect(
-      screen.getByRole("dialog", { name: "Edit food handler" })
+      screen.getByRole("dialog", { name: "Edit staff member" })
     ).toBeVisible()
     await user.click(screen.getByRole("button", { name: "Close" }))
     expect(mocks.navigate).toHaveBeenCalledWith({
@@ -193,9 +197,9 @@ describe("food handler drawer routes", () => {
 
     await user.click(screen.getByRole("button", { name: "Save changes" }))
 
-    expect(screen.getByRole("alert")).toHaveTextContent(
-      "Unable to save handler"
-    )
+    expect(
+      screen.getByText("Unable to save handler").closest('[role="alert"]')
+    ).toBeInTheDocument()
     expect(mocks.navigate).not.toHaveBeenCalled()
   })
 })

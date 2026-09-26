@@ -1,5 +1,5 @@
 import { useForm } from "@tanstack/react-form"
-import { useId, useState } from "react"
+import { useEffect, useId, useRef, useState } from "react"
 import type { ReactNode } from "react"
 import type {
   BusinessAccountInput,
@@ -28,6 +28,8 @@ type AccountFormProps = {
     input: BusinessAccountInput
   ) => AccountActionResult | Promise<AccountActionResult>
   signInLink: ReactNode
+  firstStepContent?: ReactNode
+  onPageChange?: (page: 1 | 2) => void
 }
 
 const defaultValues: BusinessAccountInput = {
@@ -39,7 +41,7 @@ const defaultValues: BusinessAccountInput = {
   acceptedTerms: false,
 }
 
-const fields = [
+const businessFields = [
   {
     name: "businessName",
     label: "Business name",
@@ -52,6 +54,9 @@ const fields = [
     type: "text",
     autoComplete: "name",
   },
+] as const
+
+const accessFields = [
   { name: "phone", label: "Phone number", type: "tel", autoComplete: "tel" },
   {
     name: "email",
@@ -67,12 +72,20 @@ const fields = [
   },
 ] as const
 
-export function AccountForm({ onSubmit, signInLink }: AccountFormProps) {
+export function AccountForm({
+  onSubmit,
+  signInLink,
+  firstStepContent,
+  onPageChange,
+}: AccountFormProps) {
   const id = useId()
+  const [page, setPage] = useState<1 | 2>(1)
   const [error, setError] = useState<string>()
   const [fieldErrors, setFieldErrors] = useState<
     ValidationErrors<BusinessAccountInput>
   >({})
+  const pageHeading = useRef<HTMLHeadingElement>(null)
+  const focusPageHeading = useRef(false)
   const form = useForm({
     defaultValues,
     validators: {
@@ -88,21 +101,75 @@ export function AccountForm({ onSubmit, signInLink }: AccountFormProps) {
         const result = await onSubmit(value)
         setError(result?.error)
         setFieldErrors(result?.fieldErrors ?? {})
+        if (
+          result?.fieldErrors?.businessName ||
+          result?.fieldErrors?.contactName
+        ) {
+          focusPageHeading.current = true
+          setPage(1)
+          onPageChange?.(1)
+        }
       } catch {
         setError("Unable to create your account. Please try again.")
       }
     },
   })
 
+  useEffect(() => {
+    if (!focusPageHeading.current) return
+    pageHeading.current?.focus()
+    focusPageHeading.current = false
+  }, [page])
+
+  function showPage(nextPage: 1 | 2) {
+    focusPageHeading.current = true
+    setError(undefined)
+    setPage(nextPage)
+    onPageChange?.(nextPage)
+  }
+
+  function continueToAccountAccess() {
+    const errors = validateAccount(form.state.values)
+    const visibleErrors: ValidationErrors<BusinessAccountInput> = {
+      businessName: errors.businessName,
+      contactName: errors.contactName,
+    }
+    setFieldErrors(visibleErrors)
+    setError(undefined)
+    if (visibleErrors.businessName || visibleErrors.contactName) return
+    showPage(2)
+  }
+
+  const fields = page === 1 ? businessFields : accessFields
+
   return (
     <form
       noValidate
       onSubmit={(event) => {
         event.preventDefault()
+        if (page === 1) {
+          continueToAccountAccess()
+          return
+        }
         void form.handleSubmit()
       }}
       className="flex flex-col gap-6"
     >
+      <div className="flex flex-col gap-1.5">
+        <h2
+          ref={pageHeading}
+          tabIndex={-1}
+          className="text-lg font-semibold tracking-tight outline-none"
+        >
+          {page === 1 ? "Business details" : "Account access"}
+        </h2>
+        <p className="text-sm leading-relaxed text-muted-foreground">
+          {page === 1
+            ? "Tell us about the business and the person responsible for it."
+            : "Add the contact details and password you will use to sign in."}
+        </p>
+      </div>
+      {page === 1 && firstStepContent}
       <FieldGroup className="gap-5">
         {fields.map(({ name, label, type, autoComplete }) => (
           <form.Field key={name} name={name}>
@@ -152,55 +219,80 @@ export function AccountForm({ onSubmit, signInLink }: AccountFormProps) {
             }}
           </form.Field>
         ))}
-        <form.Field name="acceptedTerms">
-          {(field) => {
-            const message = field.state.meta.errors[0]
-            return (
-              <Field orientation="horizontal" data-invalid={!!message}>
-                <Checkbox
-                  id={`${id}-consent`}
-                  name={field.name}
-                  checked={field.state.value}
-                  onCheckedChange={(checked) => field.handleChange(checked)}
-                  onBlur={field.handleBlur}
-                  required
-                  aria-invalid={!!message}
-                  aria-describedby={message ? `${id}-consent-error` : undefined}
-                />
-                <FieldContent>
-                  <FieldLabel
-                    htmlFor={`${id}-consent`}
-                    className="min-h-11 items-start"
-                  >
-                    I accept the terms and privacy notice.
-                  </FieldLabel>
-                  {message && (
-                    <FieldError id={`${id}-consent-error`}>
-                      {message}
-                    </FieldError>
-                  )}
-                </FieldContent>
-              </Field>
-            )
-          }}
-        </form.Field>
+        {page === 2 && (
+          <form.Field name="acceptedTerms">
+            {(field) => {
+              const message = field.state.meta.errors[0]
+              return (
+                <Field orientation="horizontal" data-invalid={!!message}>
+                  <Checkbox
+                    id={`${id}-consent`}
+                    name={field.name}
+                    checked={field.state.value}
+                    onCheckedChange={(checked) => field.handleChange(checked)}
+                    onBlur={field.handleBlur}
+                    required
+                    aria-invalid={!!message}
+                    aria-describedby={
+                      message ? `${id}-consent-error` : undefined
+                    }
+                  />
+                  <FieldContent>
+                    <FieldLabel
+                      htmlFor={`${id}-consent`}
+                      className="min-h-11 items-start"
+                    >
+                      I accept the terms and privacy notice.
+                    </FieldLabel>
+                    {message && (
+                      <FieldError id={`${id}-consent-error`}>
+                        {message}
+                      </FieldError>
+                    )}
+                  </FieldContent>
+                </Field>
+              )
+            }}
+          </form.Field>
+        )}
       </FieldGroup>
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-      <form.Subscribe selector={(state) => state.isSubmitting}>
-        {(isSubmitting) => (
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            className="min-h-11 w-full"
-          >
-            {isSubmitting ? "Creating account…" : "Create account"}
-          </Button>
-        )}
-      </form.Subscribe>
+      {page === 1 ? (
+        <Button
+          type="button"
+          className="min-h-11 w-full"
+          onClick={continueToAccountAccess}
+        >
+          Continue
+        </Button>
+      ) : (
+        <form.Subscribe selector={(state) => state.isSubmitting}>
+          {(isSubmitting) => (
+            <div className="grid grid-cols-[auto_1fr] gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isSubmitting}
+                className="min-h-11 px-5"
+                onClick={() => showPage(1)}
+              >
+                Back
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="min-h-11 w-full"
+              >
+                {isSubmitting ? "Creating account…" : "Create account"}
+              </Button>
+            </div>
+          )}
+        </form.Subscribe>
+      )}
       <p className="text-center text-sm text-muted-foreground">
         Already have an account? {signInLink}
       </p>

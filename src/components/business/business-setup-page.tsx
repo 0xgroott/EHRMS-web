@@ -2,11 +2,15 @@ import { useEffect, useRef } from "react"
 import { useBusinessSession } from "@/app/business-session"
 import { BusinessSetupForm } from "@/components/business/business-setup-form"
 import { notifySuccessAfterNavigation } from "@/components/ui/app-toast"
-import { OnboardingShell } from "@/components/business/onboarding-shell"
+import {
+  OnboardingShell,
+  VERIFIED_BUSINESS_ONBOARDING_STEPS,
+} from "@/components/business/onboarding-shell"
 import type { BusinessPremisesInput } from "@/domain/business-types"
 import { createBusinessRepository } from "@/services/business-repository"
 import type { BusinessRepositoryResult } from "@/services/business-repository"
 import { createBusinessStorage } from "@/services/business-storage"
+import { ONBOARDING_BUSINESS_CREDENTIALS } from "@/data/business-seeds"
 
 const emptyPremises: BusinessPremisesInput = {
   premisesName: "",
@@ -32,6 +36,8 @@ export function BusinessSetup() {
   const redirecting = useRef(false)
   const completing = useRef(false)
   const completed = useRef(false)
+  const usesVerifiedOnboarding =
+    profile?.email === ONBOARDING_BUSINESS_CREDENTIALS.email
   useEffect(() => {
     if (
       !session.isHydrated ||
@@ -86,7 +92,10 @@ export function BusinessSetup() {
     <OnboardingShell
       title="Tell us about your business"
       description="Add the details for your business and its first premises. You can save a draft and return later."
-      step={3}
+      step={usesVerifiedOnboarding ? 2 : 4}
+      steps={
+        usesVerifiedOnboarding ? VERIFIED_BUSINESS_ONBOARDING_STEPS : undefined
+      }
     >
       <BusinessSetupForm
         initialValues={initialValues}

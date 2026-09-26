@@ -5,6 +5,7 @@ import { renderToString } from "react-dom/server"
 import { beforeEach, expect, it, vi } from "vitest"
 import {
   emptyBusinessState,
+  ONBOARDING_BUSINESS_CREDENTIALS,
   returningBusinessState,
 } from "@/data/business-seeds"
 import { createBusinessRepository } from "@/services/business-repository"
@@ -92,6 +93,28 @@ it("signs in the returning demo business", async () => {
     "Riverside Kitchen & Foods"
   )
   expect(screen.getByTestId("stage")).toHaveTextContent("complete")
+})
+
+it("starts the reusable onboarding account as a verified blank identity", async () => {
+  renderSession(<SessionProbe />)
+  await waitFor(() => expect(latestSession?.isHydrated).toBe(true))
+
+  act(() => {
+    latestSession?.signInDemo(
+      ONBOARDING_BUSINESS_CREDENTIALS.email,
+      ONBOARDING_BUSINESS_CREDENTIALS.password
+    )
+  })
+
+  expect(latestSession?.isAuthenticated).toBe(true)
+  expect(latestSession?.state).toMatchObject({
+    stage: "account",
+    profile: {
+      businessName: "",
+      contactName: "",
+      verified: true,
+    },
+  })
 })
 
 it("signs out and resets the business session", async () => {

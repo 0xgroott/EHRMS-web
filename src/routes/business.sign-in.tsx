@@ -32,8 +32,11 @@ function BusinessSignIn() {
                 Object.values(result.errors).find(Boolean) ??
                 "Unable to sign in. Please try again.",
             }
-          // This destination is supplied by the dashboard slice.
-          window.location.assign("/business/dashboard")
+          window.location.assign(
+            result.state.stage === "complete"
+              ? "/business/dashboard"
+              : "/business/register"
+          )
         }}
         createAccountLink={
           <Button

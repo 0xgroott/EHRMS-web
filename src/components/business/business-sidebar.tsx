@@ -14,6 +14,21 @@ import {
 } from "@/components/ui/sidebar"
 import { businessNavigation } from "./business-navigation"
 
+const applicationRoutePrefixes = ["/business/fitness", "/business/fumigation"]
+
+function isNavigationItemActive(pathname: string, href: string) {
+  if (
+    href === "/business/applications" &&
+    applicationRoutePrefixes.some(
+      (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+    )
+  ) {
+    return true
+  }
+
+  return pathname === href || pathname.startsWith(`${href}/`)
+}
+
 export function BusinessSidebar({ pathname }: { pathname: string }) {
   const { setOpenMobile, isMobile, state } = useSidebar()
   return (
@@ -45,8 +60,7 @@ export function BusinessSidebar({ pathname }: { pathname: string }) {
             <SidebarGroupContent>
               <SidebarMenu>
                 {businessNavigation.map(({ label, href, icon: Icon }) => {
-                  const active =
-                    pathname === href || pathname.startsWith(`${href}/`)
+                  const active = isNavigationItemActive(pathname, href)
                   return (
                     <SidebarMenuItem key={href}>
                       <SidebarMenuButton

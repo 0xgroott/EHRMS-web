@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest"
 import {
   emptyBusinessState,
+  ONBOARDING_BUSINESS_CREDENTIALS,
   returningBusinessState,
 } from "@/data/business-seeds"
 import {
@@ -178,6 +179,95 @@ describe("business repository", () => {
       })
     }
   )
+
+  it("starts a new verified business identity every time the onboarding credentials are used", () => {
+    const repository = createBusinessRepository(
+      createBusinessStorage(localStorage)
+    )
+
+    const first = repository.signInDemo(
+      ONBOARDING_BUSINESS_CREDENTIALS.email,
+      ONBOARDING_BUSINESS_CREDENTIALS.password
+    )
+    expect(first).toMatchObject({
+      ok: true,
+      state: {
+        stage: "account",
+        profile: {
+          businessName: "",
+          contactName: "",
+          email: ONBOARDING_BUSINESS_CREDENTIALS.email,
+          verified: true,
+        },
+      },
+    })
+    if (!first.ok) throw new Error("Expected onboarding sign-in to succeed")
+
+    const second = repository.signInDemo(
+      ONBOARDING_BUSINESS_CREDENTIALS.email,
+      ONBOARDING_BUSINESS_CREDENTIALS.password
+    )
+    expect(second).toMatchObject({ ok: true, state: { stage: "account" } })
+    if (!second.ok) throw new Error("Expected onboarding sign-in to succeed")
+    expect(second.state.profile?.id).not.toBe(first.state.profile?.id)
+    expect(localStorage.getItem(STORAGE_KEY)).not.toContain(
+      ONBOARDING_BUSINESS_CREDENTIALS.password
+    )
+  })
+
+  it("saves a fresh business identity and advances directly to premises setup", () => {
+    const repository = createBusinessRepository(
+      createBusinessStorage(localStorage)
+    )
+    repository.signInDemo(
+      ONBOARDING_BUSINESS_CREDENTIALS.email,
+      ONBOARDING_BUSINESS_CREDENTIALS.password
+    )
+
+    expect(
+      repository.saveBusinessIdentity({
+        businessName: "  Harbour Foods  ",
+        contactName: "  Amaka Nwosu  ",
+      })
+    ).toMatchObject({
+      ok: true,
+      state: {
+        stage: "setup",
+        profile: {
+          businessName: "Harbour Foods",
+          contactName: "Amaka Nwosu",
+          verified: true,
+        },
+      },
+    })
+  })
+
+  it("keeps fresh onboarding on the identity step when either name is missing", () => {
+    const repository = createBusinessRepository(
+      createBusinessStorage(localStorage)
+    )
+    repository.signInDemo(
+      ONBOARDING_BUSINESS_CREDENTIALS.email,
+      ONBOARDING_BUSINESS_CREDENTIALS.password
+    )
+
+    expect(
+      repository.saveBusinessIdentity({
+        businessName: " ",
+        contactName: " ",
+      })
+    ).toMatchObject({
+      ok: false,
+      errors: {
+        businessName: expect.any(String),
+        contactName: expect.any(String),
+      },
+    })
+    expect(repository.getState()).toMatchObject({
+      stage: "account",
+      profile: { businessName: "", contactName: "" },
+    })
+  })
 
   it("saves valid profile edits without changing verified details or documents", () => {
     const repository = createBusinessRepository(

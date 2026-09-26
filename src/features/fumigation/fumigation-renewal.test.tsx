@@ -15,7 +15,8 @@ vi.mock("@/app/business-session", () => ({
 beforeEach(() => localStorage.clear())
 
 function RenewalProbe() {
-  const { state, startRenewal, startApplication } = useFumigation()
+  const { state, startRenewal, startApplication, resetApplications } =
+    useFumigation()
   return (
     <>
       <span data-testid="active">{state.application?.id ?? "none"}</span>
@@ -26,6 +27,7 @@ function RenewalProbe() {
       <button onClick={() => startApplication("October 2026", true)}>
         Start application
       </button>
+      <button onClick={resetApplications}>Reset applications</button>
     </>
   )
 }
@@ -74,4 +76,40 @@ it("retains the old Fumigation certificate and starts the next application with 
   expect(
     createFumigationStore().read("BUS-001").history?.[0].paymentReference
   ).toBe("FUM-PAY-1")
+})
+
+it("clears active and historical Fumigation applications", async () => {
+  createFumigationStore().write("BUS-001", {
+    application: {
+      id: "fumigation-application-2",
+      requestedPeriod: "October 2026",
+      declaration: true,
+      stage: "draft",
+    },
+    history: [
+      {
+        id: "fumigation-application-1",
+        requestedPeriod: "September 2026",
+        declaration: true,
+        stage: "issued",
+      },
+    ],
+  })
+  const user = userEvent.setup()
+  render(
+    <FumigationProvider>
+      <RenewalProbe />
+    </FumigationProvider>
+  )
+
+  expect(await screen.findByTestId("active")).toHaveTextContent(
+    "fumigation-application-2"
+  )
+  await user.click(screen.getByRole("button", { name: "Reset applications" }))
+
+  expect(screen.getByTestId("active")).toHaveTextContent("none")
+  expect(screen.getByTestId("history")).toBeEmptyDOMElement()
+  expect(createFumigationStore().read("BUS-001")).toEqual({
+    application: null,
+  })
 })

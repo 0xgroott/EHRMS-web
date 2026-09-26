@@ -48,6 +48,8 @@ import { Route as BusinessPortalHealthApprovalRouteImport } from './routes/busin
 import { Route as BusinessPortalInspectionsRouteImport } from './routes/business._portal.inspections'
 import { Route as BusinessPortalProfileRouteImport } from './routes/business._portal.profile'
 import { Route as BusinessPortalSettingsRouteImport } from './routes/business._portal.settings'
+import { Route as BusinessFitnessPaymentReceiptRouteImport } from './routes/business.fitness.payment-receipt'
+import { Route as BusinessFumigationPaymentReceiptRouteImport } from './routes/business.fumigation.payment-receipt'
 import { Route as EhoPortalFumigationRouteImport } from './routes/eho._portal.fumigation'
 import { Route as EhoPortalInspectionsRouteImport } from './routes/eho._portal.inspections'
 import { Route as EhoPortalMyWorkRouteImport } from './routes/eho._portal.my-work'
@@ -269,6 +271,18 @@ const BusinessPortalSettingsRoute = BusinessPortalSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => BusinessPortalRoute,
 } as any)
+const BusinessFitnessPaymentReceiptRoute =
+  BusinessFitnessPaymentReceiptRouteImport.update({
+    id: '/fitness/payment-receipt',
+    path: '/fitness/payment-receipt',
+    getParentRoute: () => BusinessRoute,
+  } as any)
+const BusinessFumigationPaymentReceiptRoute =
+  BusinessFumigationPaymentReceiptRouteImport.update({
+    id: '/fumigation/payment-receipt',
+    path: '/fumigation/payment-receipt',
+    getParentRoute: () => BusinessRoute,
+  } as any)
 const EhoPortalFumigationRoute = EhoPortalFumigationRouteImport.update({
   id: '/fumigation',
   path: '/fumigation',
@@ -439,6 +453,8 @@ export interface FileRoutesByFullPath {
   '/business/inspections': typeof BusinessPortalInspectionsRoute
   '/business/profile': typeof BusinessPortalProfileRoute
   '/business/settings': typeof BusinessPortalSettingsRoute
+  '/business/fitness/payment-receipt': typeof BusinessFitnessPaymentReceiptRoute
+  '/business/fumigation/payment-receipt': typeof BusinessFumigationPaymentReceiptRoute
   '/eho/fumigation': typeof EhoPortalFumigationRouteWithChildren
   '/eho/inspections': typeof EhoPortalInspectionsRouteWithChildren
   '/eho/my-work': typeof EhoPortalMyWorkRoute
@@ -497,6 +513,8 @@ export interface FileRoutesByTo {
   '/business/inspections': typeof BusinessPortalInspectionsRoute
   '/business/profile': typeof BusinessPortalProfileRoute
   '/business/settings': typeof BusinessPortalSettingsRoute
+  '/business/fitness/payment-receipt': typeof BusinessFitnessPaymentReceiptRoute
+  '/business/fumigation/payment-receipt': typeof BusinessFumigationPaymentReceiptRoute
   '/eho/fumigation': typeof EhoPortalFumigationRouteWithChildren
   '/eho/inspections': typeof EhoPortalInspectionsRouteWithChildren
   '/eho/my-work': typeof EhoPortalMyWorkRoute
@@ -562,6 +580,8 @@ export interface FileRoutesById {
   '/business/_portal/inspections': typeof BusinessPortalInspectionsRoute
   '/business/_portal/profile': typeof BusinessPortalProfileRoute
   '/business/_portal/settings': typeof BusinessPortalSettingsRoute
+  '/business/fitness/payment-receipt': typeof BusinessFitnessPaymentReceiptRoute
+  '/business/fumigation/payment-receipt': typeof BusinessFumigationPaymentReceiptRoute
   '/eho/_portal/fumigation': typeof EhoPortalFumigationRouteWithChildren
   '/eho/_portal/inspections': typeof EhoPortalInspectionsRouteWithChildren
   '/eho/_portal/my-work': typeof EhoPortalMyWorkRoute
@@ -625,6 +645,8 @@ export interface FileRouteTypes {
     | '/business/inspections'
     | '/business/profile'
     | '/business/settings'
+    | '/business/fitness/payment-receipt'
+    | '/business/fumigation/payment-receipt'
     | '/eho/fumigation'
     | '/eho/inspections'
     | '/eho/my-work'
@@ -683,6 +705,8 @@ export interface FileRouteTypes {
     | '/business/inspections'
     | '/business/profile'
     | '/business/settings'
+    | '/business/fitness/payment-receipt'
+    | '/business/fumigation/payment-receipt'
     | '/eho/fumigation'
     | '/eho/inspections'
     | '/eho/my-work'
@@ -747,6 +771,8 @@ export interface FileRouteTypes {
     | '/business/_portal/inspections'
     | '/business/_portal/profile'
     | '/business/_portal/settings'
+    | '/business/fitness/payment-receipt'
+    | '/business/fumigation/payment-receipt'
     | '/eho/_portal/fumigation'
     | '/eho/_portal/inspections'
     | '/eho/_portal/my-work'
@@ -1056,6 +1082,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BusinessPortalSettingsRouteImport
       parentRoute: typeof BusinessPortalRoute
     }
+    '/business/fitness/payment-receipt': {
+      id: '/business/fitness/payment-receipt'
+      path: '/fitness/payment-receipt'
+      fullPath: '/business/fitness/payment-receipt'
+      preLoaderRoute: typeof BusinessFitnessPaymentReceiptRouteImport
+      parentRoute: typeof BusinessRoute
+    }
+    '/business/fumigation/payment-receipt': {
+      id: '/business/fumigation/payment-receipt'
+      path: '/fumigation/payment-receipt'
+      fullPath: '/business/fumigation/payment-receipt'
+      preLoaderRoute: typeof BusinessFumigationPaymentReceiptRouteImport
+      parentRoute: typeof BusinessRoute
+    }
     '/eho/_portal/fumigation': {
       id: '/eho/_portal/fumigation'
       path: '/fumigation'
@@ -1307,6 +1347,8 @@ interface BusinessRouteChildren {
   BusinessSignInRoute: typeof BusinessSignInRoute
   BusinessVerifyRoute: typeof BusinessVerifyRoute
   BusinessIndexRoute: typeof BusinessIndexRoute
+  BusinessFitnessPaymentReceiptRoute: typeof BusinessFitnessPaymentReceiptRoute
+  BusinessFumigationPaymentReceiptRoute: typeof BusinessFumigationPaymentReceiptRoute
 }
 
 const BusinessRouteChildren: BusinessRouteChildren = {
@@ -1316,6 +1358,8 @@ const BusinessRouteChildren: BusinessRouteChildren = {
   BusinessSignInRoute: BusinessSignInRoute,
   BusinessVerifyRoute: BusinessVerifyRoute,
   BusinessIndexRoute: BusinessIndexRoute,
+  BusinessFitnessPaymentReceiptRoute: BusinessFitnessPaymentReceiptRoute,
+  BusinessFumigationPaymentReceiptRoute: BusinessFumigationPaymentReceiptRoute,
 }
 
 const BusinessRouteWithChildren = BusinessRoute._addFileChildren(

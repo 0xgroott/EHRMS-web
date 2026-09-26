@@ -52,6 +52,18 @@ const acceptedDocumentTypes = ["application/pdf", "image/jpeg", "image/png"]
 
 const acceptedDocumentExtensions = ".pdf,.jpg,.jpeg,.png"
 
+const businessTypes = [
+  "Bakery",
+  "Cold Store",
+  "Event Centre",
+  "Food Court",
+  "Food Depot",
+  "Hotel",
+  "Pharmacy",
+  "Restaurant",
+  "Supermarket",
+] as const
+
 function createDocumentId() {
   return globalThis.crypto.randomUUID()
 }
@@ -377,20 +389,34 @@ export function BusinessSetupForm({
                   <FieldLabel htmlFor={`${id}-business-type`}>
                     Business type
                   </FieldLabel>
-                  <Input
-                    id={`${id}-business-type`}
-                    name={field.name}
-                    required
+                  <Select
                     disabled={isExiting}
                     value={field.state.value}
-                    onChange={(event) => field.handleChange(event.target.value)}
-                    onBlur={field.handleBlur}
-                    aria-invalid={!!error}
-                    aria-describedby={
-                      error ? `${id}-business-type-error` : undefined
-                    }
-                    className="min-h-11"
-                  />
+                    onValueChange={(value) => field.handleChange(value ?? "")}
+                  >
+                    <SelectTrigger
+                      id={`${id}-business-type`}
+                      name={field.name}
+                      disabled={isExiting}
+                      aria-invalid={!!error}
+                      aria-describedby={
+                        error ? `${id}-business-type-error` : undefined
+                      }
+                      className="min-h-11 w-full"
+                    >
+                      <SelectValue placeholder="Choose a business type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectLabel>Business types</SelectLabel>
+                        {businessTypes.map((businessType) => (
+                          <SelectItem key={businessType} value={businessType}>
+                            {businessType}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
                   {error && (
                     <FieldError id={`${id}-business-type-error`}>
                       {error}
@@ -400,12 +426,6 @@ export function BusinessSetupForm({
               )
             }}
           </form.Field>
-        </FieldGroup>
-      </FieldSet>
-
-      <FieldSet>
-        <FieldLegend>Registration details</FieldLegend>
-        <FieldGroup>
           <form.Field name="registrationNumber">
             {(field) => (
               <Field>
@@ -430,8 +450,8 @@ export function BusinessSetupForm({
         </FieldGroup>
       </FieldSet>
 
-      <FieldSet>
-        <FieldLegend>Premises and address</FieldLegend>
+      <FieldSet className="border-t border-border/60 pt-10">
+        <FieldLegend>Premises location</FieldLegend>
         <FieldGroup>
           <form.Field name="address">
             {(field) => {
@@ -485,12 +505,6 @@ export function BusinessSetupForm({
               )
             }}
           </form.Field>
-        </FieldGroup>
-      </FieldSet>
-
-      <FieldSet>
-        <FieldLegend>Council and contact details</FieldLegend>
-        <FieldGroup>
           <form.Field name="councilId">
             {(field) => {
               const error = fieldError(field)
@@ -532,6 +546,12 @@ export function BusinessSetupForm({
               )
             }}
           </form.Field>
+        </FieldGroup>
+      </FieldSet>
+
+      <FieldSet className="border-t border-border/60 pt-10">
+        <FieldLegend>Contact and documents</FieldLegend>
+        <FieldGroup>
           <div
             aria-label="Account contact details"
             className="flex flex-col gap-2 rounded-md border bg-muted/30 p-4 text-sm"

@@ -75,7 +75,7 @@ export function BusinessVerify() {
           ? "Update your email or phone number. Your business details stay saved."
           : "Enter the code we sent to confirm your registration details."
       }
-      step={2}
+      step={3}
     >
       {editingContact ? (
         <ContactForm

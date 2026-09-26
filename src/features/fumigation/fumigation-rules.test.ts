@@ -21,16 +21,27 @@ describe("fumigation rules", () => {
       ok: false,
       error: "Confirm the premises declaration",
     })
+    expect(beginFumigationApplication("September 2026", true)).toEqual({
+      ok: false,
+      error: "Choose a business branch or location",
+    })
   })
 
   it("selects a licensed provider and preserves its service price", () => {
-    const started = beginFumigationApplication(" September 2026 ", true)
+    const started = beginFumigationApplication(
+      " September 2026 ",
+      true,
+      null,
+      "fumigation-application-1",
+      "Riverside Kitchen"
+    )
     if (!started.ok) throw new Error(started.error)
     const selected = chooseLicensedProvider(started.value, provider)
     expect(selected).toMatchObject({
       ok: true,
       value: {
         requestedPeriod: "September 2026",
+        premisesName: "Riverside Kitchen",
         declaration: true,
         providerId: provider.id,
         totalNgn: provider.priceNgn,
@@ -53,17 +64,27 @@ describe("fumigation rules", () => {
   })
 
   it("keeps provider, EHO, and council transitions in order", () => {
-    const started = beginFumigationApplication("September 2026", true)
+    const started = beginFumigationApplication(
+      "September 2026",
+      true,
+      null,
+      "fumigation-application-1",
+      "Riverside Kitchen"
+    )
     if (!started.ok) throw new Error(started.error)
     const selected = chooseLicensedProvider(started.value, provider)
     if (!selected.ok) throw new Error(selected.error)
     expect(recordProviderReport(selected.value)).toMatchObject({ ok: false })
 
-    const paid = confirmFumigationPayment(selected.value)
+    const paid = confirmFumigationPayment(
+      selected.value,
+      "2026-09-19T08:15:00.000Z"
+    )
     if (!paid.ok) throw new Error(paid.error)
     expect(paid.value).toMatchObject({
       stage: "awaiting-provider",
       paymentReference: expect.any(String),
+      submittedAt: "2026-09-19T08:15:00.000Z",
     })
     expect(confirmEho(paid.value)).toMatchObject({ ok: false })
     const reported = recordProviderReport(paid.value, "2026-09-20")

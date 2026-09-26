@@ -46,13 +46,13 @@ describe("FoodHandlerForm", () => {
       target: { value: "08030000000" },
     })
     expect(
-      screen.getByRole("button", { name: "Save food handler" })
+      screen.getByRole("button", { name: "Save staff member" })
     ).toBeDisabled()
     expect(screen.getByLabelText("Job role")).toHaveValue("Kitchen assistant")
     expect(onSave).not.toHaveBeenCalled()
   })
 
-  it("enables save only after every field and consent are complete", async () => {
+  it("marks only the five required details and allows optional fields to stay empty", async () => {
     const onSave = vi.fn()
     const user = userEvent.setup()
     render(
@@ -66,14 +66,10 @@ describe("FoodHandlerForm", () => {
     fireEvent.change(screen.getByLabelText("Full name"), {
       target: { value: "Chidi Nwosu" },
     })
-    const save = screen.getByRole("button", { name: "Save food handler" })
+    const save = screen.getByRole("button", { name: "Save staff member" })
     expect(save).toBeDisabled()
     fireEvent.change(screen.getByRole("combobox", { name: "Sex" }), {
       target: { value: "Male" },
-    })
-    expect(save).toBeDisabled()
-    fireEvent.change(screen.getByLabelText("Date of birth"), {
-      target: { value: "1990-06-15" },
     })
     expect(save).toBeDisabled()
     fireEvent.change(screen.getByLabelText("Job role"), {
@@ -91,6 +87,18 @@ describe("FoodHandlerForm", () => {
       screen.getByRole("checkbox", { name: /Fitness Certificate process/i })
     )
     expect(save).toBeEnabled()
+    for (const label of [
+      "Full name",
+      "Sex",
+      "Job role",
+      "Identity number",
+      "Phone number",
+    ])
+      expect(screen.getByText(label)).toHaveClass("after:content-['*']")
+    expect(screen.getByText("Date of birth")).not.toHaveClass(
+      "after:content-['*']"
+    )
+    expect(screen.getByLabelText("Date of birth")).not.toBeRequired()
     await user.click(save)
     expect(onSave).toHaveBeenCalledWith(
       expect.objectContaining({ fullName: "Chidi Nwosu", consent: true })
@@ -137,7 +145,7 @@ describe("FoodHandlerForm", () => {
     expect(
       screen.queryByRole("button", { name: "Save and add another" })
     ).not.toBeInTheDocument()
-    await user.click(screen.getByRole("button", { name: "Save food handler" }))
+    await user.click(screen.getByRole("button", { name: "Save staff member" }))
 
     expect(onSave).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -149,16 +157,33 @@ describe("FoodHandlerForm", () => {
     )
   })
 
-  it("requires a registered branch before saving", async () => {
-    const onSave = vi.fn()
+  it("requires a registered branch before saving", () => {
     render(
-      <FoodHandlerForm branchOptions={[]} onSave={onSave} onCancel={vi.fn()} />
+      <FoodHandlerForm branchOptions={[]} onSave={vi.fn()} onCancel={vi.fn()} />
     )
 
     expect(
-      screen.getByRole("button", { name: "Save food handler" })
+      screen.getByRole("combobox", { name: "Business branch/location" })
+    ).toHaveAttribute("aria-required", "true")
+    expect(screen.getByText("Business branch/location")).toHaveClass(
+      "after:content-['*']"
+    )
+    expect(
+      screen.getByRole("button", { name: "Save staff member" })
     ).toBeDisabled()
-    expect(onSave).not.toHaveBeenCalled()
+  })
+
+  it("presents consent as a soft warning alert", () => {
+    render(
+      <FoodHandlerForm
+        branchOptions={singleBranch}
+        onSave={vi.fn()}
+        onCancel={vi.fn()}
+      />
+    )
+
+    const consent = screen.getByText(/confirm this staff member consents/i)
+    expect(consent.closest('[data-slot="alert"]')).toBeInTheDocument()
   })
 
   it("enables branch selection when multiple locations are available", () => {

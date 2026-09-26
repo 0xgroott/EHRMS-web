@@ -1,11 +1,13 @@
 import {
   DEMO_BUSINESS_CREDENTIALS,
   emptyBusinessState,
+  ONBOARDING_BUSINESS_CREDENTIALS,
   returningBusinessState,
 } from "@/data/business-seeds"
 import type {
   BusinessAccountInput,
   BusinessDocument,
+  BusinessIdentityInput,
   BusinessPortalState,
   BusinessPremisesInput,
   BusinessProfile,
@@ -14,6 +16,7 @@ import type {
 } from "@/domain/business-types"
 import {
   validateAccount,
+  validateBusinessIdentity,
   validateOtp,
   validatePremises,
   validateProfileDetails,
@@ -95,6 +98,25 @@ export function createBusinessRepository(
     },
     signInDemo(contact: string, password: string): BusinessRepositoryResult {
       if (
+        contact === ONBOARDING_BUSINESS_CREDENTIALS.email &&
+        password === ONBOARDING_BUSINESS_CREDENTIALS.password
+      ) {
+        return write({
+          ...structuredClone(emptyBusinessState),
+          profile: {
+            id: nextBusinessId(),
+            businessName: "",
+            contactName: "",
+            phone: "",
+            email: ONBOARDING_BUSINESS_CREDENTIALS.email,
+            acceptedTerms: true,
+            verified: true,
+            documents: [],
+          },
+        })
+      }
+
+      if (
         (contact !== DEMO_BUSINESS_CREDENTIALS.email &&
           contact !== DEMO_BUSINESS_CREDENTIALS.phone) ||
         password !== DEMO_BUSINESS_CREDENTIALS.password
@@ -116,6 +138,32 @@ export function createBusinessRepository(
         })
       }
       return write(seeded)
+    },
+    saveBusinessIdentity(
+      input: BusinessIdentityInput
+    ): BusinessRepositoryResult {
+      const errors = validateBusinessIdentity(input)
+      if (hasErrors(errors)) return failure(errors)
+
+      const state = storage.read()
+      if (!state.profile || state.stage !== "account") {
+        return failure({ state: "Start a new registration first" })
+      }
+      if (!state.profile.verified) {
+        return failure({ state: "Verify your account before continuing" })
+      }
+
+      return write(
+        withProfile(
+          state,
+          {
+            ...state.profile,
+            businessName: input.businessName.trim(),
+            contactName: input.contactName.trim(),
+          },
+          "setup"
+        )
+      )
     },
     createAccount(input: BusinessAccountInput): BusinessRepositoryResult {
       const errors = {

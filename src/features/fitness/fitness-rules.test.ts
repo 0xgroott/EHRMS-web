@@ -103,6 +103,24 @@ describe("fitness rules", () => {
     expect(review.stage).toBe("review")
   })
 
+  it("records when a reviewed application is submitted", () => {
+    const review: FitnessApplication = {
+      ...awaitingFacility,
+      stage: "review",
+      paymentReference: undefined,
+    }
+
+    expect(
+      confirmDemoPayment(review, [handler], "2026-09-20T09:30:00.000Z")
+    ).toMatchObject({
+      ok: true,
+      value: {
+        stage: "awaiting-facility",
+        submittedAt: "2026-09-20T09:30:00.000Z",
+      },
+    })
+  })
+
   it("rejects certificate issuance before the facility result", () => {
     expect(issueDemoCertificate(awaitingFacility, "phc")).toEqual({
       ok: false,

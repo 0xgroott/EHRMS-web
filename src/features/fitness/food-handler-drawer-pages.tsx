@@ -4,6 +4,13 @@ import { useBusinessSession } from "@/app/business-session"
 import { BusinessFormDrawer } from "@/components/business/business-form-drawer"
 import { notifySuccess } from "@/components/ui/app-toast"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { FoodHandlerForm } from "./food-handler-form"
 import type { BusinessBranchOption } from "./food-handler-form"
 import { FoodHandlersPage } from "./food-handlers-page"
@@ -27,21 +34,27 @@ export function NewFoodHandlerDrawerPage() {
   return (
     <>
       <FoodHandlersPage />
-      <BusinessFormDrawer
-        title="Add food handler"
-        compactPadding
-        onClose={close}
-      >
-        <FoodHandlerForm
-          branchOptions={[branch]}
-          onSave={(handler) => {
-            addHandler(handler)
-            notifySuccess("Food handler added")
-            close()
-          }}
-          onCancel={close}
-        />
-      </BusinessFormDrawer>
+      <Dialog open onOpenChange={(open) => !open && close()}>
+        <DialogContent className="h-[min(600px,calc(100dvh-2rem))] max-h-[600px] grid-rows-[auto_minmax(0,1fr)] gap-4 overflow-hidden rounded-xl p-0 sm:max-w-[456px]!">
+          <DialogHeader className="px-6 pt-6 pr-14">
+            <DialogTitle>Add staff</DialogTitle>
+            <DialogDescription>
+              Add the staff details needed for Fitness Certificate applications.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="staff-dialog-scroll mr-1 mb-2 min-h-0 overflow-y-auto px-6 pb-4">
+            <FoodHandlerForm
+              branchOptions={[branch]}
+              onSave={(handler) => {
+                addHandler(handler)
+                notifySuccess("Staff member added")
+                close()
+              }}
+              onCancel={close}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }
@@ -64,11 +77,11 @@ export function EditFoodHandlerDrawerPage({
       <FoodHandlersPage />
       {isHydrated && (
         <BusinessFormDrawer
-          title={handler ? "Edit food handler" : "Food handler not found"}
+          title={handler ? "Edit staff member" : "Staff member not found"}
           description={
             handler
               ? undefined
-              : "Return to food handlers to select an existing staff record."
+              : "Return to Staff to select an existing record."
           }
           compactPadding
           onClose={close}
@@ -92,7 +105,7 @@ export function EditFoodHandlerDrawerPage({
               onSave={(next) => {
                 const result = updateHandler(handler.id, next)
                 if (result.ok) {
-                  notifySuccess("Food handler updated")
+                  notifySuccess("Staff member updated")
                   close()
                 } else setSaveError(result.error)
               }}

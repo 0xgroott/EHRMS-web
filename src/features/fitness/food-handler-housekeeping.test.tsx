@@ -56,20 +56,14 @@ it("searches and filters staff, archives a record, and restores it from history"
   await screen.findByText("Ada Okafor")
 
   await user.type(
-    screen.getByRole("searchbox", { name: "Search food handlers" }),
+    screen.getByRole("searchbox", { name: "Search staff" }),
     "bisi"
   )
   expect(screen.getByText("Bisi Bello")).toBeVisible()
   expect(screen.queryByText("Ada Okafor")).not.toBeInTheDocument()
-  await user.clear(
-    screen.getByRole("searchbox", { name: "Search food handlers" })
-  )
-  await user.selectOptions(
-    screen.getByRole("combobox", { name: "Show" }),
-    "ready"
-  )
+  await user.clear(screen.getByRole("searchbox", { name: "Search staff" }))
   expect(screen.getByText("Ada Okafor")).toBeVisible()
-  expect(screen.queryByText("Bisi Bello")).not.toBeInTheDocument()
+  expect(screen.getByText("Bisi Bello")).toBeVisible()
 
   await user.click(screen.getByRole("button", { name: "Archive Ada Okafor" }))
   expect(screen.queryByText("Ada Okafor")).not.toBeInTheDocument()

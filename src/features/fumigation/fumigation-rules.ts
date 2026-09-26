@@ -9,7 +9,8 @@ export function beginFumigationApplication(
   requestedPeriod: string,
   declaration: boolean,
   currentApplication: FumigationApplication | null = null,
-  id = "fumigation-application-1"
+  id = "fumigation-application-1",
+  premisesName = ""
 ): FumigationRuleResult<FumigationApplication> {
   if (
     currentApplication &&
@@ -27,11 +28,15 @@ export function beginFumigationApplication(
   if (!declaration) {
     return { ok: false, error: "Confirm the premises declaration" }
   }
+  if (!premisesName.trim()) {
+    return { ok: false, error: "Choose a business branch or location" }
+  }
 
   return {
     ok: true,
     value: {
       id: currentApplication?.id ?? id,
+      premisesName: premisesName.trim(),
       requestedPeriod: requestedPeriod.trim(),
       declaration,
       stage: "draft",
@@ -75,7 +80,8 @@ export function chooseLicensedProvider(
 }
 
 export function confirmFumigationPayment(
-  application: FumigationApplication
+  application: FumigationApplication,
+  submittedAt = new Date().toISOString()
 ): FumigationRuleResult<FumigationApplication> {
   if (
     application.stage !== "review" ||
@@ -96,6 +102,7 @@ export function confirmFumigationPayment(
     value: {
       ...application,
       stage: "awaiting-provider",
+      submittedAt,
       paymentReference: `FUM-PAY-${application.id.toUpperCase()}`,
     },
   }

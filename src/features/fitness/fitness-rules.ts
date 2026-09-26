@@ -122,7 +122,8 @@ export function chooseFacility(
 
 export function confirmDemoPayment(
   application: FitnessApplication,
-  handlers: readonly FoodHandler[]
+  handlers: readonly FoodHandler[],
+  submittedAt = new Date().toISOString()
 ): FitnessRuleResult<FitnessApplication> {
   if (application.stage !== "review" || !application.facilityId) {
     return {
@@ -156,6 +157,7 @@ export function confirmDemoPayment(
     value: {
       ...application,
       stage: "awaiting-facility",
+      submittedAt,
       paymentReference: `FIT-PAY-${application.id.toUpperCase()}`,
     },
   }

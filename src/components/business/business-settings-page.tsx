@@ -2,14 +2,29 @@ import { useState } from "react"
 import { useBusinessSession } from "@/app/business-session"
 import { PageHeader } from "@/components/shared/page-header"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { notifySuccess } from "@/components/ui/app-toast"
 import { seedDatabase } from "@/data/seeds"
 import type { BusinessProfile } from "@/domain/business-types"
 import { BusinessProfilePage } from "@/features/business-media/business-profile-page"
+import { useFitness } from "@/features/fitness/fitness-context"
+import { useFumigation } from "@/features/fumigation/fumigation-context"
+import { useInspection } from "@/features/inspection/inspection-context"
 import {
   readBusinessSettings,
   saveBusinessSettings,
@@ -45,6 +60,10 @@ function SettingsContent({ profile }: { profile: BusinessProfile }) {
   )
   const [saved, setSaved] = useState(settings)
   const [error, setError] = useState("")
+  const [resetOpen, setResetOpen] = useState(false)
+  const { resetApplications: resetFitnessApplications } = useFitness()
+  const { resetApplications: resetFumigationApplications } = useFumigation()
+  const { resetInspection } = useInspection()
   const council = seedDatabase.councils.find(
     (item) => item.id === profile.premises?.councilId
   )
@@ -63,6 +82,14 @@ function SettingsContent({ profile }: { profile: BusinessProfile }) {
     } catch {
       setError("Unable to save preferences. Try again.")
     }
+  }
+
+  function resetApplicationProgress() {
+    resetFitnessApplications()
+    resetFumigationApplications()
+    resetInspection()
+    setResetOpen(false)
+    notifySuccess("Application progress reset")
   }
 
   return (
@@ -145,6 +172,42 @@ function SettingsContent({ profile }: { profile: BusinessProfile }) {
               contact first. A council change requires a review of your premises
               assignment. Contact your council to request either change.
             </p>
+            <Separator />
+            <div className="flex max-w-2xl flex-col items-start gap-3">
+              <div className="flex flex-col gap-1">
+                <h3 className="font-medium">Application progress</h3>
+                <p className="text-sm text-muted-foreground">
+                  Return certificate applications and Health Approval inspection
+                  progress to the beginning.
+                </p>
+              </div>
+              <AlertDialog open={resetOpen} onOpenChange={setResetOpen}>
+                <AlertDialogTrigger render={<Button variant="outline" />}>
+                  Reset application progress
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      Reset application progress?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This clears Fitness and Fumigation applications,
+                      certificates, and Health Approval inspection progress.
+                      Your business profile and kitchen staff will stay.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      variant="destructive"
+                      onClick={resetApplicationProgress}
+                    >
+                      Reset progress
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           </section>
         </TabsContent>
         <TabsContent value="notifications">

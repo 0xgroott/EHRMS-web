@@ -63,6 +63,42 @@ for (const width of [1440, 390]) {
     })
 
     await page.goto("/business/applications")
+    const applications = page.getByRole("region", {
+      name: "Current applications",
+    })
+    const fitnessCard = applications.getByRole("region", {
+      name: "Fitness application",
+    })
+    const fumigationCard = applications.getByRole("region", {
+      name: "Fumigation application",
+    })
+    await expect(fitnessCard.getByText("Approved")).toHaveAttribute(
+      "data-tone",
+      "success"
+    )
+    await expect(fitnessCard.getByText("Approved")).toHaveAttribute(
+      "data-variant",
+      "success"
+    )
+    await expect(
+      fitnessCard.getByRole("link", { name: "View Application" })
+    ).toHaveAttribute("href", "/business/fitness/tracker")
+    await expect(fumigationCard.getByText("Not started")).toHaveAttribute(
+      "data-tone",
+      "pending"
+    )
+    const fitnessBox = await fitnessCard.boundingBox()
+    const fumigationBox = await fumigationCard.boundingBox()
+    expect(fitnessBox).not.toBeNull()
+    expect(fumigationBox).not.toBeNull()
+    if (fitnessBox && fumigationBox) {
+      if (width === 1440) {
+        expect(Math.abs(fitnessBox.y - fumigationBox.y)).toBeLessThan(2)
+        expect(fumigationBox.x).toBeGreaterThan(fitnessBox.x)
+      } else {
+        expect(fumigationBox.y).toBeGreaterThan(fitnessBox.y)
+      }
+    }
     await page.getByRole("button", { name: "Apply for new staff" }).click()
     await expect(page).toHaveURL(/\/business\/fitness\/apply$/)
     await expect(
@@ -79,9 +115,15 @@ for (const width of [1440, 390]) {
 
     await page.goto("/business/applications")
     await expect(
-      page.getByRole("link", { name: "Continue Fitness application" })
-    ).toBeVisible()
-    await expect(page.getByText("Certificate: FIT-CERT-1")).toBeVisible()
+      page
+        .getByRole("region", { name: "Fitness application" })
+        .getByRole("link", { name: "View Application" })
+    ).toHaveAttribute("href", "/business/fitness/apply")
+    const history = page.getByRole("table", {
+      name: "Application History",
+    })
+    await expect(history.getByText("fitness-application-1")).toBeVisible()
+    await expect(history.getByText("Approved")).toBeVisible()
     await page.goto("/business/fitness/certificate")
     await expect(page.getByText("Ada Okafor")).toBeVisible()
     expect(browserErrors).toEqual([])

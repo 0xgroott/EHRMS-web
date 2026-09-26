@@ -29,12 +29,14 @@ export interface FumigationCertificate {
 
 export interface FumigationApplication {
   id: string
+  premisesName?: string
   requestedPeriod: string
   declaration: boolean
   stage: FumigationStage
   providerId?: string
   totalNgn?: number
   paymentReference?: string
+  submittedAt?: string
   workDate?: string
   certificate?: FumigationCertificate
 }

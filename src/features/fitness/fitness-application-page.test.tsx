@@ -90,7 +90,12 @@ it("shows the dedicated application layout and progress guide", () => {
 })
 
 it("takes eligible people through review and simulated payment, then separate external decisions", async () => {
+  const copy = vi.fn().mockResolvedValue(undefined)
   const user = userEvent.setup()
+  Object.defineProperty(navigator, "clipboard", {
+    configurable: true,
+    value: { writeText: copy },
+  })
   const onPaid = vi.fn()
   let view = mount(<FitnessApplicationPage onPaid={onPaid} />, {
     handlers: [handler],
@@ -157,28 +162,205 @@ it("takes eligible people through review and simulated payment, then separate ex
   view.unmount()
   view = mount(<FitnessTrackerPage />)
   expect(
-    screen.getByRole("heading", { name: "Awaiting facility result" })
+    screen.getByRole("heading", { name: "Application tracker" })
   ).toBeVisible()
-  const controls = screen.getByRole("region", {
-    name: "Facility and council updates",
+  expect(document.querySelector('[data-slot="page-header"]')).not.toHaveClass(
+    "border-b"
+  )
+  const status = screen.getByRole("status", {
+    name: "Fitness application status",
+  })
+  expect(status).toHaveTextContent("Awaiting facility result")
+  expect(status).toHaveTextContent(/approved facility/i)
+  expect(
+    within(status).getByRole("button", { name: "Contact facility" })
+  ).toBeVisible()
+  expect(screen.queryByText("Application submitted")).not.toBeInTheDocument()
+
+  const business = screen.getByRole("region", { name: "The business" })
+  expect(
+    within(business)
+      .getAllByRole("term")
+      .map((term) => term.textContent)
+  ).toEqual([
+    "Business",
+    "Approved facility",
+    "Payment total",
+    "Payment reference",
+  ])
+  expect(within(business).getByText("Riverside Kitchen")).toBeVisible()
+  expect(
+    within(business).getByText("Port Harcourt City Health Centre")
+  ).toBeVisible()
+  expect(
+    screen.queryByText("16 Aggrey Road, Old GRA, Port Harcourt")
+  ).not.toBeInTheDocument()
+  expect(screen.queryByText("0803 555 0140")).not.toBeInTheDocument()
+
+  const receipt = within(business).getByRole("link", {
+    name: "View payment receipt",
+  })
+  expect(receipt).toHaveAttribute("href", "/business/fitness/payment-receipt")
+  expect(receipt).toHaveAttribute("target", "_blank")
+  expect(receipt).toHaveAttribute("rel", expect.stringContaining("noopener"))
+  expect(receipt).toHaveClass("mt-3")
+  expect(receipt.querySelector(".lucide-external-link")).toBeInTheDocument()
+  expect(
+    within(business).queryByRole("table", {
+      name: "Staff included in this application",
+    })
+  ).not.toBeInTheDocument()
+  expect(
+    screen.queryByRole("button", { name: "Download payment record" })
+  ).not.toBeInTheDocument()
+
+  await user.click(
+    within(status).getByRole("button", { name: "Contact facility" })
+  )
+  const facilityDialog = screen.getByRole("dialog", {
+    name: "Contact facility",
   })
   expect(
-    within(controls).getByRole("button", { name: "Show council decision" })
-  ).toBeDisabled()
-  await user.click(
-    within(controls).getByRole("button", {
-      name: "Show facility Fit result",
-    })
-  )
+    within(facilityDialog).getByText("Port Harcourt City Health Centre")
+  ).toBeVisible()
   expect(
-    screen.getByRole("heading", { name: "Facility result received: Fit" })
+    within(facilityDialog).getByText("16 Aggrey Road, Old GRA, Port Harcourt")
+  ).toBeVisible()
+  expect(
+    within(facilityDialog).getByRole("link", { name: "0803 555 0140" })
+  ).toHaveAttribute("href", "tel:08035550140")
+  expect(
+    within(facilityDialog).getByRole("link", {
+      name: "appointments@phchealthcentre.example",
+    })
+  ).toHaveAttribute("href", "mailto:appointments@phchealthcentre.example")
+  const phoneCopy = within(
+    within(facilityDialog).getByRole("link", { name: "0803 555 0140" })
+      .parentElement!
+  ).getByRole("button", { name: "Copy phone number" })
+  const emailCopy = within(
+    within(facilityDialog).getByRole("link", {
+      name: "appointments@phchealthcentre.example",
+    }).parentElement!
+  ).getByRole("button", { name: "Copy email address" })
+  await user.click(phoneCopy)
+  expect(copy).toHaveBeenCalledWith("0803 555 0140")
+  expect(
+    within(facilityDialog).getByRole("button", {
+      name: "Copied phone number",
+    })
+  ).toBeVisible()
+  await user.click(emailCopy)
+  expect(copy).toHaveBeenCalledWith("appointments@phchealthcentre.example")
+  expect(
+    within(facilityDialog).getByRole("button", {
+      name: "Copied email address",
+    })
   ).toBeVisible()
   await user.click(
-    within(controls).getByRole("button", { name: "Show council decision" })
+    within(facilityDialog).getByRole("button", { name: "Close" })
+  )
+
+  const staffSection = screen.getByRole("region", {
+    name: "Staff in this application",
+  })
+  const staff = within(staffSection).getByRole("table", {
+    name: "Staff included in this application",
+  })
+  expect(
+    within(staff).getByRole("columnheader", { name: "Name" })
+  ).toBeVisible()
+  expect(
+    within(staff).getByRole("columnheader", { name: "Role" })
+  ).toBeVisible()
+  expect(within(staff).getByText("Ada Okafor")).toBeVisible()
+  expect(within(staff).getByText("Cook")).toBeVisible()
+
+  const progress = screen.getByRole("region", {
+    name: "Application progress",
+  })
+  const steps = within(progress).getAllByRole("listitem")
+  expect(steps).toHaveLength(4)
+  expect(steps[0]).toHaveTextContent("Submit application")
+  expect(steps[0]).toHaveTextContent("Complete")
+  expect(steps[1]).toHaveTextContent("Confirm payment")
+  expect(steps[1]).toHaveTextContent("Complete")
+  expect(steps[2]).toHaveTextContent("Facility test results")
+  expect(steps[2]).toHaveTextContent("Pending")
+  expect(steps[2]).toHaveAttribute("aria-current", "step")
+  expect(steps[3]).toHaveTextContent("Council decision")
+  expect(steps[3]).toHaveTextContent("Pending")
+  const controls = screen.getByRole("region", {
+    name: "Continue this flow",
+  })
+  expect(within(controls).getAllByRole("button")).toHaveLength(1)
+  await user.click(
+    within(controls).getByRole("button", {
+      name: "Approve Fitness Test",
+    })
+  )
+  const testApproval = screen.getByRole("dialog", {
+    name: "Fitness tests approved",
+  })
+  expect(testApproval.querySelectorAll(".fitness-confetti-piece")).toHaveLength(
+    12
+  )
+  await user.click(
+    within(testApproval).getByRole("button", { name: "Continue" })
+  )
+  expect(status).toHaveTextContent("Facility result received: Fit")
+  expect(status).not.toHaveTextContent("Contact facility")
+  expect(steps[2]).toHaveTextContent("Complete")
+  expect(steps[2]).not.toHaveAttribute("aria-current")
+  expect(steps[3]).toHaveAttribute("aria-current", "step")
+  expect(within(controls).getAllByRole("button")).toHaveLength(1)
+  await user.click(
+    within(controls).getByRole("button", {
+      name: "Approve council decision",
+    })
+  )
+  const councilApproval = screen.getByRole("dialog", {
+    name: "Council decision approved",
+  })
+  expect(
+    councilApproval.querySelectorAll(".fitness-confetti-piece")
+  ).toHaveLength(12)
+  await user.click(
+    within(councilApproval).getByRole("button", { name: "Continue" })
   )
   expect(
     screen.getByRole("link", { name: "View Fitness Certificate" })
   ).toHaveAttribute("href", "/business/fitness/certificate")
+  const approvedContact = within(status).getByRole("button", {
+    name: "Contact facility",
+  })
+  expect(approvedContact).toHaveClass("border-border")
+  const approvedActions = approvedContact.closest('[data-slot="alert-action"]')
+  expect(approvedActions).toHaveClass("md:absolute", "md:right-3")
+  expect(
+    Array.from(approvedActions!.querySelectorAll("button, a")).map(
+      (action) => action.textContent
+    )
+  ).toEqual(["Contact facility", "View Fitness Certificate"])
+  await user.click(approvedContact)
+  const approvedFacilityDialog = screen.getByRole("dialog", {
+    name: "Contact facility",
+  })
+  expect(
+    within(approvedFacilityDialog).getByText("Port Harcourt City Health Centre")
+  ).toBeVisible()
+  expect(
+    within(approvedFacilityDialog).getByRole("link", {
+      name: "0803 555 0140",
+    })
+  ).toHaveAttribute("href", "tel:08035550140")
+  await user.click(
+    within(approvedFacilityDialog).getByRole("button", { name: "Close" })
+  )
+  expect(steps[3]).toHaveTextContent("Complete")
+  expect(steps[3]).not.toHaveAttribute("aria-current")
+  expect(within(controls).queryByRole("button")).not.toBeInTheDocument()
+  expect(within(controls).getByText("Flow complete")).toBeVisible()
   view.unmount()
   mount(<FitnessCertificatePage />)
   expect(

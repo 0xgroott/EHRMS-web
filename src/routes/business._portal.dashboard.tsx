@@ -31,7 +31,7 @@ function BusinessDashboardRoute() {
       fitness={fitness}
       fumigation={fumigation}
       inspection={inspection}
-      premisesPhoto={media.photos.find(Boolean)?.dataUrl}
+      businessAvatar={media.avatar?.dataUrl}
     />
   )
 }

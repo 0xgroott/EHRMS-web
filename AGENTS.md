@@ -5,6 +5,7 @@
 ## Scope and behavior
 
 - Read the relevant screen specification in `docs/` and the current code before changing a workflow. Follow existing React, TanStack Router, and Base UI/shadcn patterns; keep edits focused and preserve unrelated work in the working tree.
+- Once the user explicitly approves a design or says to proceed, treat design specs and implementation plans as internal execution artifacts and continue without requesting another approval or review. Ask again only when a new ambiguity or material scope change requires a user decision.
 - Make the frontend look and read like a real public health service. Do not add "demo", "simulation", or similar prototype disclaimers to user-facing UI copy. Keep mock behavior and integration limits in code and developer documentation, not in the interface. Use fictional test data; do not add real external integrations unless requested.
 - Preserve role boundaries, direct links, browser navigation, validation, and saved draft behavior when changing flows. Keep controls accessible and check desktop and 390px mobile layouts for UI changes.
 - Do not store passwords, OTP values, or uploaded document contents in browser storage. Keep persisted state scoped to the correct account or role.

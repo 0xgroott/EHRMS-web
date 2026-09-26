@@ -1,7 +1,9 @@
 import { act, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
+import { useState } from "react"
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 import { AccountForm } from "./account-form"
+import { OnboardingShell } from "./onboarding-shell"
 import { createBusinessRepository } from "@/services/business-repository"
 import { createBusinessStorage } from "@/services/business-storage"
 import type { BusinessAccountInput } from "@/domain/business-types"
@@ -26,6 +28,7 @@ async function fillAccount(values = account) {
     screen.getByLabelText("Contact person's name"),
     values.contactName
   )
+  await user.click(screen.getByRole("button", { name: "Continue" }))
   await user.type(screen.getByLabelText("Phone number"), values.phone)
   await user.type(screen.getByLabelText("Email address"), values.email)
   await user.type(screen.getByLabelText("Password"), values.password)
@@ -44,14 +47,122 @@ function renderAccount(onSubmit = vi.fn()) {
 }
 
 describe("AccountForm", () => {
+  it("updates the main onboarding stepper on page two and Back", async () => {
+    function RegistrationWizard() {
+      const [step, setStep] = useState(1)
+      return (
+        <OnboardingShell
+          title="Create your business account"
+          description="Add your details."
+          step={step}
+          steps={[
+            "Business details",
+            "Account access",
+            "Verify contact",
+            "Business and premises",
+          ]}
+        >
+          <AccountForm
+            onSubmit={vi.fn()}
+            onPageChange={setStep}
+            signInLink={null}
+          />
+        </OnboardingShell>
+      )
+    }
+    render(<RegistrationWizard />)
+    const currentStep = () =>
+      screen
+        .getByRole("navigation", { name: "Account setup progress" })
+        .querySelector('[aria-current="step"]')
+
+    expect(currentStep()).toHaveTextContent("Step 01")
+    expect(currentStep()).toHaveAccessibleName("Step 1 of 4: Business details")
+    const user = userEvent.setup()
+    await user.type(
+      screen.getByLabelText("Business name"),
+      account.businessName
+    )
+    await user.type(
+      screen.getByLabelText("Contact person's name"),
+      account.contactName
+    )
+    await user.click(screen.getByRole("button", { name: "Continue" }))
+    expect(currentStep()).toHaveTextContent("Step 02")
+    expect(currentStep()).toHaveAccessibleName("Step 2 of 4: Account access")
+
+    await user.click(screen.getByRole("button", { name: "Back" }))
+    expect(currentStep()).toHaveTextContent("Step 01")
+    expect(currentStep()).toHaveAccessibleName("Step 1 of 4: Business details")
+  })
+
+  it("splits business identity from contact and security details", async () => {
+    renderAccount()
+
+    expect(
+      screen.getByRole("heading", { name: "Business details" })
+    ).toBeVisible()
+    expect(screen.getByLabelText("Business name")).toBeVisible()
+    expect(screen.getByLabelText("Contact person's name")).toBeVisible()
+    expect(screen.queryByLabelText("Phone number")).not.toBeInTheDocument()
+
+    const user = userEvent.setup()
+    await user.type(
+      screen.getByLabelText("Business name"),
+      account.businessName
+    )
+    await user.type(
+      screen.getByLabelText("Contact person's name"),
+      account.contactName
+    )
+    await user.click(screen.getByRole("button", { name: "Continue" }))
+
+    expect(
+      screen.getByRole("heading", { name: "Account access" })
+    ).toBeVisible()
+    expect(screen.getByLabelText("Phone number")).toBeVisible()
+    expect(screen.getByLabelText("Email address")).toBeVisible()
+    expect(screen.getByLabelText("Password")).toBeVisible()
+    expect(screen.queryByLabelText("Business name")).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: "Back" }))
+    expect(screen.getByLabelText("Business name")).toHaveValue(
+      account.businessName
+    )
+    expect(screen.getByLabelText("Contact person's name")).toHaveValue(
+      account.contactName
+    )
+  })
+
   it("associates required-field errors with all six controls", async () => {
     const onSubmit = renderAccount()
-    await userEvent
-      .setup()
-      .click(screen.getByRole("button", { name: "Create account" }))
+    const user = userEvent.setup()
+    await user.click(screen.getByRole("button", { name: "Continue" }))
     for (const [label, error] of [
       ["Business name", "Enter the registered business name"],
       ["Contact person's name", "Enter the contact person's name"],
+    ]) {
+      expect(screen.getByLabelText(label)).toHaveAttribute(
+        "aria-invalid",
+        "true"
+      )
+      expect(screen.getByLabelText(label)).toHaveAccessibleDescription(
+        new RegExp(error)
+      )
+    }
+    expect(screen.queryByLabelText("Phone number")).not.toBeInTheDocument()
+
+    await user.type(
+      screen.getByLabelText("Business name"),
+      account.businessName
+    )
+    await user.type(
+      screen.getByLabelText("Contact person's name"),
+      account.contactName
+    )
+    await user.click(screen.getByRole("button", { name: "Continue" }))
+    await user.click(screen.getByRole("button", { name: "Create account" }))
+    for (const [label, error] of [
       ["Phone number", "Enter a valid phone number"],
       ["Email address", "Enter a valid email address"],
       ["Password", "Use at least 10 characters"],
@@ -146,12 +257,22 @@ describe("AccountForm", () => {
     expect(screen.getByRole("checkbox")).toBeChecked()
   })
 
-  it("exposes a sign-in link and password guidance", () => {
+  it("exposes a sign-in link and password guidance", async () => {
     renderAccount()
     expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute(
       "href",
       "/business/sign-in"
     )
+    const user = userEvent.setup()
+    await user.type(
+      screen.getByLabelText("Business name"),
+      account.businessName
+    )
+    await user.type(
+      screen.getByLabelText("Contact person's name"),
+      account.contactName
+    )
+    await user.click(screen.getByRole("button", { name: "Continue" }))
     expect(screen.getByLabelText("Password")).toHaveAccessibleDescription(
       "Use at least 10 characters."
     )
@@ -193,17 +314,19 @@ describe("AccountForm", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Unable to create your account. Please try again."
     )
+    expect(screen.getByLabelText("Phone number")).toHaveValue(account.phone)
+    expect(screen.getByLabelText("Email address")).toHaveValue(account.email)
+    expect(screen.getByLabelText("Password")).toHaveValue(account.password)
+    expect(screen.getByRole("checkbox")).toBeChecked()
+
+    await user.click(screen.getByRole("button", { name: "Back" }))
     expect(screen.getByLabelText("Business name")).toHaveValue(
       account.businessName
     )
     expect(screen.getByLabelText("Contact person's name")).toHaveValue(
       account.contactName
     )
-    expect(screen.getByLabelText("Phone number")).toHaveValue(account.phone)
-    expect(screen.getByLabelText("Email address")).toHaveValue(account.email)
-    expect(screen.getByLabelText("Password")).toHaveValue(account.password)
-    expect(screen.getByRole("checkbox")).toBeChecked()
-
+    await user.click(screen.getByRole("button", { name: "Continue" }))
     await user.click(screen.getByRole("button", { name: "Create account" }))
     expect(onSubmit).toHaveBeenCalledTimes(2)
     expect(onSubmit).toHaveBeenLastCalledWith(account)

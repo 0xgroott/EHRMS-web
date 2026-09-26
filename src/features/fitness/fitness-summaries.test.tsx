@@ -1,4 +1,5 @@
 import { render, screen, within } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { beforeEach, expect, it, vi } from "vitest"
 import { returningBusinessState } from "@/data/business-seeds"
 import { BusinessApplicationsPage } from "./fitness-application-page"
@@ -43,12 +44,27 @@ it("shows an active Fitness summary and Fumigation start action", async () => {
       </FumigationProvider>
     </FitnessProvider>
   )
-  expect(await screen.findByText("Awaiting facility result")).toBeVisible()
+  const applications = await screen.findByRole("region", {
+    name: "Current applications",
+  })
+  const fitnessCard = within(applications).getByRole("region", {
+    name: "Fitness application",
+  })
+  const fumigationCard = within(applications).getByRole("region", {
+    name: "Fumigation application",
+  })
+  expect(fitnessCard).toHaveTextContent("Awaiting facility result")
   expect(
-    screen.getByRole("link", { name: "Track Fitness application" })
+    within(fitnessCard).getByText("Awaiting facility result")
+  ).toHaveAttribute("data-tone", "pending")
+  expect(
+    within(fitnessCard).getByText("Awaiting facility result")
+  ).toHaveAttribute("data-variant", "warning")
+  expect(
+    within(fitnessCard).getByRole("link", { name: "View Application" })
   ).toHaveAttribute("href", "/business/fitness/tracker")
   expect(
-    screen.getByRole("link", { name: "Start Fumigation application" })
+    within(fumigationCard).getByRole("link", { name: "View Application" })
   ).toHaveAttribute("href", "/business/fumigation/apply")
 })
 
@@ -104,12 +120,69 @@ it("offers a separate application when new staff join after Fitness issuance", a
   expect(
     await screen.findByRole("button", { name: "Apply for new staff" })
   ).toBeVisible()
+  const fitnessCard = screen.getByRole("region", {
+    name: "Fitness application",
+  })
+  expect(within(fitnessCard).getByText("Approved")).toHaveAttribute(
+    "data-tone",
+    "success"
+  )
+  expect(within(fitnessCard).getByText("Approved")).toHaveAttribute(
+    "data-variant",
+    "success"
+  )
   expect(
-    screen.getByRole("link", { name: "View Fitness Certificate or renew" })
-  ).toBeVisible()
+    within(fitnessCard).getByRole("link", { name: "View Application" })
+  ).toHaveAttribute("href", "/business/fitness/tracker")
 })
 
-it("shows issued Fitness and Fumigation certificates in certificates navigation", async () => {
+it("does not add a food-handler action to an approved application", async () => {
+  createFitnessStore().write("BUS-001", {
+    handlers: [
+      {
+        id: "ada",
+        fullName: "Ada Okafor",
+        role: "Cook",
+        sex: "Female",
+        dateOfBirth: "1990-01-01",
+        identityNumber: "TEST-ADA",
+        phone: "08030000000",
+        premisesName: "Riverside Kitchen",
+        consent: true,
+      },
+    ],
+    application: {
+      id: "fitness-application-1",
+      handlerIds: ["ada"],
+      stage: "issued",
+      certificate: {
+        id: "FIT-CERT-1",
+        handlerIds: ["ada"],
+        councilId: "phc",
+        issuedAt: "2026-01-01",
+        expiresAt: "2027-01-01",
+      },
+    },
+  })
+  render(
+    <FitnessProvider>
+      <FumigationProvider>
+        <InspectionProvider>
+          <BusinessApplicationsPage />
+        </InspectionProvider>
+      </FumigationProvider>
+    </FitnessProvider>
+  )
+
+  expect(
+    await screen.findByRole("region", { name: "Fitness application" })
+  ).toBeVisible()
+  expect(
+    screen.queryByRole("link", { name: "Add new food handler" })
+  ).not.toBeInTheDocument()
+})
+
+it("shows exactly three visual certificate cards", async () => {
   createFitnessStore().write("BUS-001", {
     handlers: [],
     application: {
@@ -144,7 +217,7 @@ it("shows issued Fitness and Fumigation certificates in certificates navigation"
       },
     },
   })
-  render(
+  const view = render(
     <FitnessProvider>
       <FumigationProvider>
         <InspectionProvider>
@@ -154,6 +227,17 @@ it("shows issued Fitness and Fumigation certificates in certificates navigation"
     </FitnessProvider>
   )
   expect(await screen.findByText("FIT-CERT")).toBeVisible()
+  const fitnessCertificateCard = screen.getByRole("region", {
+    name: "Fitness Certificate",
+  })
+  expect(within(fitnessCertificateCard).getByText("Issued")).toHaveAttribute(
+    "data-variant",
+    "success"
+  )
+  expect(fitnessCertificateCard).toHaveTextContent("Kitchen staff: 1")
+  expect(
+    fitnessCertificateCard.querySelector(".lucide-users")
+  ).toBeInTheDocument()
   expect(
     screen.getByRole("link", { name: "View Fitness Certificate" })
   ).toHaveAttribute("href", "/business/fitness/certificate")
@@ -164,6 +248,115 @@ it("shows issued Fitness and Fumigation certificates in certificates navigation"
   expect(
     screen.getByRole("link", { name: "View Health Approval" })
   ).toHaveAttribute("href", "/business/health-approval")
+  expect(view.container.querySelectorAll('[data-slot="card"]')).toHaveLength(3)
+  expect(screen.getByRole("region", { name: "Health Approval" })).toHaveClass(
+    "md:col-span-2"
+  )
+})
+
+it("uses pending and not-applied Fitness states and opens the Health Approval checklist", async () => {
+  const user = userEvent.setup()
+  const emptyView = render(
+    <FitnessProvider>
+      <FumigationProvider>
+        <InspectionProvider>
+          <BusinessCertificatesPage />
+        </InspectionProvider>
+      </FumigationProvider>
+    </FitnessProvider>
+  )
+  const emptyFitnessCard = await screen.findByRole("region", {
+    name: "Fitness Certificate",
+  })
+  expect(within(emptyFitnessCard).getByText("Not applied")).toHaveAttribute(
+    "data-variant",
+    "destructive"
+  )
+  expect(emptyFitnessCard).toHaveTextContent("Kitchen staff: 0")
+  const emptyFumigationCard = screen.getByRole("region", {
+    name: "Fumigation Certificate",
+  })
+  expect(within(emptyFumigationCard).getByText("Not applied")).toHaveAttribute(
+    "data-variant",
+    "destructive"
+  )
+
+  await user.click(screen.getByRole("button", { name: "View checklist" }))
+  const checklist = screen.getByRole("dialog", {
+    name: "Health Approval checklist",
+  })
+  expect(
+    within(checklist).getByRole("list", { name: "Health Approval steps" })
+  ).toBeVisible()
+  expect(within(checklist).getAllByRole("listitem")).toHaveLength(4)
+  await user.keyboard("{Escape}")
+  emptyView.unmount()
+
+  createFitnessStore().write("BUS-001", {
+    handlers: [],
+    application: {
+      id: "fitness-application-1",
+      handlerIds: [],
+      stage: "awaiting-facility",
+    },
+  })
+  createFumigationStore().write("BUS-001", {
+    application: {
+      id: "fumigation-application-1",
+      requestedPeriod: "October 2026",
+      declaration: true,
+      stage: "review",
+    },
+  })
+  const pendingView = render(
+    <FitnessProvider>
+      <FumigationProvider>
+        <InspectionProvider>
+          <BusinessCertificatesPage />
+        </InspectionProvider>
+      </FumigationProvider>
+    </FitnessProvider>
+  )
+  const pendingFitnessCard = await screen.findByRole("region", {
+    name: "Fitness Certificate",
+  })
+  expect(within(pendingFitnessCard).getByText("Pending")).toHaveAttribute(
+    "data-variant",
+    "warning"
+  )
+  const draftFumigationCard = screen.getByRole("region", {
+    name: "Fumigation Certificate",
+  })
+  expect(within(draftFumigationCard).getByText("Not applied")).toHaveAttribute(
+    "data-variant",
+    "destructive"
+  )
+  pendingView.unmount()
+
+  createFumigationStore().write("BUS-001", {
+    application: {
+      id: "fumigation-application-1",
+      requestedPeriod: "October 2026",
+      declaration: true,
+      stage: "awaiting-provider",
+    },
+  })
+  render(
+    <FitnessProvider>
+      <FumigationProvider>
+        <InspectionProvider>
+          <BusinessCertificatesPage />
+        </InspectionProvider>
+      </FumigationProvider>
+    </FitnessProvider>
+  )
+  const submittedFumigationCard = await screen.findByRole("region", {
+    name: "Fumigation Certificate",
+  })
+  expect(within(submittedFumigationCard).getByText("Pending")).toHaveAttribute(
+    "data-variant",
+    "warning"
+  )
 })
 
 it("shows prior applications and certificates while renewals are in progress", async () => {
@@ -179,6 +372,7 @@ it("shows prior applications and certificates while renewals are in progress", a
         id: "fitness-application-1",
         handlerIds: ["ada"],
         stage: "issued",
+        submittedAt: "2026-08-28T09:30:00.000Z",
         paymentReference: "FIT-PAY-1",
         certificate: {
           id: "FIT-CERT-1",
@@ -203,6 +397,7 @@ it("shows prior applications and certificates while renewals are in progress", a
         requestedPeriod: "September 2026",
         declaration: true,
         stage: "issued",
+        submittedAt: "2026-08-29T10:15:00.000Z",
         paymentReference: "FUM-PAY-1",
         certificate: {
           id: "FUM-CERT-1",
@@ -224,13 +419,37 @@ it("shows prior applications and certificates while renewals are in progress", a
     </FitnessProvider>
   )
   expect(
-    await screen.findByRole("heading", { name: "Fitness application history" })
+    await screen.findByRole("heading", { name: "Application History" })
   ).toBeVisible()
-  expect(screen.getByText(/Payment reference: FIT-PAY-1/)).toBeVisible()
-  expect(screen.getByText(/Payment reference: FUM-PAY-1/)).toBeVisible()
+  const applicationHistory = screen.getByRole("table", {
+    name: "Application History",
+  })
   expect(
-    screen.getAllByRole("button", { name: "Download payment record" })
-  ).toHaveLength(2)
+    within(applicationHistory)
+      .getAllByRole("columnheader")
+      .map((header) => header.textContent)
+  ).toEqual(["Application Type", "Reference ID", "Submitted", "Status"])
+  expect(
+    within(applicationHistory).getByText("Fitness application")
+  ).toBeVisible()
+  expect(
+    within(applicationHistory).getByText("Fumigation application")
+  ).toBeVisible()
+  expect(
+    within(applicationHistory).getByText("fitness-application-1")
+  ).toBeVisible()
+  expect(
+    within(applicationHistory).getByText("fumigation-application-1")
+  ).toBeVisible()
+  expect(within(applicationHistory).getByText("28 Aug 2026")).toBeVisible()
+  expect(within(applicationHistory).getByText("29 Aug 2026")).toBeVisible()
+  expect(within(applicationHistory).getAllByText("Approved")).toHaveLength(2)
+  for (const badge of within(applicationHistory).getAllByText("Approved")) {
+    expect(badge).toHaveAttribute("data-variant", "success")
+  }
+  expect(
+    screen.queryByRole("heading", { name: "Fumigation application history" })
+  ).not.toBeInTheDocument()
   applicationView.unmount()
 
   const certificateView = render(
@@ -242,24 +461,22 @@ it("shows prior applications and certificates while renewals are in progress", a
       </FumigationProvider>
     </FitnessProvider>
   )
+  expect(await screen.findByText("FIT-CERT-1")).toBeVisible()
+  expect(screen.getByText("FUM-CERT-1")).toBeVisible()
   expect(
-    await screen.findByRole("heading", {
-      name: "Previous Fitness certificates",
+    certificateView.container.querySelectorAll('[data-slot="card"]')
+  ).toHaveLength(3)
+  expect(
+    screen.queryByRole("heading", { name: "Previous Fitness certificates" })
+  ).not.toBeInTheDocument()
+  expect(
+    screen.queryByRole("heading", {
+      name: "Previous Fumigation certificates",
     })
-  ).toBeVisible()
+  ).not.toBeInTheDocument()
   expect(
-    within(
-      screen.getByRole("region", { name: "Previous Fitness certificates" })
-    ).getByText(/FIT-CERT-1/)
-  ).toBeVisible()
-  expect(
-    within(
-      screen.getByRole("region", { name: "Previous Fumigation certificates" })
-    ).getByText(/FUM-CERT-1/)
-  ).toBeVisible()
-  expect(
-    screen.getAllByRole("button", { name: "Download certificate" })
-  ).toHaveLength(2)
+    screen.queryByRole("button", { name: "Download certificate" })
+  ).not.toBeInTheDocument()
   expect(screen.queryByText("Requirements incomplete")).not.toBeInTheDocument()
   certificateView.unmount()
 

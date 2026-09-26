@@ -1,4 +1,6 @@
 import { useId, useState } from "react"
+import { TriangleAlert } from "lucide-react"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -23,6 +25,23 @@ import type { FoodHandler, FoodHandlerInput } from "./fitness-types"
 type FormHandler = FoodHandlerInput & { id?: string }
 type FormValues = FoodHandlerInput
 export type BusinessBranchOption = { value: string; label: string }
+
+function RequiredFieldLabel({
+  htmlFor,
+  children,
+}: {
+  htmlFor: string
+  children: React.ReactNode
+}) {
+  return (
+    <FieldLabel
+      htmlFor={htmlFor}
+      className="after:ml-0.5 after:text-destructive after:content-['*']"
+    >
+      {children}
+    </FieldLabel>
+  )
+}
 
 const emptyValues = (branch: string): FormValues => ({
   fullName: "",
@@ -60,7 +79,6 @@ export function FoodHandlerForm({
   const canSave = Boolean(
     values.fullName.trim() &&
     values.sex &&
-    values.dateOfBirth &&
     values.role.trim() &&
     values.identityNumber.trim() &&
     values.phone.trim() &&
@@ -81,8 +99,6 @@ export function FoodHandlerForm({
     if (!values.fullName.trim())
       nextErrors.fullName = "Enter the handler's full name."
     if (!values.sex) nextErrors.sex = "Select the handler's sex."
-    if (!values.dateOfBirth)
-      nextErrors.dateOfBirth = "Enter the handler's date of birth."
     if (!values.role.trim()) nextErrors.role = "Enter the handler's job role."
     if (!values.identityNumber.trim())
       nextErrors.identityNumber = "Enter the handler's identity number."
@@ -128,7 +144,9 @@ export function FoodHandlerForm({
     >
       <FieldGroup className="min-w-0 gap-5">
         <Field data-invalid={fullName.invalid}>
-          <FieldLabel htmlFor={`${formId}-full-name`}>Full name</FieldLabel>
+          <RequiredFieldLabel htmlFor={`${formId}-full-name`}>
+            Full name
+          </RequiredFieldLabel>
           <Input
             id={`${formId}-full-name`}
             value={values.fullName}
@@ -144,7 +162,9 @@ export function FoodHandlerForm({
         </Field>
         <div className="grid min-w-0 grid-cols-2 gap-4">
           <Field className="min-w-0" data-invalid={sex.invalid}>
-            <FieldLabel htmlFor={`${formId}-sex`}>Sex</FieldLabel>
+            <RequiredFieldLabel htmlFor={`${formId}-sex`}>
+              Sex
+            </RequiredFieldLabel>
             <Select
               value={values.sex}
               onValueChange={(value) => update("sex", value ?? "")}
@@ -182,7 +202,6 @@ export function FoodHandlerForm({
               className="min-h-11 w-full min-w-0"
               aria-invalid={dateOfBirth.invalid}
               aria-describedby={dateOfBirth.describedBy}
-              required
             />
             {dateOfBirth.error && (
               <FieldError id={dateOfBirth.describedBy}>
@@ -192,7 +211,9 @@ export function FoodHandlerForm({
           </Field>
         </div>
         <Field data-invalid={role.invalid}>
-          <FieldLabel htmlFor={`${formId}-role`}>Job role</FieldLabel>
+          <RequiredFieldLabel htmlFor={`${formId}-role`}>
+            Job role
+          </RequiredFieldLabel>
           <Input
             id={`${formId}-role`}
             value={values.role}
@@ -207,9 +228,9 @@ export function FoodHandlerForm({
           )}
         </Field>
         <Field data-invalid={identityNumber.invalid}>
-          <FieldLabel htmlFor={`${formId}-identity-number`}>
+          <RequiredFieldLabel htmlFor={`${formId}-identity-number`}>
             Identity number
-          </FieldLabel>
+          </RequiredFieldLabel>
           <Input
             id={`${formId}-identity-number`}
             value={values.identityNumber}
@@ -226,7 +247,9 @@ export function FoodHandlerForm({
           )}
         </Field>
         <Field data-invalid={phone.invalid}>
-          <FieldLabel htmlFor={`${formId}-phone`}>Phone number</FieldLabel>
+          <RequiredFieldLabel htmlFor={`${formId}-phone`}>
+            Phone number
+          </RequiredFieldLabel>
           <Input
             id={`${formId}-phone`}
             inputMode="tel"
@@ -242,9 +265,9 @@ export function FoodHandlerForm({
           )}
         </Field>
         <Field data-invalid={premisesName.invalid}>
-          <FieldLabel htmlFor={`${formId}-branch`}>
+          <RequiredFieldLabel htmlFor={`${formId}-branch`}>
             Business branch/location
-          </FieldLabel>
+          </RequiredFieldLabel>
           <Select
             items={branchOptions}
             value={values.premisesName}
@@ -278,37 +301,45 @@ export function FoodHandlerForm({
         </Field>
       </FieldGroup>
 
-      <Field
-        orientation="horizontal"
-        className="min-w-0"
-        data-invalid={consent.invalid}
-      >
-        <Checkbox
-          id={`${formId}-consent`}
-          checked={values.consent}
-          onCheckedChange={(checked) => update("consent", checked)}
-          aria-label="I confirm this food handler consents to use these details for the Fitness Certificate process."
-          aria-invalid={consent.invalid}
-          aria-describedby={consent.describedBy}
-          aria-required="true"
-        />
-        <FieldContent className="min-w-0">
-          <FieldLabel
-            htmlFor={`${formId}-consent`}
-            className="min-h-11 max-w-full items-start"
+      <Alert className="border-amber-200 bg-amber-50/70 text-amber-950 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
+        <TriangleAlert aria-hidden="true" />
+        <AlertTitle>Consent confirmation</AlertTitle>
+        <AlertDescription>
+          <Field
+            orientation="horizontal"
+            className="mt-2 min-w-0"
+            data-invalid={consent.invalid}
           >
-            I confirm this food handler consents to use these details for the
-            Fitness Certificate process.
-          </FieldLabel>
-          {consent.error && (
-            <FieldError id={consent.describedBy}>{consent.error}</FieldError>
-          )}
-        </FieldContent>
-      </Field>
+            <Checkbox
+              id={`${formId}-consent`}
+              checked={values.consent}
+              onCheckedChange={(checked) => update("consent", checked)}
+              aria-label="I confirm this staff member consents to use these details for the Fitness Certificate process."
+              aria-invalid={consent.invalid}
+              aria-describedby={consent.describedBy}
+              aria-required="true"
+            />
+            <FieldContent className="min-w-0">
+              <FieldLabel
+                htmlFor={`${formId}-consent`}
+                className="min-h-11 max-w-full items-start font-normal text-current"
+              >
+                I confirm this staff member consents to use these details for
+                the Fitness Certificate process.
+              </FieldLabel>
+              {consent.error && (
+                <FieldError id={consent.describedBy}>
+                  {consent.error}
+                </FieldError>
+              )}
+            </FieldContent>
+          </Field>
+        </AlertDescription>
+      </Alert>
 
       {!canSave && (
         <p className="text-sm text-muted-foreground">
-          Complete all fields and confirm consent to save.
+          Complete the required fields and confirm consent to save.
         </p>
       )}
       <div className="flex flex-col-reverse gap-3 border-t pt-6 sm:flex-row sm:justify-end">
@@ -325,7 +356,7 @@ export function FoodHandlerForm({
           disabled={!canSave}
           className="min-h-11 w-full sm:w-auto"
         >
-          {handler ? "Save changes" : "Save food handler"}
+          {handler ? "Save changes" : "Save staff member"}
         </Button>
       </div>
     </form>

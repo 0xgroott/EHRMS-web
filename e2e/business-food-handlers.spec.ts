@@ -1,8 +1,6 @@
 import { expect, test } from "@playwright/test"
 
-test("business user can find, archive, and restore a food handler", async ({
-  page,
-}) => {
+test("business user can find, archive, and restore staff", async ({ page }) => {
   const browserErrors: string[] = []
   page.on("pageerror", (error) => browserErrors.push(error.message))
   page.on("console", (message) => {
@@ -53,7 +51,7 @@ test("business user can find, archive, and restore a food handler", async ({
   })
 
   await page.goto("/business/food-handlers")
-  const records = page.getByRole("region", { name: "Food handler list" })
+  const records = page.getByRole("region", { name: "Staff list" })
   await expect(records).toBeVisible()
   await expect(
     page.getByRole("heading", { name: "Food handler records" })
@@ -77,15 +75,13 @@ test("business user can find, archive, and restore a food handler", async ({
     )
   ).toBe(true)
   await page.setViewportSize({ width: 1280, height: 800 })
-  const search = page.getByRole("searchbox", { name: "Search food handlers" })
+  const search = page.getByRole("searchbox", { name: "Search staff" })
   const filter = page.getByRole("combobox", { name: "Show" })
   await expect(page.getByText("Ada Okafor")).toBeVisible()
   await search.fill("bisi")
   await expect(page.getByText("Bisi Bello")).toBeVisible()
   await expect(page.getByText("Ada Okafor")).toBeHidden()
   await search.clear()
-  await filter.selectOption("ready")
-  await expect(page.getByText("Bisi Bello")).toBeHidden()
   await page.getByRole("button", { name: "Archive Ada Okafor" }).click()
   await expect(page.getByText("Ada Okafor")).toBeHidden()
 
@@ -93,12 +89,12 @@ test("business user can find, archive, and restore a food handler", async ({
   await filter.selectOption("archived")
   await expect(page.getByText("Ada Okafor")).toBeVisible()
   await page.getByRole("button", { name: "Restore Ada Okafor" }).click()
-  await filter.selectOption("current")
+  await filter.selectOption("active")
   await expect(page.getByText("Ada Okafor")).toBeVisible()
   expect(browserErrors).toEqual([])
 })
 
-test("food handler drawer shows the branch and fits a 390px screen", async ({
+test("new staff dialog shows the branch and fits a 390px screen", async ({
   page,
 }) => {
   const browserErrors: string[] = []
@@ -119,60 +115,71 @@ test("food handler drawer shows the branch and fits a 390px screen", async ({
   }).toPass({ timeout: 15_000 })
 
   await page.goto("/business/food-handler/new")
-  const drawer = page.getByRole("dialog", { name: "Add food handler" })
-  await expect(drawer).toBeVisible()
-  const branch = drawer.getByRole("combobox", {
+  const dialog = page.getByRole("dialog", { name: "Add staff" })
+  await expect(dialog).toBeVisible()
+  const branch = dialog.getByRole("combobox", {
     name: "Business branch/location",
   })
   await expect(branch).toBeDisabled()
   await expect(branch).toContainText("Riverside Kitchen, Diobu")
-  await expect(drawer.getByText("Food handler details")).toHaveCount(0)
+  await expect(dialog.getByText("Food handler details")).toHaveCount(0)
   await expect(
-    drawer.getByText("Record the details needed to include this person")
+    dialog.getByText("Record the details needed to include this person")
   ).toHaveCount(0)
   await expect(
-    drawer.getByRole("button", { name: "Save and add another" })
+    dialog.getByRole("button", { name: "Save and add another" })
   ).toHaveCount(0)
-  await expect(drawer.getByRole("button", { name: "Cancel" })).toBeVisible()
+  await expect(dialog.getByRole("button", { name: "Cancel" })).toBeVisible()
 
-  const fullName = await drawer
+  const fullName = await dialog
     .getByRole("textbox", { name: "Full name" })
     .boundingBox()
-  const jobRole = await drawer
+  const jobRole = await dialog
     .getByRole("textbox", { name: "Job role" })
     .boundingBox()
   expect(fullName && jobRole && Math.abs(fullName.x - jobRole.x) < 2).toBe(true)
   expect(fullName && jobRole && jobRole.y > fullName.y).toBe(true)
-  const sex = await drawer.getByRole("combobox", { name: "Sex" }).boundingBox()
-  const dateOfBirth = await drawer.getByLabel("Date of birth").boundingBox()
+  const sex = await dialog.getByRole("combobox", { name: "Sex" }).boundingBox()
+  const dateOfBirth = await dialog.getByLabel("Date of birth").boundingBox()
   expect(sex && dateOfBirth && Math.abs(sex.y - dateOfBirth.y) < 2).toBe(true)
   expect(sex && dateOfBirth && dateOfBirth.x > sex.x).toBe(true)
   expect(
-    await drawer.evaluate((element) => {
-      const header = element.querySelector('[data-slot="sheet-header"]')
-      const body = header?.nextElementSibling
-      return [header, body].map((node) =>
-        node ? getComputedStyle(node).paddingLeft : null
-      )
-    })
-  ).toEqual(["16px", "16px"])
-  expect(
     await page.evaluate(() => {
-      const sheet = document.querySelector('[data-slot="sheet-content"]')
-      const content = sheet?.querySelector("[data-slot=sheet-header] + div")
+      const content = document.querySelector('[data-slot="dialog-content"]')
       return (
         document.documentElement.scrollWidth <= window.innerWidth &&
-        (!sheet || sheet.scrollWidth <= sheet.clientWidth) &&
         (!content || content.scrollWidth <= content.clientWidth)
       )
     })
   ).toBe(true)
 
   await page.setViewportSize({ width: 1280, height: 800 })
-  const desktopName = await drawer
+  await expect
+    .poll(() =>
+      dialog.evaluate((element) => element.getBoundingClientRect().width)
+    )
+    .toBeLessThanOrEqual(456)
+  const dialogGeometry = await dialog.evaluate((element) => {
+    const box = element.getBoundingClientRect()
+    const style = getComputedStyle(element)
+    return {
+      width: box.width,
+      height: box.height,
+      radii: [
+        style.borderTopLeftRadius,
+        style.borderTopRightRadius,
+        style.borderBottomRightRadius,
+        style.borderBottomLeftRadius,
+      ],
+    }
+  })
+  expect(dialogGeometry.width).toBeLessThanOrEqual(456)
+  expect(dialogGeometry.height).toBe(600)
+  expect(new Set(dialogGeometry.radii).size).toBe(1)
+  const desktopName = await dialog
     .getByRole("textbox", { name: "Full name" })
     .boundingBox()
-  const desktopRole = await drawer
+  const desktopRole = await dialog
     .getByRole("textbox", { name: "Job role" })
     .boundingBox()
   expect(
@@ -181,21 +188,26 @@ test("food handler drawer shows the branch and fits a 390px screen", async ({
       Math.abs(desktopName.x - desktopRole.x) < 2 &&
       desktopRole.y > desktopName.y
   ).toBe(true)
-  const desktopSex = await drawer
+  const desktopSex = await dialog
     .getByRole("combobox", { name: "Sex" })
     .boundingBox()
-  const desktopDob = await drawer.getByLabel("Date of birth").boundingBox()
+  const desktopDob = await dialog.getByLabel("Date of birth").boundingBox()
   expect(
     desktopSex && desktopDob && Math.abs(desktopSex.y - desktopDob.y) < 2
   ).toBe(true)
   expect(
     await page.evaluate(() => {
-      const sheet = document.querySelector('[data-slot="sheet-content"]')
-      return !sheet || sheet.scrollWidth <= sheet.clientWidth
+      const content = document.querySelector('[data-slot="dialog-content"]')
+      if (!content) return false
+      const box = content.getBoundingClientRect()
+      return (
+        content.scrollWidth <= content.clientWidth &&
+        Math.abs(box.left + box.width / 2 - window.innerWidth / 2) < 2
+      )
     })
   ).toBe(true)
 
-  await drawer.getByRole("combobox", { name: "Sex" }).click()
+  await dialog.getByRole("combobox", { name: "Sex" }).click()
   await expect(
     page.getByRole("option", { name: "Female", exact: true })
   ).toBeVisible()
@@ -207,21 +219,22 @@ test("food handler drawer shows the branch and fits a 390px screen", async ({
   ).toHaveCount(0)
   await page.getByRole("option", { name: "Female", exact: true }).click()
 
-  await drawer.getByRole("textbox", { name: "Full name" }).fill("Chidi Nwosu")
-  const save = drawer.getByRole("button", { name: "Save food handler" })
+  await dialog.getByRole("textbox", { name: "Full name" }).fill("Chidi Nwosu")
+  const save = dialog.getByRole("button", { name: "Save staff member" })
   await expect(save).toBeDisabled()
   await expect(
-    drawer.getByText("Complete all fields and confirm consent to save.")
+    dialog.getByText(
+      "Complete the required fields and confirm consent to save."
+    )
   ).toBeVisible()
   await expect(page).toHaveURL(/\/business\/food-handler\/new$/)
 
-  await drawer.getByLabel("Date of birth").fill("1991-04-12")
-  await drawer.getByRole("textbox", { name: "Job role" }).fill("Cook")
-  await drawer.getByRole("textbox", { name: "Identity number" }).fill("NIN-123")
-  await drawer
+  await dialog.getByRole("textbox", { name: "Job role" }).fill("Cook")
+  await dialog.getByRole("textbox", { name: "Identity number" }).fill("NIN-123")
+  await dialog
     .getByRole("textbox", { name: "Phone number" })
     .fill("08030000000")
-  await drawer
+  await dialog
     .getByRole("checkbox", { name: /Fitness Certificate process/i })
     .check()
   await expect(save).toBeEnabled()

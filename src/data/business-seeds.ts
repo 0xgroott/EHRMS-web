@@ -13,6 +13,11 @@ export const DEMO_BUSINESS_CREDENTIALS = {
   password: "riverside-demo",
 } as const
 
+export const ONBOARDING_BUSINESS_CREDENTIALS = {
+  email: "start@business.ehrcms.test",
+  password: "start-business",
+} as const
+
 export const returningBusinessState: BusinessPortalState = {
   schemaVersion: 1,
   stage: "complete",

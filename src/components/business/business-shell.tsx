@@ -5,7 +5,10 @@ import { BusinessSidebar } from "./business-sidebar"
 
 export function BusinessShell() {
   const pathname = useLocation({ select: (location) => location.pathname })
-  if (pathname === "/business/fitness/apply") {
+  if (
+    pathname === "/business/fitness/apply" ||
+    pathname === "/business/fumigation/apply"
+  ) {
     return (
       <>
         <a
@@ -38,7 +41,7 @@ export function BusinessShell() {
         <div
           id="business-content"
           tabIndex={-1}
-          className="mx-auto w-full max-w-7xl flex-1 p-4 outline-none md:p-6 lg:p-8"
+          className="mx-auto w-full max-w-7xl flex-1 p-4 pb-20 outline-none md:p-6 md:pb-24 lg:p-8 lg:pb-28"
         >
           <Outlet />
         </div>

@@ -7,6 +7,7 @@ export const APPROVED_FITNESS_FACILITIES: readonly FitnessFacility[] = [
     location: "16 Aggrey Road, Old GRA, Port Harcourt",
     service: "Food-handler fitness assessment",
     contact: "0803 555 0140",
+    email: "appointments@phchealthcentre.example",
     priceNgn: 12500,
   },
   {
@@ -15,6 +16,7 @@ export const APPROVED_FITNESS_FACILITIES: readonly FitnessFacility[] = [
     location: "31 Ikwerre Road, Diobu, Port Harcourt",
     service: "Food-handler fitness assessment",
     contact: "0803 555 0151",
+    email: "appointments@diobuclinic.example",
     priceNgn: 12000,
   },
   {
@@ -23,6 +25,7 @@ export const APPROVED_FITNESS_FACILITIES: readonly FitnessFacility[] = [
     location: "8 Olu Obasanjo Road, Port Harcourt",
     service: "Food-handler fitness assessment",
     contact: "0803 555 0162",
+    email: "appointments@riversidemedical.example",
     priceNgn: 13000,
   },
 ]

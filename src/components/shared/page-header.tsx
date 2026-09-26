@@ -1,16 +1,26 @@
+import { cn } from "@/lib/utils"
+
 export function PageHeader({
   eyebrow,
   title,
   description,
   actions,
+  divided = true,
 }: {
   eyebrow?: string
   title: string
   description?: string
   actions?: React.ReactNode
+  divided?: boolean
 }) {
   return (
-    <div className="flex flex-col justify-between gap-4 border-b pb-6 sm:flex-row sm:items-end">
+    <div
+      data-slot="page-header"
+      className={cn(
+        "flex flex-col justify-between gap-4 sm:flex-row sm:items-end",
+        divided && "border-b pb-6"
+      )}
+    >
       <div>
         {eyebrow && (
           <p className="mb-2 text-xs font-semibold tracking-[0.16em] text-primary uppercase">

@@ -132,6 +132,7 @@ it("downloads a self-contained HTML file with the expected name", () => {
   downloadBusinessDocument(document)
   expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob))
   expect(click).toHaveBeenCalledOnce()
-  expect(document.filename).toBe("fitness-payment-FIT-PAY-1.html")
+  expect(document.title).toBe("Fitness payment receipt")
+  expect(document.filename).toBe("fitness-payment-receipt-FIT-PAY-1.html")
   expect(window.document.querySelector("a[download]")).toBeNull()
 })

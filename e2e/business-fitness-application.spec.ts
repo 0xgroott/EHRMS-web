@@ -287,3 +287,236 @@ test("fitness application fits a 390px screen", async ({ page }) => {
   ).toBe(true)
   expect(browserErrors).toEqual([])
 })
+
+test("fitness tracker keeps status, staff, and progress clear across screen sizes", async ({
+  page,
+}) => {
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"])
+  const browserErrors: string[] = []
+  page.on("pageerror", (error) => browserErrors.push(error.message))
+  page.on("console", (message) => {
+    if (message.type() === "error") browserErrors.push(message.text())
+  })
+
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto("/business/sign-in")
+  await expect(async () => {
+    await page
+      .getByRole("button", { name: "Sign in as Riverside Kitchen" })
+      .click()
+    await expect(page).toHaveURL(/\/business\/dashboard$/, { timeout: 1_000 })
+  }).toPass({ timeout: 15_000 })
+
+  await page.evaluate(() => {
+    const handlers = Array.from({ length: 12 }, (_, index) => ({
+      id: `tracker-handler-${index + 1}`,
+      fullName: `Staff Member ${index + 1}`,
+      sex: index % 2 ? "Female" : "Male",
+      dateOfBirth: "1992-06-15",
+      role: index % 2 ? "Server" : "Cook",
+      identityNumber: `TRACKER-${index + 1}`,
+      phone: `080000000${String(index).padStart(2, "0")}`,
+      premisesName: "Riverside Kitchen",
+      consent: true,
+    }))
+    localStorage.setItem(
+      "ehrcms:fitness:v1:BUS-001",
+      JSON.stringify({
+        handlers,
+        application: {
+          id: "fitness-tracker-e2e",
+          stage: "awaiting-facility",
+          handlerIds: handlers.map((handler) => handler.id),
+          facilityId: "phc-health-centre",
+          totalNgn: 150000,
+          paymentReference: "FIT-PAY-TRACKER-E2E",
+        },
+      })
+    )
+  })
+  await page.goto("/business/fitness/tracker")
+
+  await expect(
+    page.getByRole("heading", { name: "Application tracker" })
+  ).toBeVisible()
+  const status = page.getByRole("status", {
+    name: "Fitness application status",
+  })
+  await expect(status).toContainText("Awaiting facility result")
+  await expect(
+    status.getByRole("button", { name: "Contact facility" })
+  ).toBeVisible()
+  const initialStatusHeight = (await status.boundingBox())?.height
+  await expect(page.locator('[data-slot="page-header"]')).toHaveCSS(
+    "border-bottom-width",
+    "0px"
+  )
+  await status.getByRole("button", { name: "Contact facility" }).click()
+  const facilityDialog = page.getByRole("dialog", { name: "Contact facility" })
+  await expect(facilityDialog).toContainText("Port Harcourt City Health Centre")
+  await expect(facilityDialog).toContainText(
+    "16 Aggrey Road, Old GRA, Port Harcourt"
+  )
+  await expect(
+    facilityDialog.getByRole("link", { name: "0803 555 0140" })
+  ).toHaveAttribute("href", "tel:08035550140")
+  await expect(
+    facilityDialog.getByRole("link", {
+      name: "appointments@phchealthcentre.example",
+    })
+  ).toHaveAttribute("href", "mailto:appointments@phchealthcentre.example")
+  const phoneCopy = facilityDialog.getByRole("button", {
+    name: "Copy phone number",
+  })
+  const emailCopy = facilityDialog.getByRole("button", {
+    name: "Copy email address",
+  })
+  await expect(phoneCopy).toBeVisible()
+  await expect(emailCopy).toBeVisible()
+  await phoneCopy.click()
+  await expect(
+    facilityDialog.getByRole("button", { name: "Copied phone number" })
+  ).toBeVisible()
+  await emailCopy.click()
+  await expect(
+    facilityDialog.getByRole("button", { name: "Copied email address" })
+  ).toBeVisible()
+  await facilityDialog.getByRole("button", { name: "Close" }).click()
+
+  const business = page.getByRole("region", { name: "The business" })
+  await expect(business.locator("dt")).toHaveText([
+    "Business",
+    "Approved facility",
+    "Payment total",
+    "Payment reference",
+  ])
+  await expect(business).not.toContainText(
+    "16 Aggrey Road, Old GRA, Port Harcourt"
+  )
+  await expect(
+    business.getByRole("table", {
+      name: "Staff included in this application",
+    })
+  ).toHaveCount(0)
+  await expect(
+    page
+      .getByRole("navigation", { name: "Business navigation" })
+      .getByRole("link", { name: "Applications" })
+  ).toHaveAttribute("aria-current", "page")
+  const staffSection = page.getByRole("region", {
+    name: "Staff in this application",
+  })
+  await expect(
+    staffSection
+      .getByRole("table", { name: "Staff included in this application" })
+      .getByRole("row")
+  ).toHaveCount(13)
+  await expect(
+    page
+      .getByRole("region", { name: "Application progress" })
+      .getByRole("listitem")
+      .nth(2)
+  ).toHaveAttribute("aria-current", "step")
+
+  const receiptPagePromise = page.waitForEvent("popup")
+  const receiptLink = business.getByRole("link", {
+    name: "View payment receipt",
+  })
+  await expect(receiptLink.locator(".lucide-external-link")).toBeVisible()
+  await expect(receiptLink).toHaveClass(/mt-3/)
+  await receiptLink.click()
+  const receiptPage = await receiptPagePromise
+  await expect(
+    receiptPage.getByRole("heading", { name: "Fitness payment receipt" })
+  ).toBeVisible()
+  await expect(
+    receiptPage.getByTitle("Fitness payment receipt document")
+  ).toBeVisible()
+  await expect(
+    receiptPage.getByRole("button", { name: "Download receipt" })
+  ).toBeVisible()
+  await expect(receiptPage.locator("main").getByRole("button")).toHaveCount(1)
+  await expect(receiptPage.getByRole("navigation")).toHaveCount(0)
+  await receiptPage.close()
+
+  const controls = page.getByRole("region", { name: "Continue this flow" })
+  await expect(controls.getByRole("button")).toHaveCount(1)
+  await controls.getByRole("button", { name: "Approve Fitness Test" }).click()
+  const fitnessApproval = page.getByRole("dialog", {
+    name: "Fitness tests approved",
+  })
+  await expect(fitnessApproval).toBeVisible()
+  await expect(fitnessApproval.locator(".fitness-confetti-piece")).toHaveCount(
+    12
+  )
+  await fitnessApproval.getByRole("button", { name: "Continue" }).click()
+  await expect(
+    controls.getByRole("button", { name: "Approve council decision" })
+  ).toBeVisible()
+
+  await controls
+    .getByRole("button", { name: "Approve council decision" })
+    .click()
+  const councilApproval = page.getByRole("dialog", {
+    name: "Council decision approved",
+  })
+  await expect(councilApproval).toBeVisible()
+  await expect(councilApproval.locator(".fitness-confetti-piece")).toHaveCount(
+    12
+  )
+  await councilApproval.getByRole("button", { name: "Continue" }).click()
+  await expect(controls.getByText("Flow complete")).toBeVisible()
+  await expect(controls.getByRole("button")).toHaveCount(0)
+  await expect(
+    status.getByRole("link", { name: "View Fitness Certificate" })
+  ).toBeVisible()
+  const certificateLink = status.getByRole("link", {
+    name: "View Fitness Certificate",
+  })
+  const approvedFacilityContact = status.getByRole("button", {
+    name: "Contact facility",
+  })
+  await expect(approvedFacilityContact).toBeVisible()
+  await expect(approvedFacilityContact).toHaveClass(/border-border/)
+  const approvedStatusBox = await status.boundingBox()
+  const contactBox = await approvedFacilityContact.boundingBox()
+  const certificateBox = await certificateLink.boundingBox()
+  expect(approvedStatusBox).not.toBeNull()
+  expect(contactBox).not.toBeNull()
+  expect(certificateBox).not.toBeNull()
+  expect(
+    Math.abs(approvedStatusBox!.height - initialStatusHeight!)
+  ).toBeLessThan(2)
+  expect(contactBox!.x).toBeLessThan(certificateBox!.x)
+  expect(Math.abs(contactBox!.y - certificateBox!.y)).toBeLessThan(2)
+  expect(certificateBox!.x + certificateBox!.width).toBeLessThanOrEqual(
+    approvedStatusBox!.x + approvedStatusBox!.width
+  )
+  await approvedFacilityContact.click()
+  await expect(
+    page
+      .getByRole("dialog", { name: "Contact facility" })
+      .getByRole("link", { name: "0803 555 0140" })
+  ).toHaveAttribute("href", "tel:08035550140")
+  await page
+    .getByRole("dialog", { name: "Contact facility" })
+    .getByRole("button", { name: "Close" })
+    .click()
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await expect(status).toBeVisible()
+  await expect(approvedFacilityContact).toBeVisible()
+  await expect(
+    page.getByRole("table", { name: "Staff included in this application" })
+  ).toBeVisible()
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth
+    )
+  ).toBe(true)
+  await page.getByRole("button", { name: "Open business navigation" }).click()
+  await expect(
+    page.getByRole("dialog").getByRole("link", { name: "Applications" })
+  ).toHaveAttribute("aria-current", "page")
+  expect(browserErrors).toEqual([])
+})

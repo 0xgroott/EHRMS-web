@@ -7,6 +7,11 @@ export interface BusinessAccountInput {
   acceptedTerms: boolean
 }
 
+export type BusinessIdentityInput = Pick<
+  BusinessAccountInput,
+  "businessName" | "contactName"
+>
+
 export interface BusinessPremisesInput {
   premisesName: string
   businessType: string
@@ -47,6 +52,7 @@ export interface BusinessProfile {
   acceptedTerms: boolean
   verified: boolean
   premises?: BusinessPremisesInput
+  branches?: BusinessPremisesInput[]
   documents: BusinessDocument[]
 }
 

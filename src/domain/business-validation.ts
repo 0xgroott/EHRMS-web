@@ -1,9 +1,20 @@
 import type {
   BusinessAccountInput,
+  BusinessIdentityInput,
   BusinessPremisesInput,
   BusinessProfileDetailsInput,
   ValidationErrors,
 } from "./business-types"
+
+export function validateBusinessIdentity(
+  value: BusinessIdentityInput
+): ValidationErrors<BusinessIdentityInput> {
+  const errors: ValidationErrors<BusinessIdentityInput> = {}
+  if (!value.businessName.trim())
+    errors.businessName = "Enter the registered business name"
+  if (!value.contactName.trim()) errors.contactName = "Enter your full name"
+  return errors
+}
 
 export function validateAccount(
   value: BusinessAccountInput

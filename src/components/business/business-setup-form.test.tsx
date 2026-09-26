@@ -1,4 +1,11 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import {
   afterAll,
@@ -49,6 +56,51 @@ describe("BusinessSetupForm", () => {
     vi.useRealTimers()
   })
 
+  it("organizes setup fields into three separated groups", () => {
+    renderSetup()
+
+    const businessDetails = screen.getByRole("group", {
+      name: "Business details",
+    })
+    expect(
+      within(businessDetails).getByLabelText("Premises name")
+    ).toBeVisible()
+    expect(
+      within(businessDetails).getByLabelText("Business type")
+    ).toBeVisible()
+    expect(
+      within(businessDetails).getByLabelText("Registration number (optional)")
+    ).toBeVisible()
+
+    const premisesLocation = screen.getByRole("group", {
+      name: "Premises location",
+    })
+    expect(
+      within(premisesLocation).getByLabelText("Premises address")
+    ).toBeVisible()
+    expect(within(premisesLocation).getByLabelText("Ward")).toBeVisible()
+    expect(within(premisesLocation).getByLabelText("Council")).toBeVisible()
+    expect(premisesLocation).toHaveClass("border-t", "pt-10")
+
+    const contactAndDocuments = screen.getByRole("group", {
+      name: "Contact and documents",
+    })
+    expect(
+      within(contactAndDocuments).getByLabelText("Account contact details")
+    ).toBeVisible()
+    expect(
+      within(contactAndDocuments).getByLabelText(/Supporting document/)
+    ).toBeVisible()
+    expect(contactAndDocuments).toHaveClass("border-t", "pt-10")
+
+    expect(
+      screen.queryByRole("group", { name: "Registration details" })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole("group", { name: "Council and contact details" })
+    ).not.toBeInTheDocument()
+  })
+
   it("shows required address and council errors when continuing", async () => {
     const onComplete = vi.fn()
     renderSetup({
@@ -67,6 +119,18 @@ describe("BusinessSetupForm", () => {
       "Choose a council"
     )
     expect(onComplete).not.toHaveBeenCalled()
+  })
+
+  it("presents business type as a dropdown instead of an empty input", () => {
+    renderSetup()
+    const businessType = screen.getByRole("combobox", {
+      name: "Business type",
+    })
+    expect(businessType).toHaveTextContent("Restaurant")
+    expect(businessType).toHaveAttribute("aria-haspopup", "listbox")
+    expect(
+      screen.queryByRole("textbox", { name: "Business type" })
+    ).not.toBeInTheDocument()
   })
 
   it("shows council seed options and keeps document metadata only", async () => {

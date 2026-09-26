@@ -48,6 +48,7 @@ type FitnessContextValue = {
   issueDemoCertificate: () => FitnessRuleResult<FitnessApplication>
   startRenewal: () => FitnessRuleResult<null>
   startNewStaffApplication: () => FitnessRuleResult<FitnessApplication>
+  resetApplications: () => void
 }
 
 const FitnessContext = createContext<FitnessContextValue | null>(null)
@@ -298,6 +299,10 @@ export function FitnessProvider({ children }: { children: React.ReactNode }) {
       return { ok: true, value: application }
     }, [noProfile, profileId, save, state])
 
+  const resetApplications = useCallback(() => {
+    save({ handlers: state.handlers, application: null })
+  }, [save, state.handlers])
+
   const value = useMemo(
     () => ({
       state,
@@ -312,6 +317,7 @@ export function FitnessProvider({ children }: { children: React.ReactNode }) {
       issueDemoCertificate,
       startRenewal,
       startNewStaffApplication,
+      resetApplications,
     }),
     [
       addHandler,
@@ -322,6 +328,7 @@ export function FitnessProvider({ children }: { children: React.ReactNode }) {
       startNewStaffApplication,
       startRenewal,
       recordFitResult,
+      resetApplications,
       selectHandlers,
       state,
       setHandlerArchived,

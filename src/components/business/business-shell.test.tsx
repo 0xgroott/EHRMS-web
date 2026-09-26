@@ -21,10 +21,9 @@ import { UpcomingModule } from "./upcoming-module"
 
 const destinations = [
   ["Home", "/business/dashboard"],
-  ["Food handlers", "/business/food-handlers"],
+  ["Staff", "/business/food-handlers"],
   ["Applications", "/business/applications"],
   ["Certificates", "/business/certificates"],
-  ["Inspections", "/business/inspections"],
   ["Settings", "/business/settings"],
 ]
 
@@ -43,8 +42,22 @@ function shell(path = "/business/applications") {
     path: "/business/$module",
     component: () => <h1>Page content</h1>,
   })
+  const fitnessTrackerRoute = createRoute({
+    getParentRoute: () => root,
+    path: "/business/fitness/tracker",
+    component: () => <h1>Fitness tracker</h1>,
+  })
+  const fumigationTrackerRoute = createRoute({
+    getParentRoute: () => root,
+    path: "/business/fumigation/tracker",
+    component: () => <h1>Fumigation tracker</h1>,
+  })
   const router = createRouter({
-    routeTree: root.addChildren([route]),
+    routeTree: root.addChildren([
+      route,
+      fitnessTrackerRoute,
+      fumigationTrackerRoute,
+    ]),
     history: createMemoryHistory({ initialEntries: [path] }),
   })
   return render(<RouterProvider router={router} />)
@@ -71,12 +84,12 @@ afterEach(() => {
 })
 
 describe("Business shell", () => {
-  it("provides only the six business destinations and marks the current page", async () => {
+  it("provides only the five business destinations and marks the current page", async () => {
     shell()
     const nav = await screen.findByRole("navigation", {
       name: "Business navigation",
     })
-    expect(within(nav).getAllByRole("link")).toHaveLength(6)
+    expect(within(nav).getAllByRole("link")).toHaveLength(5)
     for (const [label, href] of destinations)
       expect(within(nav).getByRole("link", { name: label })).toHaveAttribute(
         "href",
@@ -88,10 +101,14 @@ describe("Business shell", () => {
     expect(within(nav).getByRole("link", { name: "Home" })).not.toHaveAttribute(
       "aria-current"
     )
+    expect(
+      within(nav).queryByRole("link", { name: "Inspections" })
+    ).not.toBeInTheDocument()
     for (const label of ["Finance", "Users", "Council administration", "Role"])
       expect(screen.queryByText(label)).not.toBeInTheDocument()
     expect(await screen.findByText("Riverside Kitchen & Foods")).toBeVisible()
     expect(screen.getAllByRole("main")).toHaveLength(1)
+    expect(document.querySelector("#business-content")).toHaveClass("pb-20")
   })
 
   it("collapses desktop navigation and retains accessible link names", async () => {
@@ -103,11 +120,30 @@ describe("Business shell", () => {
     expect(
       document.querySelector('[data-slot="sidebar"][data-state="collapsed"]')
     ).toBeInTheDocument()
-    expect(screen.getByRole("link", { name: "Food handlers" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Staff" })).toHaveAttribute(
       "href",
       "/business/food-handlers"
     )
   })
+
+  it.each([
+    ["Fitness", "/business/fitness/tracker"],
+    ["Fumigation", "/business/fumigation/tracker"],
+  ])(
+    "keeps Applications active throughout a %s application route",
+    async (_name, path) => {
+      shell(path)
+      const nav = await screen.findByRole("navigation", {
+        name: "Business navigation",
+      })
+      expect(
+        within(nav).getByRole("link", { name: "Applications" })
+      ).toHaveAttribute("aria-current", "page")
+      expect(
+        within(nav).getByRole("link", { name: "Home" })
+      ).not.toHaveAttribute("aria-current")
+    }
+  )
 
   it("opens a mobile sheet and closes it when a destination is selected", async () => {
     vi.stubGlobal("innerWidth", 390)
@@ -122,9 +158,7 @@ describe("Business shell", () => {
     expect(
       within(dialog).getByRole("navigation", { name: "Business navigation" })
     ).toBeVisible()
-    await user.click(
-      within(dialog).getByRole("link", { name: "Food handlers" })
-    )
+    await user.click(within(dialog).getByRole("link", { name: "Staff" }))
     await waitFor(() =>
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
     )

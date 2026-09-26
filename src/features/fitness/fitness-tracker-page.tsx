@@ -1,12 +1,15 @@
 import { useState } from "react"
+import { Check, Clock3, ExternalLink } from "lucide-react"
 import { useBusinessSession } from "@/app/business-session"
-import { DocumentDownloadButton } from "@/components/business/document-download-button"
-import { paymentReceiptDocument } from "@/domain/business-document-downloads"
 import { PageHeader } from "@/components/shared/page-header"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import {
+  Alert,
+  AlertAction,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { notifySuccess } from "@/components/ui/app-toast"
+import { Button, buttonVariants } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -15,12 +18,33 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import {
   Empty,
   EmptyDescription,
   EmptyHeader,
   EmptyTitle,
 } from "@/components/ui/empty"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Separator } from "@/components/ui/separator"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { cn } from "@/lib/utils"
+import { CopyValueButton } from "./copy-value-button"
 import { useFitness } from "./fitness-context"
 import { findApprovedFitnessFacility } from "./fitness-seeds"
 import type { FitnessStage } from "./fitness-types"
@@ -59,15 +83,15 @@ export function FitnessLink({
   variant?: "default" | "outline" | "link"
 }) {
   return (
-    <Button
-      nativeButton={false}
-      role="link"
-      render={<a href={href} />}
-      variant={variant}
-      className="min-h-11 max-w-full text-left whitespace-normal"
+    <a
+      href={href}
+      className={cn(
+        buttonVariants({ variant }),
+        "min-h-11 max-w-full text-left whitespace-normal"
+      )}
     >
       {children}
-    </Button>
+    </a>
   )
 }
 
@@ -103,11 +127,55 @@ export function FitnessEmptyState({
   )
 }
 
+function FitnessApprovalSuccessDialog({
+  open,
+  onOpenChange,
+  title,
+  description,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  title: string
+  description: string
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="fitness-success-dialog text-center sm:p-8">
+        <div className="relative mx-auto flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <div
+            className="fitness-confetti pointer-events-none absolute inset-0"
+            aria-hidden="true"
+          >
+            {Array.from({ length: 12 }, (_, index) => (
+              <span className="fitness-confetti-piece" key={index} />
+            ))}
+          </div>
+          <Check className="relative size-7" aria-hidden="true" />
+        </div>
+        <DialogHeader className="items-center">
+          <DialogTitle className="text-2xl font-semibold tracking-tight">
+            {title}
+          </DialogTitle>
+          <DialogDescription className="max-w-sm text-center leading-6">
+            {description}
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="sm:justify-center">
+          <DialogClose render={<Button type="button" />}>Continue</DialogClose>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 export function FitnessTrackerPage() {
   const { state, isHydrated, recordFitResult, issueDemoCertificate } =
     useFitness()
   const { state: businessState } = useBusinessSession()
   const [error, setError] = useState("")
+  const [approvalSuccess, setApprovalSuccess] = useState<
+    "fitness" | "council" | null
+  >(null)
   if (!isHydrated) return <FitnessLoading />
   const application = state.application
   if (!application || ["draft", "review"].includes(application.stage)) {
@@ -131,76 +199,155 @@ export function FitnessTrackerPage() {
   const resultReceived =
     application.stage === "result-received" || application.stage === "issued"
   const issued = application.stage === "issued"
+  const currentStepIndex = issued ? -1 : resultReceived ? 3 : 2
   const timeline = [
-    { label: "Application prepared", complete: true },
-    { label: "Payment confirmed", complete: true },
-    { label: "Facility result received: Fit", complete: resultReceived },
-    { label: "Council decision: issued", complete: issued },
+    { label: "Submit application", complete: true },
+    { label: "Confirm payment", complete: true },
+    { label: "Facility test results", complete: resultReceived },
+    { label: "Council decision", complete: issued },
   ]
+  const statusDescription = issued
+    ? "The council decision is complete. Your Fitness Certificate is ready to view."
+    : resultReceived
+      ? "Council review is next. Facility test results have been received for all staff in this application."
+      : "The approved facility is handling this step. Contact the facility to coordinate staff attendance."
+  const facilityPhone = facility?.contact.replace(/[^+\d]/g, "")
   return (
-    <div className="flex max-w-5xl min-w-0 flex-col gap-6 break-words">
+    <div className="flex max-w-5xl min-w-0 flex-col gap-5 break-words">
       <PageHeader
-        eyebrow="Fitness application tracker"
-        title={fitnessStageLabel[application.stage]}
-        description={
-          issued
-            ? "The council decision is complete. Your certificate details are available."
-            : resultReceived
-              ? "Next step owner: Council. The Fit result is ready for an issuance decision."
-              : "Next step owner: Approved facility. Coordinate attendance using the contact details below."
-        }
+        eyebrow="Health Fitness Certificate"
+        title="Application tracker"
+        description="Track staff testing, payment, and the council decision."
+        divided={false}
       />
-      <div className="flex flex-wrap gap-3">
-        <Badge variant="secondary">Application submitted</Badge>
-        <Badge variant="outline">Payment confirmed</Badge>
-      </div>
-      {issued && (
-        <div>
-          <FitnessLink href="/business/fitness/certificate">
-            View Fitness Certificate
-          </FitnessLink>
-        </div>
-      )}
-      <div className="grid min-w-0 gap-6 lg:grid-cols-[1fr_18rem]">
-        <Card className="min-w-0">
+      <Alert
+        role="status"
+        aria-label="Fitness application status"
+        variant="status"
+        className={cn(
+          "has-data-[slot=alert-action]:pr-4",
+          issued
+            ? "md:has-data-[slot=alert-action]:pr-[22rem]"
+            : "md:has-data-[slot=alert-action]:pr-[11rem]"
+        )}
+      >
+        {issued ? <Check aria-hidden="true" /> : <Clock3 aria-hidden="true" />}
+        <AlertTitle>{fitnessStageLabel[application.stage]}</AlertTitle>
+        <AlertDescription>{statusDescription}</AlertDescription>
+        {(issued || (!resultReceived && facility)) && (
+          <AlertAction className="static col-span-full mt-3 justify-self-start md:absolute md:top-1/2 md:right-3 md:col-auto md:mt-0 md:-translate-y-1/2 md:justify-self-auto">
+            <div className="flex flex-wrap gap-2">
+              {facility && (!resultReceived || issued) && (
+                <Dialog>
+                  <DialogTrigger
+                    render={
+                      <Button
+                        type="button"
+                        variant={issued ? "outline" : "default"}
+                        className="min-h-11"
+                      />
+                    }
+                  >
+                    Contact facility
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Contact facility</DialogTitle>
+                    </DialogHeader>
+                    <dl className="grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <dt className="text-sm text-muted-foreground">
+                          Facility name
+                        </dt>
+                        <dd className="mt-1 font-medium">{facility.name}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-sm text-muted-foreground">
+                          Location
+                        </dt>
+                        <dd className="mt-1 font-medium">
+                          {facility.location}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-sm text-muted-foreground">
+                          Phone number
+                        </dt>
+                        <dd className="mt-1 flex items-center gap-1 font-medium">
+                          <a
+                            className="underline-offset-4 hover:underline"
+                            href={`tel:${facilityPhone}`}
+                          >
+                            {facility.contact}
+                          </a>
+                          <CopyValueButton
+                            value={facility.contact}
+                            label="phone number"
+                          />
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-sm text-muted-foreground">
+                          Email address
+                        </dt>
+                        <dd className="mt-1 flex min-w-0 items-start gap-1 font-medium">
+                          <a
+                            className="min-w-0 break-all underline-offset-4 hover:underline"
+                            href={`mailto:${facility.email}`}
+                          >
+                            {facility.email}
+                          </a>
+                          <CopyValueButton
+                            value={facility.email}
+                            label="email address"
+                          />
+                        </dd>
+                      </div>
+                    </dl>
+                  </DialogContent>
+                </Dialog>
+              )}
+              {issued && (
+                <a
+                  href="/business/fitness/certificate"
+                  className={cn(buttonVariants(), "min-h-11")}
+                >
+                  View Fitness Certificate
+                </a>
+              )}
+            </div>
+          </AlertAction>
+        )}
+      </Alert>
+      <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_17rem]">
+        <Card
+          size="sm"
+          role="region"
+          aria-label="The business"
+          className="min-w-0"
+        >
           <CardHeader>
             <CardTitle>
-              <h2>Application details</h2>
+              <h2>The business</h2>
             </CardTitle>
-            <CardDescription>
-              {businessState.profile?.premises?.premisesName}
-            </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col gap-5">
-            <section>
-              <h3 className="text-sm text-muted-foreground">
-                Selected food handlers
-              </h3>
-              <ul className="mt-2 flex flex-col gap-1">
-                {people.map((handler) => (
-                  <li key={handler.id}>
-                    {handler.fullName}{" "}
-                    <span className="text-sm text-muted-foreground">
-                      · {handler.role}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-            <section>
-              <h3 className="text-sm text-muted-foreground">
-                Approved facility
-              </h3>
-              <p className="mt-2 font-medium">{facility?.name}</p>
-              <p className="text-sm text-muted-foreground">
-                {facility?.location}
-              </p>
-              <p className="mt-1 text-sm">Contact: {facility?.contact}</p>
-            </section>
-            <dl className="flex flex-col gap-3 border-t pt-4">
+          <CardContent className="flex flex-col gap-4">
+            <dl className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
+              <div>
+                <dt className="text-sm text-muted-foreground">Business</dt>
+                <dd className="mt-1 font-medium">
+                  {businessState.profile?.premises?.premisesName}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-sm text-muted-foreground">
+                  Approved facility
+                </dt>
+                <dd className="mt-1 font-medium">{facility?.name}</dd>
+              </div>
               <div>
                 <dt className="text-sm text-muted-foreground">Payment total</dt>
-                <dd className="mt-1 font-medium">
+                <dd className="mt-1 font-medium tabular-nums">
                   {formatFitnessPrice(application.totalNgn ?? 0)}
                 </dd>
               </div>
@@ -213,47 +360,121 @@ export function FitnessTrackerPage() {
                 </dd>
               </div>
             </dl>
-            <DocumentDownloadButton
-              document={paymentReceiptDocument(
-                "Fitness",
-                application,
-                businessState.profile
+            <a
+              href="/business/fitness/payment-receipt"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(
+                buttonVariants({ variant: "link" }),
+                "mt-3 h-auto self-start p-0"
               )}
             >
-              Download payment record
-            </DocumentDownloadButton>
+              View payment receipt
+              <ExternalLink aria-hidden="true" />
+            </a>
           </CardContent>
         </Card>
-        <section aria-label="Application timeline" className="min-w-0">
-          <h2 className="mb-4 font-semibold">Progress</h2>
-          <ol className="flex flex-col gap-5">
-            {timeline.map((item, index) => (
-              <li key={item.label} className="flex items-start gap-3">
-                <Badge variant={item.complete ? "secondary" : "outline"}>
-                  {index + 1}
-                </Badge>
-                <div>
-                  <p className="text-sm font-medium">{item.label}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {item.complete ? "Complete" : "Pending"}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </section>
-      </div>
-      <section aria-labelledby="fitness-external-steps-title">
-        <Card>
+        <Card
+          size="sm"
+          role="region"
+          aria-label="Application progress"
+          className="min-w-0 self-start"
+        >
           <CardHeader>
             <CardTitle>
-              <h2 id="fitness-external-steps-title">
-                Facility and council updates
-              </h2>
+              <h2>Progress</h2>
+            </CardTitle>
+            <CardDescription>Four steps to certification</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ol className="flex flex-col">
+              {timeline.map((item, index) => {
+                const current = index === currentStepIndex
+                return (
+                  <li
+                    key={item.label}
+                    aria-current={current ? "step" : undefined}
+                    className="relative flex items-start gap-3 pb-5 last:pb-0"
+                  >
+                    <Badge
+                      variant={
+                        item.complete
+                          ? "secondary"
+                          : current
+                            ? "default"
+                            : "outline"
+                      }
+                      className="size-7 rounded-full p-0"
+                      aria-hidden="true"
+                    >
+                      {item.complete ? <Check /> : index + 1}
+                    </Badge>
+                    {index < timeline.length - 1 && (
+                      <Separator
+                        orientation="vertical"
+                        className="absolute top-7 bottom-0 left-3.5 h-auto"
+                      />
+                    )}
+                    <div className="min-w-0 pt-0.5">
+                      <p className="text-sm font-medium">{item.label}</p>
+                      <p className="mt-0.5 text-sm text-muted-foreground">
+                        {item.complete ? "Complete" : "Pending"}
+                      </p>
+                    </div>
+                  </li>
+                )
+              })}
+            </ol>
+          </CardContent>
+        </Card>
+      </div>
+      <Card
+        size="sm"
+        role="region"
+        aria-label="Staff in this application"
+        className="min-w-0"
+      >
+        <CardHeader className="flex-row items-center justify-between gap-3">
+          <CardTitle>
+            <h2>Staff in this application</h2>
+          </CardTitle>
+          <Badge variant="secondary">
+            {people.length} {people.length === 1 ? "person" : "people"}
+          </Badge>
+        </CardHeader>
+        <CardContent>
+          <Table aria-label="Staff included in this application">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Role</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {people.map((handler) => (
+                <TableRow key={handler.id}>
+                  <TableCell className="font-medium">
+                    {handler.fullName}
+                  </TableCell>
+                  <TableCell>{handler.role}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+      <section aria-labelledby="fitness-external-steps-title">
+        <Card size="sm">
+          <CardHeader>
+            <CardTitle>
+              <h2 id="fitness-external-steps-title">Continue this flow</h2>
             </CardTitle>
             <CardDescription>
-              The facility and council complete these steps. View each outcome
-              as the application progresses.
+              {issued
+                ? "This application has completed all approval steps."
+                : resultReceived
+                  ? "Approve the council decision to complete this application."
+                  : "Approve the facility test results to move this application forward."}
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
@@ -262,42 +483,52 @@ export function FitnessTrackerPage() {
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+            {issued ? (
+              <Badge variant="secondary" className="w-fit">
+                <Check aria-hidden="true" />
+                Flow complete
+              </Badge>
+            ) : (
               <Button
-                variant="outline"
-                className="min-h-11 whitespace-normal"
-                disabled={application.stage !== "awaiting-facility"}
+                className="min-h-11 w-fit whitespace-normal"
                 onClick={() => {
-                  const result = recordFitResult()
+                  const approvingFitnessTest =
+                    application.stage === "awaiting-facility"
+                  const result = approvingFitnessTest
+                    ? recordFitResult()
+                    : issueDemoCertificate()
                   setError(result.ok ? "" : result.error)
-                  if (result.ok) notifySuccess("Facility Fit result recorded")
+                  if (result.ok) {
+                    setApprovalSuccess(
+                      approvingFitnessTest ? "fitness" : "council"
+                    )
+                  }
                 }}
               >
-                Show facility Fit result
+                {resultReceived
+                  ? "Approve council decision"
+                  : "Approve Fitness Test"}
               </Button>
-              <Button
-                variant="outline"
-                className="min-h-11 whitespace-normal"
-                disabled={application.stage !== "result-received"}
-                onClick={() => {
-                  const result = issueDemoCertificate()
-                  setError(result.ok ? "" : result.error)
-                  if (result.ok) notifySuccess("Fitness certificate issued")
-                }}
-              >
-                Show council decision
-              </Button>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {issued
-                ? "Both external steps are complete."
-                : resultReceived
-                  ? "The facility result is recorded. The council decision can now be made."
-                  : "Record a Fit result for all selected handlers before the council decision."}
-            </p>
+            )}
           </CardContent>
         </Card>
       </section>
+      <FitnessApprovalSuccessDialog
+        open={approvalSuccess !== null}
+        onOpenChange={(open) => {
+          if (!open) setApprovalSuccess(null)
+        }}
+        title={
+          approvalSuccess === "council"
+            ? "Council decision approved"
+            : "Fitness tests approved"
+        }
+        description={
+          approvalSuccess === "council"
+            ? "The council decision is complete and the Fitness Certificate is ready."
+            : "Facility test results have been recorded for all staff in this application."
+        }
+      />
       <div>
         <FitnessLink href="/business/applications" variant="link">
           Back to applications

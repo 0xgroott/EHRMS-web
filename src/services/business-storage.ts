@@ -97,7 +97,9 @@ function isProfile(value: unknown): value is BusinessProfile {
     typeof value.verified === "boolean" &&
     Array.isArray(value.documents) &&
     value.documents.every(isDocument) &&
-    (value.premises === undefined || isPremises(value.premises))
+    (value.premises === undefined || isPremises(value.premises)) &&
+    (value.branches === undefined ||
+      (Array.isArray(value.branches) && value.branches.every(isPremises)))
   )
 }
 

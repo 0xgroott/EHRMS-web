@@ -51,3 +51,18 @@ it("guards scheduling and saves an eligible notice to the active profile", () =>
     })
   )
 })
+
+it("clears Health Approval inspection progress", () => {
+  const { result } = renderHook(() => useInspection(), {
+    wrapper: InspectionProvider,
+  })
+  act(() => expect(result.current.scheduleNotice(true).ok).toBe(true))
+  expect(result.current.state.inspection).not.toBeNull()
+
+  act(() => result.current.resetInspection())
+
+  expect(result.current.state.inspection).toBeNull()
+  expect(mockedStore.write).toHaveBeenLastCalledWith("business-a", {
+    inspection: null,
+  })
+})

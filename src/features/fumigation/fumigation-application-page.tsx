@@ -1,14 +1,21 @@
 import { useState } from "react"
+import { ArrowLeft, ArrowRight, Check, CircleHelp } from "lucide-react"
 import { useBusinessSession } from "@/app/business-session"
-import { PageHeader } from "@/components/shared/page-header"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { notifySuccess } from "@/components/ui/app-toast"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import type { BusinessPremisesInput } from "@/domain/business-types"
 import { cn } from "@/lib/utils"
 import { useFumigation } from "./fumigation-context"
 import {
@@ -22,20 +29,22 @@ import {
 } from "./fumigation-shared"
 
 type Step = "premises" | "provider" | "review" | "payment"
-const steps: { id: Step; label: string }[] = [
-  { id: "premises", label: "Premises" },
-  { id: "provider", label: "Provider" },
-  { id: "review", label: "Review" },
-  { id: "payment", label: "Payment" },
-]
 
-export function FumigationApplicationPage({
-  onPaid,
-  inDrawer = false,
-}: {
-  onPaid?: () => void
-  inDrawer?: boolean
-}) {
+const steps: Step[] = ["premises", "provider", "review", "payment"]
+const stepLabels: Record<Step, string> = {
+  premises: "Application details",
+  provider: "Choose a licensed provider",
+  review: "Review application",
+  payment: "Payment & submission",
+}
+const stepTitles: Record<Step, string> = {
+  premises: "Application details",
+  provider: "Choose a licensed provider",
+  review: "Review application",
+  payment: "Payment & submission",
+}
+
+export function FumigationApplicationPage({ onPaid }: { onPaid?: () => void }) {
   const {
     state,
     isHydrated,
@@ -44,7 +53,11 @@ export function FumigationApplicationPage({
     confirmPayment,
   } = useFumigation()
   const { state: businessState } = useBusinessSession()
-  const premises = businessState.profile?.premises
+  const profile = businessState.profile
+  const premisesOptions = getPremisesOptions(
+    profile?.premises,
+    profile?.branches
+  )
   const application = state.application
   const [step, setStep] = useState<Step>(
     application?.stage === "review"
@@ -52,6 +65,9 @@ export function FumigationApplicationPage({
       : application
         ? "provider"
         : "premises"
+  )
+  const [premisesName, setPremisesName] = useState(
+    application?.premisesName ?? premisesOptions.at(0)?.premisesName ?? ""
   )
   const [requestedPeriod, setRequestedPeriod] = useState(
     application?.requestedPeriod ?? ""
@@ -63,56 +79,37 @@ export function FumigationApplicationPage({
     application?.providerId ?? ""
   )
   const [error, setError] = useState("")
-  const titles: Record<Step, string> = {
-    premises: "Start fumigation application",
-    provider: "Choose a licensed provider",
-    review: "Review your application",
-    payment: "Service payment",
-  }
+
   if (!isHydrated) return <FumigationLoading />
   if (application && !["draft", "review"].includes(application.stage)) {
-    const issued = application.stage === "issued"
-    return (
-      <div className="max-w-3xl space-y-5">
-        <PageHeader
-          eyebrow="Fumigation Certificate"
-          title={
-            issued ? "Fumigation certificate issued" : "Application underway"
-          }
-          description={
-            issued
-              ? "Your certificate is available. Start a renewal from its details when you are ready."
-              : "Follow the service report and decision for your premises."
-          }
-        />
-        <FumigationLink
-          href={
-            issued
-              ? "/business/fumigation/certificate"
-              : "/business/fumigation/tracker"
-          }
-        >
-          {issued ? "View Fumigation Certificate" : "Track application"}
-        </FumigationLink>
-      </div>
-    )
+    return <ExistingApplication stage={application.stage} />
   }
 
-  const provider = findLicensedProvider(selectedProviderId)
+  const provider = findLicensedProvider(
+    application?.providerId ?? selectedProviderId
+  )
+  const selectedPremises =
+    premisesOptions.find((option) => option.premisesName === premisesName) ??
+    premisesOptions.at(0)
+  const activeIndex = steps.indexOf(step)
+
   function go(next: Step) {
     setError("")
     setStep(next)
   }
+
   function start() {
-    const result = startApplication(requestedPeriod, declaration)
+    const result = startApplication(requestedPeriod, declaration, premisesName)
     if (!result.ok) return setError(result.error)
     go("provider")
   }
+
   function selectProvider() {
     const result = chooseProvider(selectedProviderId)
     if (!result.ok) return setError(result.error)
     go("review")
   }
+
   function pay() {
     const result = confirmPayment()
     if (!result.ok) return setError(result.error)
@@ -121,271 +118,373 @@ export function FumigationApplicationPage({
   }
 
   return (
-    <div className="flex max-w-5xl min-w-0 flex-col gap-7 pb-12">
-      {inDrawer ? (
-        <h2 className="text-xl font-semibold tracking-tight">{titles[step]}</h2>
-      ) : (
-        <PageHeader
-          eyebrow="Fumigation Certificate"
-          title={titles[step]}
-          description="Arrange fumigation for your registered premises."
-        />
-      )}
-      <ol
-        aria-label="Application steps"
-        className="grid grid-cols-2 gap-2 sm:grid-cols-4"
-      >
-        {steps.map(({ id, label }, index) => (
-          <li
-            key={id}
-            aria-current={step === id ? "step" : undefined}
-            className={`border-t-2 pt-2 text-sm ${step === id ? "border-primary font-semibold text-foreground" : "border-border text-muted-foreground"}`}
-          >
-            <span className="mr-2 tabular-nums">0{index + 1}</span>
-            {label}
-          </li>
-        ))}
-      </ol>
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+    <div className="fitness-flow min-h-screen bg-[#f7f9f8] text-foreground lg:grid lg:h-dvh lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_22rem] lg:overflow-hidden xl:grid-cols-[minmax(0,1fr)_26rem]">
+      <div className="fitness-form-scroll min-w-0 px-4 pt-5 pb-12 sm:px-8 lg:min-h-0 lg:overflow-y-auto lg:px-12 lg:pt-8">
+        <FumigationLink href="/business/applications" variant="outline">
+          <ArrowLeft aria-hidden="true" /> Back to applications
+        </FumigationLink>
 
-      {step === "premises" && (
-        <div
-          className={cn(
-            "grid min-w-0 gap-6",
-            !inDrawer && "lg:grid-cols-[minmax(0,1fr)_17rem]"
-          )}
-        >
-          <div className="min-w-0 space-y-6">
-            <section className="border-b pb-6">
-              <h2 className="text-lg font-semibold">Premises</h2>
-              <p className="mt-3 font-medium">{premises?.premisesName}</p>
-              <p className="text-sm text-muted-foreground">
-                {premises?.address}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {premises?.businessType}
-              </p>
-            </section>
-            <div className="max-w-sm space-y-2">
-              <Label htmlFor="requested-period">Requested service month</Label>
-              <Input
-                id="requested-period"
-                type="month"
-                value={requestedPeriod}
-                onChange={(event) => {
-                  setRequestedPeriod(event.target.value)
-                  setError("")
-                }}
-              />
-              <p className="text-sm text-muted-foreground">
-                The provider will confirm the service date after payment.
-              </p>
-            </div>
-            <div className="flex items-start gap-3">
-              <Checkbox
-                id="fumigation-declaration"
-                checked={declaration}
-                onCheckedChange={(checked) => {
-                  setDeclaration(checked === true)
-                  setError("")
-                }}
-              />
-              <Label
-                htmlFor="fumigation-declaration"
-                className="leading-6 font-normal"
-              >
-                I confirm these premises details are correct and the provider
-                may contact me about this service.
-              </Label>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <Button onClick={start}>Choose provider</Button>
-              <FumigationLink href="/business/applications" variant="link">
-                Cancel
-              </FumigationLink>
-            </div>
-          </div>
-          <aside
-            className={cn(
-              "border-t pt-4 text-sm text-muted-foreground",
-              !inDrawer && "lg:border-t-0 lg:border-l lg:pl-6"
-            )}
-          >
-            <h2 className="font-semibold text-foreground">What happens next</h2>
-            <p className="mt-2 leading-6">
-              Choose a licensed provider, review the service total, then track
-              the report and decision in one place.
-            </p>
-          </aside>
-        </div>
-      )}
-
-      {step === "provider" && (
-        <div className="space-y-5">
-          <p className="text-sm text-muted-foreground">
-            Select one provider for {premises?.premisesName}. Prices below are
-            the full service total.
+        <div className="mx-auto mt-10 max-w-[43rem] lg:mt-[clamp(4rem,10vh,8rem)]">
+          <p className="mb-3 text-xs font-semibold tracking-[0.17em] text-primary uppercase">
+            Fumigation certificate · Application
           </p>
-          <fieldset className="space-y-3">
-            <legend className="sr-only">Licensed providers</legend>
-            {LICENSED_FUMIGATION_PROVIDERS.map((option) => (
-              <label
-                key={option.id}
-                className={`flex cursor-pointer flex-col gap-4 rounded-lg border p-5 transition-colors hover:border-primary sm:flex-row sm:items-start sm:justify-between ${selectedProviderId === option.id ? "border-primary bg-accent/40" : ""}`}
-              >
-                <span className="flex min-w-0 items-start gap-3">
-                  <input
-                    type="radio"
-                    name="fumigation-provider"
-                    value={option.id}
-                    checked={selectedProviderId === option.id}
-                    onChange={() => {
-                      setSelectedProviderId(option.id)
+          <div
+            key={step}
+            className="fitness-step-panel rounded-2xl border border-border/80 bg-background p-5 shadow-[0_16px_45px_-38px_rgba(10,42,38,.35)] sm:p-8"
+          >
+            <div className="mb-7">
+              <h1 className="text-2xl font-semibold tracking-tight sm:text-[1.7rem]">
+                {stepTitles[step]}
+              </h1>
+            </div>
+
+            {error && (
+              <Alert variant="destructive" className="mb-5">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            {step === "premises" && (
+              <div className="space-y-5">
+                <div className="space-y-2">
+                  <Label htmlFor="fumigation-premises">
+                    Business branch/location
+                  </Label>
+                  <Select
+                    items={premisesOptions.map((option) => ({
+                      value: option.premisesName,
+                      label: `${option.premisesName}, ${option.ward}`,
+                    }))}
+                    value={premisesName}
+                    onValueChange={(value) => {
+                      setPremisesName(value ?? "")
                       setError("")
                     }}
-                    className="mt-1 size-4 accent-primary"
+                    disabled={premisesOptions.length < 2}
+                  >
+                    <SelectTrigger
+                      id="fumigation-premises"
+                      className="min-h-11 w-full"
+                      aria-required="true"
+                    >
+                      <SelectValue placeholder="Select branch/location" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {premisesOptions.map((option) => (
+                          <SelectItem
+                            key={`${option.premisesName}-${option.address}`}
+                            value={option.premisesName}
+                          >
+                            {option.premisesName}, {option.ward}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="requested-period">
+                    Requested service month
+                  </Label>
+                  <Input
+                    id="requested-period"
+                    type="month"
+                    value={requestedPeriod}
+                    onChange={(event) => {
+                      setRequestedPeriod(event.target.value)
+                      setError("")
+                    }}
+                    className="min-h-11"
                   />
-                  <span className="min-w-0">
-                    <span className="block font-semibold">{option.name}</span>
-                    <span className="mt-1 block text-sm text-muted-foreground">
-                      Licence {option.registrationNumber} · {option.location}
-                    </span>
-                    <span className="mt-2 block text-sm">{option.service}</span>
-                    <span className="mt-1 block text-sm text-muted-foreground">
-                      Contact: {option.contact}
-                    </span>
-                  </span>
-                </span>
-                <span className="shrink-0 font-semibold tabular-nums">
-                  {formatNgn(option.priceNgn)}
-                </span>
-              </label>
-            ))}
-          </fieldset>
-          <div className="flex flex-wrap gap-3">
-            <Button onClick={selectProvider}>Select provider</Button>
-            <Button variant="outline" onClick={() => go("premises")}>
-              Go back
-            </Button>
-          </div>
-        </div>
-      )}
+                </div>
 
-      {step === "review" && (
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                <h2>Service summary</h2>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <dl className="grid gap-5 sm:grid-cols-2">
-                <div>
-                  <dt className="text-sm text-muted-foreground">Premises</dt>
-                  <dd className="mt-1 font-medium">{premises?.premisesName}</dd>
-                  <dd className="text-sm">{premises?.address}</dd>
+                <div className="flex items-start gap-3 rounded-lg bg-muted/60 p-4">
+                  <Checkbox
+                    id="fumigation-declaration"
+                    checked={declaration}
+                    onCheckedChange={(checked) => {
+                      setDeclaration(checked === true)
+                      setError("")
+                    }}
+                  />
+                  <Label
+                    htmlFor="fumigation-declaration"
+                    className="leading-5 font-normal"
+                  >
+                    I confirm the selected premises details are correct.
+                  </Label>
                 </div>
-                <div>
-                  <dt className="text-sm text-muted-foreground">
-                    Requested month
-                  </dt>
-                  <dd className="mt-1 font-medium">{requestedPeriod}</dd>
+
+                <div className="flex justify-end pt-2">
+                  <Button
+                    className="fitness-action min-h-11 px-5"
+                    onClick={start}
+                  >
+                    Next{" "}
+                    <ArrowRight data-icon="inline-end" aria-hidden="true" />
+                  </Button>
                 </div>
-                <div>
-                  <dt className="text-sm text-muted-foreground">
-                    Licensed provider
-                  </dt>
-                  <dd className="mt-1 font-medium">{provider?.name}</dd>
-                  <dd className="text-sm">{provider?.registrationNumber}</dd>
-                </div>
-                <div>
-                  <dt className="text-sm text-muted-foreground">Service</dt>
-                  <dd className="mt-1 font-medium">{provider?.service}</dd>
-                </div>
-              </dl>
-              <div className="mt-6 flex items-center justify-between border-t pt-5">
-                <span className="font-medium">Total price</span>
-                <strong className="text-xl tabular-nums">
-                  {formatNgn(application?.totalNgn ?? provider?.priceNgn ?? 0)}
-                </strong>
               </div>
-            </CardContent>
-          </Card>
-          <div className="flex flex-wrap gap-3">
-            <Button onClick={() => go("payment")}>Proceed to payment</Button>
-            <Button variant="outline" onClick={() => go("provider")}>
-              Change provider
-            </Button>
-            <Button variant="link" onClick={() => go("premises")}>
-              Edit application
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {step === "payment" && (
-        <div
-          className={cn(
-            "grid min-w-0 gap-6",
-            !inDrawer && "lg:grid-cols-[minmax(0,1fr)_18rem]"
-          )}
-        >
-          <div className="min-w-0 space-y-5">
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  <h2>Payment summary</h2>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <p>{provider?.service}</p>
-                <p className="text-sm text-muted-foreground">
-                  {provider?.name} · {premises?.premisesName}
-                </p>
-                <div className="flex items-center justify-between border-t pt-4">
-                  <span>Total</span>
-                  <strong className="text-xl tabular-nums">
-                    {formatNgn(application?.totalNgn ?? 0)}
-                  </strong>
-                </div>
-              </CardContent>
-            </Card>
-            <Alert>
-              <AlertTitle>Payment</AlertTitle>
-              <AlertDescription>
-                Check the amount and provider before confirming payment. The
-                provider's work and council review follow as separate steps.
-              </AlertDescription>
-            </Alert>
-            <div className="flex flex-wrap gap-3">
-              <Button onClick={pay}>Confirm payment</Button>
-              <Button variant="outline" onClick={() => go("review")}>
-                Return to application
-              </Button>
-              <FumigationLink href="/business/applications" variant="link">
-                Pay later
-              </FumigationLink>
-            </div>
-          </div>
-          <aside
-            className={cn(
-              "border-t pt-4 text-sm text-muted-foreground",
-              !inDrawer && "lg:border-t-0 lg:border-l lg:pl-6"
             )}
-          >
-            <Badge variant="outline">Next</Badge>
-            <p className="mt-3 leading-6">
-              After confirmation, the application tracker shows the provider
-              report, EHO confirmation, and council decision.
-            </p>
-          </aside>
+
+            {step === "provider" && (
+              <div className="space-y-5">
+                <fieldset className="grid gap-3">
+                  <legend className="sr-only">Licensed providers</legend>
+                  {LICENSED_FUMIGATION_PROVIDERS.map((option) => (
+                    <label
+                      key={option.id}
+                      className={cn(
+                        "flex cursor-pointer items-start justify-between gap-4 rounded-xl border p-4 transition-colors hover:bg-muted/30 sm:p-5",
+                        selectedProviderId === option.id
+                          ? "border-primary/50 bg-primary/5"
+                          : "border-border"
+                      )}
+                    >
+                      <span className="flex min-w-0 gap-3">
+                        <input
+                          type="radio"
+                          name="fumigation-provider"
+                          value={option.id}
+                          checked={selectedProviderId === option.id}
+                          onChange={() => {
+                            setSelectedProviderId(option.id)
+                            setError("")
+                          }}
+                          className="mt-1 size-4 shrink-0 accent-primary"
+                        />
+                        <span className="min-w-0">
+                          <span className="block font-semibold">
+                            {option.name}
+                          </span>
+                          <span className="mt-1 block text-sm text-muted-foreground">
+                            {option.registrationNumber} · {option.location}
+                          </span>
+                        </span>
+                      </span>
+                      <strong className="shrink-0 text-[#D35E24] tabular-nums">
+                        {formatNgn(option.priceNgn)}
+                      </strong>
+                    </label>
+                  ))}
+                </fieldset>
+                <div className="flex items-center justify-between gap-3 pt-2">
+                  <Button
+                    variant="ghost"
+                    className="min-h-11"
+                    onClick={() => go("premises")}
+                  >
+                    <ArrowLeft aria-hidden="true" /> Back
+                  </Button>
+                  <Button
+                    className="fitness-action min-h-11 px-5"
+                    onClick={selectProvider}
+                    disabled={!selectedProviderId}
+                  >
+                    Next{" "}
+                    <ArrowRight data-icon="inline-end" aria-hidden="true" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {step === "review" && (
+              <div className="space-y-6">
+                <section aria-labelledby="fumigation-summary-heading">
+                  <h2
+                    id="fumigation-summary-heading"
+                    className="text-base font-semibold"
+                  >
+                    Application summary
+                  </h2>
+                  <dl className="mt-5 divide-y divide-border/70 border-t border-border/70">
+                    <SummaryItem
+                      label="Branch"
+                      value={selectedPremises?.premisesName}
+                    />
+                    <SummaryItem
+                      label="Service month"
+                      value={requestedPeriod}
+                    />
+                    <SummaryItem label="Provider" value={provider?.name} />
+                    <SummaryItem label="Service" value={provider?.service} />
+                  </dl>
+                  <div className="flex items-center justify-between gap-3 border-t border-border/70 pt-5">
+                    <span className="font-medium">Total</span>
+                    <strong className="text-2xl font-semibold tracking-tight text-[#D35E24] tabular-nums">
+                      {formatNgn(
+                        application?.totalNgn ?? provider?.priceNgn ?? 0
+                      )}
+                    </strong>
+                  </div>
+                </section>
+                <div className="flex items-center justify-between gap-3 pt-2">
+                  <Button
+                    variant="ghost"
+                    className="min-h-11"
+                    onClick={() => go("provider")}
+                  >
+                    <ArrowLeft aria-hidden="true" /> Back
+                  </Button>
+                  <Button
+                    className="fitness-action min-h-11 px-5"
+                    onClick={() => go("payment")}
+                  >
+                    Continue to payment
+                    <ArrowRight data-icon="inline-end" aria-hidden="true" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {step === "payment" && (
+              <div className="space-y-6">
+                <dl className="divide-y divide-border/70 border-y border-border/70">
+                  <SummaryItem
+                    label="Branch"
+                    value={application?.premisesName ?? premisesName}
+                  />
+                  <SummaryItem label="Provider" value={provider?.name} />
+                  <SummaryItem label="Service" value={provider?.service} />
+                  <SummaryItem
+                    label="Total"
+                    value={formatNgn(application?.totalNgn ?? 0)}
+                  />
+                </dl>
+                <div className="flex items-center justify-between gap-3 pt-2">
+                  <Button
+                    variant="ghost"
+                    className="min-h-11"
+                    onClick={() => go("review")}
+                  >
+                    <ArrowLeft aria-hidden="true" /> Back
+                  </Button>
+                  <Button
+                    className="fitness-action min-h-11 px-5"
+                    onClick={pay}
+                  >
+                    Confirm payment and submit
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-      )}
+      </div>
+
+      <aside
+        className="flex flex-col border-t border-border/80 bg-background px-5 py-7 sm:px-8 lg:h-dvh lg:overflow-hidden lg:border-t-0 lg:border-l lg:px-6 lg:py-10"
+        aria-label="Application progress"
+      >
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 className="text-lg font-semibold tracking-tight">
+            Application guide
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {activeIndex} of {steps.length} completed
+          </p>
+        </div>
+        <ol aria-label="Application steps" className="mt-8 space-y-2">
+          {steps.map((item, index) => (
+            <li
+              key={item}
+              aria-current={item === step ? "step" : undefined}
+              className={cn(
+                "fitness-progress-item flex min-h-16 items-center gap-3 rounded-xl px-3 py-2 transition-[background-color,color] duration-200",
+                item === step
+                  ? "bg-primary/7 text-foreground"
+                  : "text-muted-foreground"
+              )}
+            >
+              <span
+                className={cn(
+                  "flex size-7 shrink-0 items-center justify-center rounded-full border text-xs font-semibold transition-[background-color,border-color,color] duration-200",
+                  index < activeIndex
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : item === step
+                      ? "border-primary text-primary"
+                      : "border-border text-muted-foreground"
+                )}
+              >
+                {index < activeIndex ? (
+                  <Check className="size-4" aria-hidden="true" />
+                ) : (
+                  index + 1
+                )}
+              </span>
+              <span className="text-sm font-medium">{stepLabels[item]}</span>
+            </li>
+          ))}
+        </ol>
+        <div className="mt-10 rounded-xl border border-border/80 bg-[#f7f9f8] p-4 lg:mt-auto">
+          <p className="flex items-center gap-2 font-semibold">
+            <CircleHelp className="size-4 text-primary" aria-hidden="true" />
+            What happens next?
+          </p>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            After payment, the selected provider completes the service and
+            submits a report for council review.
+          </p>
+        </div>
+      </aside>
     </div>
+  )
+}
+
+function ExistingApplication({ stage }: { stage: string }) {
+  const issued = stage === "issued"
+  return (
+    <div className="min-h-screen bg-[#f7f9f8] p-4 sm:p-8 lg:p-12">
+      <FumigationLink href="/business/applications" variant="outline">
+        <ArrowLeft aria-hidden="true" /> Back to applications
+      </FumigationLink>
+      <div className="mx-auto mt-10 max-w-[43rem] rounded-2xl border bg-background p-6 sm:p-8">
+        <p className="text-xs font-semibold tracking-[0.17em] text-primary uppercase">
+          Fumigation certificate
+        </p>
+        <h1 className="mt-2 text-2xl font-semibold">
+          {issued ? "Certificate issued" : "Application underway"}
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          {issued
+            ? "Your certificate is ready to view."
+            : "Track the provider service and council decision."}
+        </p>
+        <FumigationLink
+          className="mt-5"
+          href={
+            issued
+              ? "/business/fumigation/certificate"
+              : "/business/fumigation/tracker"
+          }
+        >
+          {issued ? "View certificate" : "View application"}
+        </FumigationLink>
+      </div>
+    </div>
+  )
+}
+
+function SummaryItem({ label, value }: { label: string; value?: string }) {
+  return (
+    <div className="py-4">
+      <dt className="text-sm text-muted-foreground">{label}</dt>
+      <dd className="mt-1.5 font-medium break-words">{value || "—"}</dd>
+    </div>
+  )
+}
+
+function getPremisesOptions(
+  primary?: BusinessPremisesInput,
+  branches?: BusinessPremisesInput[]
+) {
+  const options = branches?.length ? branches : primary ? [primary] : []
+  return options.filter(
+    (option, index) =>
+      options.findIndex(
+        (candidate) => candidate.premisesName === option.premisesName
+      ) === index
   )
 }

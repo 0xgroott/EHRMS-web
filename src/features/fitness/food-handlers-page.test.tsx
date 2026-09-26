@@ -19,14 +19,15 @@ describe("FoodHandlersPage", () => {
   it("guides a business with no food handlers to add its first staff record", () => {
     render(<FoodHandlersPage />)
 
-    expect(screen.getByRole("heading", { name: "Food handlers" })).toBeVisible()
-    expect(screen.getByText("No food handlers registered yet")).toBeVisible()
-    expect(
-      screen.getByRole("link", { name: "Add food handler" })
-    ).toHaveAttribute("href", "/business/food-handler/new")
+    expect(screen.getByRole("heading", { name: "Staff" })).toBeVisible()
+    expect(screen.getByText("No staff registered yet")).toBeVisible()
+    expect(screen.getByRole("link", { name: "Add staff" })).toHaveAttribute(
+      "href",
+      "/business/food-handler/new"
+    )
   })
 
-  it("lists saved handlers with readiness and Fitness coverage", () => {
+  it("lists staff with active status and Fitness test state", () => {
     mockedFitness.value = {
       isHydrated: true,
       state: {
@@ -52,13 +53,11 @@ describe("FoodHandlersPage", () => {
     expect(screen.getByText("Kitchen assistant")).toBeVisible()
     expect(
       within(screen.getByRole("row", { name: /Ada Okafor/ })).getByText(
-        "Ready to apply"
+        "Active"
       )
     ).toBeVisible()
-    expect(screen.getByText("No Fitness coverage")).toBeVisible()
-    expect(
-      screen.getByRole("region", { name: "Food handler list" })
-    ).toBeVisible()
+    expect(screen.getByText("Not approved")).toBeVisible()
+    expect(screen.getByRole("region", { name: "Staff list" })).toBeVisible()
     expect(
       screen.queryByRole("heading", { name: "Food handler records" })
     ).not.toBeInTheDocument()
@@ -105,9 +104,7 @@ describe("FoodHandlersPage", () => {
     }
     render(<FoodHandlersPage />)
 
-    expect(
-      screen.getByText("Included in active Fitness application")
-    ).toBeVisible()
+    expect(screen.getByText("In progress")).toBeVisible()
     expect(
       screen.queryByRole("link", { name: "Track Fitness application" })
     ).not.toBeInTheDocument()
@@ -152,7 +149,7 @@ describe("FoodHandlersPage", () => {
     }
     render(<FoodHandlersPage />)
 
-    expect(screen.getByText("Covered by Fitness certificate")).toBeVisible()
+    expect(screen.getByText("Approved")).toBeVisible()
     expect(
       screen.queryByRole("link", { name: "View Fitness certificate" })
     ).not.toBeInTheDocument()
@@ -201,7 +198,7 @@ describe("FoodHandlersPage", () => {
     }
     render(<FoodHandlersPage />)
 
-    expect(screen.getByText("Covered by Fitness certificate")).toBeVisible()
+    expect(screen.getByText("Approved")).toBeVisible()
   })
 
   it("keeps earlier staff covered after a separate new-staff certificate is issued", () => {
@@ -253,12 +250,12 @@ describe("FoodHandlersPage", () => {
 
     expect(
       within(screen.getByRole("row", { name: /Ada Okafor/ })).getByText(
-        "Covered by Fitness certificate"
+        "Approved"
       )
     ).toBeVisible()
     expect(
       within(screen.getByRole("row", { name: /Bola James/ })).getByText(
-        "Covered by Fitness certificate"
+        "Approved"
       )
     ).toBeVisible()
   })

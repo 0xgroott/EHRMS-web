@@ -1,34 +1,33 @@
+import { useState } from "react"
 import {
   ArrowRight,
   BellRing,
-  CalendarClock,
+  ChevronLeft,
+  ChevronRight,
   CheckCircle2,
-  ClipboardList,
   FileBadge2,
-  ReceiptText,
   ShieldCheck,
   SprayCan,
   Users,
 } from "lucide-react"
-import type { LucideIcon } from "lucide-react"
 import type { BusinessPortalState } from "@/domain/business-types"
 import type { FitnessState } from "@/features/fitness/fitness-types"
 import type { FumigationState } from "@/features/fumigation/fumigation-types"
-import type { InspectionState } from "@/features/inspection/inspection-types"
+import type {
+  InspectionStage,
+  InspectionState,
+} from "@/features/inspection/inspection-types"
 import {
   certificateIsValid,
-  certificateReminder,
   latestCertificateApplication,
 } from "@/domain/certificate-validity"
-import { fumigationStageLabel } from "@/features/fumigation/fumigation-shared"
 import { formatFitnessReference } from "@/features/fitness/fitness-tracker-page"
-import {
-  getBusinessNextAction,
-  getUrgentBusinessAlerts,
-} from "@/domain/business-next-action"
+import { fitnessTestStatus } from "@/features/fitness/fitness-test-status"
+import { getUrgentBusinessAlerts } from "@/domain/business-next-action"
 import { validatePremises } from "@/domain/business-validation"
 import { PageHeader } from "@/components/shared/page-header"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -40,13 +39,36 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty"
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+
+const STAFF_PAGE_SIZE = 10
+
+const HEALTH_APPROVAL_STATUS: Record<InspectionStage, string> = {
+  "notice-served": "Inspection notice received",
+  "notice-acknowledged": "Inspection scheduled",
+  "findings-issued": "Corrective actions required",
+  "corrections-recorded": "Corrections recorded",
+  "follow-up-served": "Follow-up notice received",
+  "follow-up-acknowledged": "Follow-up inspection scheduled",
+  resolved: "Awaiting council decision",
+  "approval-issued": "Health Approval issued",
+  "further-action": "Further action required",
+}
 
 function QuietLink({
   href,
@@ -69,41 +91,9 @@ function QuietLink({
   )
 }
 
-function EmptySection({
-  id,
-  title,
-  emptyTitle,
-  description,
-  icon: Icon,
-}: {
-  id: string
-  title: string
-  emptyTitle: string
-  description: string
-  icon: LucideIcon
-}) {
-  return (
-    <section aria-labelledby={id} className="min-w-0">
-      <h2 id={id} className="mb-3 font-semibold">
-        {title}
-      </h2>
-      <Empty className="border px-5 py-6">
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <Icon aria-hidden="true" />
-          </EmptyMedia>
-          <EmptyTitle>{emptyTitle}</EmptyTitle>
-          <EmptyDescription>{description}</EmptyDescription>
-        </EmptyHeader>
-      </Empty>
-    </section>
-  )
-}
-
-function Deadline({ value }: { value: string }) {
+function DashboardDate({ value }: { value: string }) {
   const date = new Date(value)
-  if (Number.isNaN(date.getTime()))
-    return <span>Review notice for deadline</span>
+  if (Number.isNaN(date.getTime())) return <span>Date unavailable</span>
   return (
     <time dateTime={value}>
       {new Intl.DateTimeFormat("en-NG", {
@@ -121,15 +111,23 @@ export function BusinessDashboard({
   fitness = { handlers: [], application: null },
   fumigation = { application: null },
   inspection = { inspection: null },
-  premisesPhoto,
+  businessAvatar,
 }: {
   state: BusinessPortalState
   fitness?: FitnessState
   fumigation?: FumigationState
   inspection?: InspectionState
-  premisesPhoto?: string
+  businessAvatar?: string
 }) {
+  const [staffPage, setStaffPage] = useState(1)
+  const [dashboardTab, setDashboardTab] = useState("staff")
   const { profile } = state
+  const businessInitials = (profile?.businessName ?? "Business")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word[0])
+    .join("")
   const profileComplete = Boolean(
     profile?.verified &&
     state.stage === "complete" &&
@@ -150,11 +148,6 @@ export function BusinessDashboard({
   const fitnessInProgress = Boolean(
     fitnessApplication && fitnessApplication.stage !== "issued"
   )
-  const fitnessRenewing = Boolean(
-    fitness.history?.length &&
-    fitnessApplication?.stage !== "issued" &&
-    fitnessApplication?.purpose !== "new-staff"
-  )
   const fumigationApplication = fumigation.application
   const fumigationIssuedApplication = latestCertificateApplication(
     fumigationApplication,
@@ -168,37 +161,6 @@ export function BusinessDashboard({
   const fumigationInProgress = Boolean(
     fumigationApplication && fumigationApplication.stage !== "issued"
   )
-  const fumigationRenewing = Boolean(
-    fumigation.history?.length && fumigationApplication?.stage !== "issued"
-  )
-  const fitnessReminder = fitnessCertificate
-    ? certificateReminder(
-        fitnessCertificate.expiresAt,
-        new Date(),
-        fitnessRenewing
-      )
-    : null
-  const fumigationReminder = fumigationCertificate
-    ? certificateReminder(
-        fumigationCertificate.expiresAt,
-        new Date(),
-        fumigationRenewing
-      )
-    : null
-  const recentFitnessPayment =
-    fitnessApplication?.paymentReference ??
-    [...(fitness.history ?? [])].reverse().find((item) => item.paymentReference)
-      ?.paymentReference
-  const recentFumigationPayment =
-    fumigationApplication?.paymentReference ??
-    [...(fumigation.history ?? [])]
-      .reverse()
-      .find((item) => item.paymentReference)?.paymentReference
-  const inspectionCase = inspection.inspection
-  const healthEligible = fitnessIssued && fumigationIssued
-  const healthStage = healthEligible
-    ? (inspectionCase?.stage ?? "eligible")
-    : undefined
   const fumigationActionHref =
     fumigationApplication?.stage === "draft" ||
     fumigationApplication?.stage === "review"
@@ -209,160 +171,191 @@ export function BusinessDashboard({
     fitnessApplication?.stage === "review"
       ? "/business/fitness/apply"
       : "/business/fitness/tracker"
-  const action = getBusinessNextAction({
-    profileComplete,
-    alerts: state.alerts,
-    foodHandlerCount: fitness.handlers.length,
-    fitness: fitnessInProgress
-      ? "in-progress"
-      : fitnessIssued
-        ? "active"
-        : fitnessExpired
-          ? "expired"
-          : "not-started",
-    fitnessActionHref,
-    fumigation: fumigationInProgress
-      ? "in-progress"
-      : fumigationIssued
-        ? "active"
-        : fumigationExpired
-          ? "expired"
-          : "not-started",
-    fumigationActionHref,
-    missingHealthApprovalRequirement: !healthEligible,
-    healthApprovalStage: healthStage,
-  })
-  const statuses = [
-    {
-      title: "Fitness",
-      icon: Users,
-      status: fitnessRenewing
-        ? "Renewal in progress"
-        : fitnessExpired
-          ? "Expired"
-          : fitnessIssued
-            ? "Issued"
-            : fitnessInProgress
-              ? fitnessApplication?.stage === "awaiting-facility"
-                ? "Awaiting facility result"
-                : "Application in progress"
-              : "Not started",
-      description: fitnessRenewing
-        ? "Previous certificate saved in history."
-        : fitnessExpired
-          ? "Renew to restore coverage."
-          : fitnessIssued
-            ? "Food handlers covered."
-            : fitnessInProgress
-              ? "Assessment and council decision pending."
-              : "Add food handlers to begin.",
-      href: fitnessRenewing
-        ? fitnessActionHref
-        : fitnessExpired || fitnessIssued
-          ? "/business/fitness/certificate"
-          : fitnessInProgress
-            ? fitnessActionHref
-            : "/business/food-handlers",
-      label: fitnessRenewing
-        ? "Track Fitness renewal"
-        : fitnessExpired
-          ? "Renew Fitness certificate"
-          : fitnessIssued
-            ? "View Fitness certificate"
-            : fitnessInProgress
-              ? "Track Fitness application"
-              : "Manage food handlers",
-    },
-    {
-      title: "Fumigation",
-      icon: SprayCan,
-      status: fumigationRenewing
-        ? "Renewal in progress"
-        : fumigationExpired
-          ? "Expired"
-          : fumigationApplication
-            ? fumigationStageLabel[fumigationApplication.stage]
-            : "Not started",
-      description: "Premises treatment by an approved provider.",
-      href: fumigationRenewing
-        ? fumigationActionHref
-        : fumigationExpired || fumigationIssued
-          ? "/business/fumigation/certificate"
-          : fumigationInProgress
-            ? fumigationActionHref
-            : "/business/fumigation/apply",
-      label: fumigationRenewing
-        ? "Track Fumigation renewal"
-        : fumigationExpired
-          ? "Renew Fumigation Certificate"
-          : fumigationIssued
-            ? "View Fumigation Certificate"
-            : fumigationInProgress
-              ? "Track Fumigation application"
-              : "Start Fumigation application",
-    },
-    {
-      title: "Health Approval",
-      icon: ShieldCheck,
-      status: !healthEligible
-        ? "Requirements incomplete"
-        : inspectionCase?.stage === "approval-issued"
-          ? "Issued"
-          : inspectionCase?.stage === "further-action"
-            ? "Further action required"
-            : inspectionCase?.stage === "findings-issued"
-              ? "Corrective action required"
-              : inspectionCase?.stage === "follow-up-served" ||
-                  inspectionCase?.stage === "follow-up-acknowledged"
-                ? "Follow-up inspection pending"
-                : inspectionCase?.stage === "notice-served"
-                  ? "Acknowledgement required"
-                  : "Inspection pending",
-      description: !healthEligible
-        ? "Fitness and Fumigation required first."
-        : inspectionCase?.stage === "approval-issued"
-          ? "Approval available for these premises."
-          : "Track inspection and council decision.",
-      href: "/business/health-approval",
-      label: healthEligible
-        ? "View Health Approval"
-        : "View Health Approval requirements",
-    },
+  const issuedCertificateCount =
+    Number(fitnessIssued) + Number(fumigationIssued)
+  const activeStaffCount = fitness.handlers.filter(
+    (handler) => !handler.archivedAt
+  ).length
+  const staffPageCount = Math.max(
+    1,
+    Math.ceil(fitness.handlers.length / STAFF_PAGE_SIZE)
+  )
+  const currentStaffPage = Math.min(staffPage, staffPageCount)
+  const visibleStaff = fitness.handlers.slice(
+    (currentStaffPage - 1) * STAFF_PAGE_SIZE,
+    currentStaffPage * STAFF_PAGE_SIZE
+  )
+  const hasStartedCertificateProcess = Boolean(
+    fitnessApplication ||
+    fitness.history?.length ||
+    fumigationApplication ||
+    fumigation.history?.length
+  )
+  const fitnessChoice = fitnessExpired
+    ? {
+        status: "Expired",
+        label: "Renew Health Fitness Certificate",
+        href: "/business/fitness/certificate",
+      }
+    : fitnessIssued
+      ? {
+          status: "Issued",
+          label: "View Health Fitness Certificate",
+          href: "/business/fitness/certificate",
+        }
+      : fitnessInProgress
+        ? {
+            status: "Application in progress",
+            label: "Continue Health Fitness Certificate",
+            href: fitnessActionHref,
+          }
+        : fitness.handlers.length === 0
+          ? {
+              status: "Kitchen staff required",
+              label: "Add kitchen staff",
+              href: "/business/food-handlers",
+            }
+          : {
+              status: "Ready to begin",
+              label: "Begin Health Fitness Certificate",
+              href: "/business/fitness/apply",
+            }
+  const fumigationChoice = fumigationExpired
+    ? {
+        status: "Expired",
+        label: "Renew Fumigation Certificate",
+        href: "/business/fumigation/certificate",
+      }
+    : fumigationIssued
+      ? {
+          status: "Issued",
+          label: "View Fumigation Certificate",
+          href: "/business/fumigation/certificate",
+        }
+      : fumigationInProgress
+        ? {
+            status: "Application in progress",
+            label: "Continue Fumigation Certificate",
+            href: fumigationActionHref,
+          }
+        : {
+            status: "Ready to begin",
+            label: "Begin Fumigation Certificate",
+            href: "/business/fumigation/apply",
+          }
+  const certificateRows = [
+    ...(fitnessCertificate
+      ? [
+          {
+            name: "Health Fitness Certificate",
+            reference: formatFitnessReference(fitnessCertificate.id),
+            status: fitnessExpired ? "Expired" : "Issued",
+            href: "/business/fitness/certificate",
+            action: "View certificate",
+          },
+        ]
+      : fitnessInProgress
+        ? [
+            {
+              name: "Health Fitness Certificate",
+              reference: fitnessApplication?.id ?? "—",
+              status: "In progress",
+              href: "/business/fitness/tracker",
+              action: "View status",
+            },
+          ]
+        : []),
+    ...(fumigationCertificate
+      ? [
+          {
+            name: "Fumigation Certificate",
+            reference: fumigationCertificate.id,
+            status: fumigationExpired ? "Expired" : "Issued",
+            href: "/business/fumigation/certificate",
+            action: "View certificate",
+          },
+        ]
+      : fumigationInProgress
+        ? [
+            {
+              name: "Fumigation Certificate",
+              reference: fumigationApplication?.id ?? "—",
+              status: "In progress",
+              href: "/business/fumigation/tracker",
+              action: "View status",
+            },
+          ]
+        : []),
   ]
+  const activityByKey = new Map<
+    string,
+    { date: string; activity: string; reference: string }
+  >()
+  for (const application of [
+    ...(fitness.history ?? []),
+    ...(fitness.application ? [fitness.application] : []),
+  ]) {
+    if (application.certificate) {
+      activityByKey.set(`fitness-${application.certificate.id}`, {
+        date: application.certificate.issuedAt,
+        activity: "Fitness Certificate issued",
+        reference: formatFitnessReference(application.certificate.id),
+      })
+    }
+  }
+  for (const application of [
+    ...(fumigation.history ?? []),
+    ...(fumigation.application ? [fumigation.application] : []),
+  ]) {
+    if (application.certificate) {
+      activityByKey.set(`fumigation-${application.certificate.id}`, {
+        date: application.certificate.issuedAt,
+        activity: "Fumigation Certificate issued",
+        reference: application.certificate.id,
+      })
+    }
+  }
+  const inspectionCase = inspection.inspection
+  const showHealthApprovalCard = Boolean(
+    (fitnessIssued && fumigationIssued) || inspectionCase
+  )
+  const healthApprovalIssued = Boolean(
+    inspectionCase?.certificate &&
+    certificateIsValid(inspectionCase.certificate.expiresAt)
+  )
+  const healthApprovalStatus =
+    inspectionCase?.certificate && !healthApprovalIssued
+      ? "Health Approval expired"
+      : inspectionCase
+        ? HEALTH_APPROVAL_STATUS[inspectionCase.stage]
+        : "Awaiting inspection notice"
+  if (inspectionCase?.notice.acknowledgedAt) {
+    activityByKey.set(`inspection-${inspectionCase.notice.reference}`, {
+      date: inspectionCase.notice.acknowledgedAt,
+      activity: "Inspection notice acknowledged",
+      reference: inspectionCase.notice.reference,
+    })
+  }
+  if (inspectionCase?.followUpNotice?.acknowledgedAt) {
+    activityByKey.set(`follow-up-${inspectionCase.followUpNotice.reference}`, {
+      date: inspectionCase.followUpNotice.acknowledgedAt,
+      activity: "Follow-up inspection acknowledged",
+      reference: inspectionCase.followUpNotice.reference,
+    })
+  }
+  if (inspectionCase?.certificate) {
+    activityByKey.set(`approval-${inspectionCase.certificate.id}`, {
+      date: inspectionCase.certificate.issuedAt,
+      activity: "Health Approval issued",
+      reference: inspectionCase.certificate.id,
+    })
+  }
+  const recentActivity = [...activityByKey.values()].sort(
+    (a, b) => Date.parse(b.date) - Date.parse(a.date)
+  )
   return (
     <div className="flex min-w-0 flex-col gap-8 break-words">
       <PageHeader eyebrow="Business portal" title="Business dashboard" />
-      <section
-        aria-label="Business profile"
-        className="flex min-w-0 flex-col justify-between gap-3 sm:flex-row sm:items-start"
-      >
-        <div className="flex min-w-0 items-center gap-4">
-          {premisesPhoto && (
-            <img
-              src={premisesPhoto}
-              alt={`${profile?.premises?.premisesName ?? "Business"} premises`}
-              className="size-16 shrink-0 rounded-md object-cover"
-            />
-          )}
-          <div className="min-w-0">
-            <p className="font-semibold">
-              {profile?.businessName || "Your business"}
-            </p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {profile?.premises
-                ? `${profile.premises.premisesName} · ${profile.premises.address}`
-                : "Premises details still needed"}
-            </p>
-            <QuietLink href="/business/settings">
-              Update business profile
-            </QuietLink>
-          </div>
-        </div>
-        <Badge variant="outline" className="shrink-0 self-start">
-          {profileComplete && <CheckCircle2 aria-hidden="true" />}{" "}
-          {profileComplete ? "Profile complete" : "Profile incomplete"}
-        </Badge>
-      </section>
       {urgentAlerts.length > 0 && (
         <Alert variant="destructive">
           <BellRing aria-hidden="true" />
@@ -372,50 +365,248 @@ export function BusinessDashboard({
             attention
           </AlertTitle>
           <AlertDescription>
-            Check deadlines in the Activity tab.
+            Review your inspection tasks as soon as possible.
           </AlertDescription>
         </Alert>
       )}
-      <section aria-labelledby="next-action-label">
-        <Card>
+      <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(20rem,0.85fr)]">
+        <Card aria-label="Business profile" className="min-w-0">
           <CardHeader>
-            <p
-              id="next-action-label"
-              className="mb-2 text-xs font-semibold tracking-wider text-primary uppercase"
-            >
-              Next required action
-            </p>
             <CardTitle>
-              <h2>{action.title}</h2>
+              <h2>Your business</h2>
             </CardTitle>
-            <CardDescription className="max-w-2xl">
-              {action.description}
-            </CardDescription>
           </CardHeader>
+          <CardContent>
+            <div className="flex min-w-0 items-center gap-4">
+              <Avatar className="size-16">
+                {businessAvatar && (
+                  <AvatarImage
+                    src={businessAvatar}
+                    alt={`${profile?.businessName ?? "Business"} logo`}
+                    keepMounted
+                  />
+                )}
+                <AvatarFallback className="text-base font-semibold text-primary">
+                  {businessInitials}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0">
+                <p className="text-lg font-semibold">
+                  {profile?.businessName || "Your business"}
+                </p>
+                <p className="mt-1 flex items-center gap-1.5 text-sm leading-6 text-muted-foreground">
+                  {profileComplete && (
+                    <CheckCircle2
+                      className="size-4 text-primary"
+                      aria-hidden="true"
+                    />
+                  )}
+                  {profileComplete ? "Profile complete" : "Profile incomplete"}
+                </p>
+              </div>
+            </div>
+          </CardContent>
           <CardFooter>
-            <Button
-              nativeButton={false}
-              role="link"
-              render={<a href={action.href} />}
-              className="min-h-11 max-w-full text-left whitespace-normal"
+            <QuietLink
+              href={profile ? "/business/settings" : "/business/setup"}
             >
-              {action.label}
-              <ArrowRight data-icon="inline-end" aria-hidden="true" />
-            </Button>
+              View profile
+            </QuietLink>
           </CardFooter>
         </Card>
+        <Card className="relative min-w-0 overflow-hidden bg-primary text-primary-foreground ring-primary/20">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -top-10 -right-8 size-44 rounded-full border border-primary-foreground/15"
+          />
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute top-8 -right-12 size-52 rounded-full border border-primary-foreground/10"
+          />
+          <CardHeader className="relative">
+            <CardTitle className="text-primary-foreground">
+              <h2>
+                {showHealthApprovalCard
+                  ? "My Health Approval"
+                  : "Complete your certificates"}
+              </h2>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="relative flex-row items-end justify-between gap-6">
+            <div className="flex max-w-sm flex-col items-start gap-4">
+              {showHealthApprovalCard ? (
+                <>
+                  <div>
+                    <p className="text-xs font-medium tracking-wide text-primary-foreground/70 uppercase">
+                      Current status
+                    </p>
+                    <p className="mt-1 font-semibold">{healthApprovalStatus}</p>
+                    <p className="mt-2 text-sm leading-6 text-primary-foreground/75">
+                      {inspectionCase
+                        ? "Follow your inspection and approval progress."
+                        : "Both certificate requirements are complete. Your inspection status will appear here."}
+                    </p>
+                  </div>
+                  <Button
+                    variant="secondary"
+                    size="lg"
+                    nativeButton={false}
+                    role="link"
+                    render={<a href="/business/health-approval" />}
+                    className="min-h-11"
+                  >
+                    {healthApprovalIssued
+                      ? "View Health Approval"
+                      : "View status"}
+                    <ArrowRight data-icon="inline-end" aria-hidden="true" />
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm leading-6 text-primary-foreground/75">
+                    Begin or continue the requirements for your premises.
+                  </p>
+                  <Dialog>
+                    <DialogTrigger
+                      render={
+                        <Button
+                          variant="secondary"
+                          size="lg"
+                          className="min-h-11"
+                        />
+                      }
+                    >
+                      {hasStartedCertificateProcess
+                        ? "Continue process"
+                        : "Get started"}
+                      <ArrowRight data-icon="inline-end" aria-hidden="true" />
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Choose a certificate</DialogTitle>
+                        <DialogDescription>
+                          Select the requirement you want to begin or continue.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="flex flex-col gap-3">
+                        {[
+                          {
+                            title: "Health Fitness Certificate",
+                            description:
+                              "Health assessment for your kitchen staff.",
+                            icon: Users,
+                            ...fitnessChoice,
+                          },
+                          {
+                            title: "Fumigation Certificate",
+                            description:
+                              "Treatment and certification for your premises.",
+                            icon: SprayCan,
+                            ...fumigationChoice,
+                          },
+                        ].map((choice) => (
+                          <Button
+                            key={choice.title}
+                            variant="outline"
+                            nativeButton={false}
+                            role="link"
+                            aria-label={`${choice.label}. ${choice.status}`}
+                            render={<a href={choice.href} />}
+                            className="h-auto min-h-20 w-full justify-start gap-3 px-4 py-3 text-left whitespace-normal"
+                          >
+                            <choice.icon
+                              data-icon="inline-start"
+                              aria-hidden="true"
+                            />
+                            <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
+                              <span className="font-semibold">
+                                {choice.title}
+                              </span>
+                              <span className="text-xs font-normal text-muted-foreground">
+                                {choice.description}
+                              </span>
+                            </span>
+                            <Badge variant="secondary">{choice.status}</Badge>
+                          </Button>
+                        ))}
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </>
+              )}
+            </div>
+            <div
+              aria-hidden="true"
+              className="relative hidden size-24 shrink-0 place-items-center sm:grid"
+            >
+              <div className="absolute inset-2 rotate-6 rounded-xl bg-primary-foreground/15" />
+              <div className="relative grid size-20 place-items-center rounded-xl bg-primary-foreground text-primary shadow-sm">
+                {showHealthApprovalCard ? (
+                  <ShieldCheck className="size-9" />
+                ) : (
+                  <FileBadge2 className="size-9" />
+                )}
+                <span className="absolute -right-2 -bottom-2 grid size-8 place-items-center rounded-full bg-secondary text-secondary-foreground shadow-sm">
+                  <ShieldCheck className="size-4" />
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      <section
+        aria-label="Business metrics"
+        className="grid gap-4 sm:grid-cols-3"
+      >
+        <Card size="sm">
+          <CardHeader>
+            <CardTitle>Kitchen staff</CardTitle>
+            <CardDescription>Registered for this premises</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-semibold tabular-nums">
+              {activeStaffCount}
+            </p>
+          </CardContent>
+        </Card>
+        <Card size="sm">
+          <CardHeader>
+            <CardTitle>Branches</CardTitle>
+            <CardDescription>Registered business locations</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-semibold tabular-nums">
+              {profile?.premises ? 1 : 0}
+            </p>
+          </CardContent>
+        </Card>
+        <Card size="sm">
+          <CardHeader>
+            <CardTitle>Certificates issued</CardTitle>
+            <CardDescription>Health Fitness and Fumigation</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-semibold tabular-nums">
+              {issuedCertificateCount}
+            </p>
+          </CardContent>
+        </Card>
       </section>
-      <Tabs defaultValue="overview" className="min-w-0 gap-6">
-        <div className="w-full overflow-x-auto border-b">
+      <Tabs
+        value={dashboardTab}
+        onValueChange={setDashboardTab}
+        className="min-w-0 gap-6"
+      >
+        <div className="flex w-full items-center gap-4 overflow-x-auto border-b">
           <TabsList
             variant="line"
             aria-label="Dashboard sections"
             className="h-11! min-w-max! justify-start gap-1 rounded-none p-0"
           >
             {[
-              ["overview", "Overview"],
+              ["staff", "Staff"],
+              ["certificates", "Certificates"],
               ["activity", "Activity"],
-              ["records", "Records"],
             ].map(([value, label]) => (
               <TabsTrigger
                 key={value}
@@ -426,301 +617,181 @@ export function BusinessDashboard({
               </TabsTrigger>
             ))}
           </TabsList>
-        </div>
-        <TabsContent value="overview">
-          <section
-            aria-labelledby="certificate-status"
-            className="flex flex-col gap-4"
-          >
-            <h2 id="certificate-status" className="font-semibold">
-              Certificate status
-            </h2>
-            <div className="grid min-w-0 gap-4 lg:grid-cols-3">
-              {statuses.map((item) => (
-                <Card key={item.title} size="sm" className="min-w-0">
-                  <CardHeader>
-                    <CardTitle>
-                      <h3 className="flex items-center gap-2">
-                        <item.icon
-                          className="size-4 text-primary"
-                          aria-hidden="true"
-                        />
-                        {item.title}
-                      </h3>
-                    </CardTitle>
-                    <Badge variant="secondary" className="mt-2">
-                      {item.status}
-                    </Badge>
-                  </CardHeader>
-                  <CardContent className="flex-1">
-                    <p className="text-sm leading-6 text-muted-foreground">
-                      {item.description}
-                    </p>
-                  </CardContent>
-                  <CardFooter>
-                    <QuietLink href={item.href}>{item.label}</QuietLink>
-                  </CardFooter>
-                </Card>
-              ))}
+          {dashboardTab === "staff" && (
+            <div className="ml-auto shrink-0 pr-1">
+              <QuietLink href="/business/food-handlers">
+                View all staff
+              </QuietLink>
             </div>
+          )}
+        </div>
+        <TabsContent value="staff">
+          <section aria-label="Staff" className="min-w-0">
+            {visibleStaff.length === 0 ? (
+              <div className="rounded-lg border border-dashed px-5 py-8 text-center">
+                <p className="font-medium">No staff registered yet</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Add staff before starting a Health Fitness Certificate.
+                </p>
+              </div>
+            ) : (
+              <Table
+                aria-label="Dashboard staff list"
+                className="min-w-[38rem]"
+              >
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Job role</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Fitness test</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {visibleStaff.map((handler) => (
+                    <TableRow key={handler.id}>
+                      <TableCell className="font-medium">
+                        {handler.fullName}
+                      </TableCell>
+                      <TableCell>{handler.role || "Not recorded"}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={handler.archivedAt ? "outline" : "secondary"}
+                        >
+                          {handler.archivedAt ? "Archived" : "Active"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {fitnessTestStatus(fitness, handler.id)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+            {fitness.handlers.length > STAFF_PAGE_SIZE && (
+              <div className="mt-4 flex items-center justify-between border-t pt-4">
+                <p className="text-sm text-muted-foreground" aria-live="polite">
+                  Page {currentStaffPage} of {staffPageCount}
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    aria-label="Previous page"
+                    disabled={currentStaffPage === 1}
+                    onClick={() =>
+                      setStaffPage((page) => Math.max(1, page - 1))
+                    }
+                  >
+                    <ChevronLeft aria-hidden="true" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    aria-label="Next page"
+                    disabled={currentStaffPage === staffPageCount}
+                    onClick={() =>
+                      setStaffPage((page) => Math.min(staffPageCount, page + 1))
+                    }
+                  >
+                    <ChevronRight aria-hidden="true" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </section>
+        </TabsContent>
+        <TabsContent value="certificates">
+          <section aria-label="Certificates" className="min-w-0">
+            {certificateRows.length === 0 ? (
+              <div className="rounded-lg border border-dashed px-5 py-8 text-center">
+                <p className="font-medium">No certificates yet</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Your certificate applications and issued documents will appear
+                  here.
+                </p>
+              </div>
+            ) : (
+              <Table aria-label="Certificates" className="min-w-[40rem]">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Certificate</TableHead>
+                    <TableHead>Reference</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {certificateRows.map((certificate) => (
+                    <TableRow key={certificate.name}>
+                      <TableCell className="font-medium">
+                        {certificate.name}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {certificate.reference}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            certificate.status === "Expired"
+                              ? "destructive"
+                              : "secondary"
+                          }
+                        >
+                          {certificate.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <QuietLink href={certificate.href}>
+                          {certificate.action}
+                        </QuietLink>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </section>
         </TabsContent>
         <TabsContent value="activity">
-          <div className="grid min-w-0 gap-8 lg:grid-cols-2">
-            <div className="flex min-w-0 flex-col gap-2">
-              {fitnessInProgress || fumigationInProgress ? (
-                <section
-                  aria-labelledby="active-applications"
-                  className="min-w-0"
-                >
-                  <h2 id="active-applications" className="mb-3 font-semibold">
-                    Active applications
-                  </h2>
-                  <div className="space-y-3">
-                    {fitnessInProgress && (
-                      <Card size="sm">
-                        <CardHeader>
-                          <CardTitle className="flex items-center gap-2">
-                            <Users
-                              className="size-4 text-primary"
-                              aria-hidden="true"
-                            />
-                            Fitness application
-                          </CardTitle>
-                          <CardDescription>
-                            {fitnessApplication?.handlerIds.length} food
-                            handler(s) ·{" "}
-                            {fitnessApplication?.stage === "awaiting-facility"
-                              ? "Awaiting facility result"
-                              : fitnessApplication?.stage === "result-received"
-                                ? "Facility result received"
-                                : "Draft in progress"}
-                          </CardDescription>
-                        </CardHeader>
-                        <CardFooter>
-                          <QuietLink href={fitnessActionHref}>
-                            Track Fitness application
-                          </QuietLink>
-                        </CardFooter>
-                      </Card>
-                    )}
-                    {fumigationInProgress && (
-                      <Card size="sm">
-                        <CardHeader>
-                          <CardTitle className="flex items-center gap-2">
-                            <SprayCan
-                              className="size-4 text-primary"
-                              aria-hidden="true"
-                            />
-                            Fumigation application
-                          </CardTitle>
-                          <CardDescription>
-                            {fumigationApplication
-                              ? fumigationStageLabel[
-                                  fumigationApplication.stage
-                                ]
-                              : ""}
-                          </CardDescription>
-                        </CardHeader>
-                        <CardFooter>
-                          <QuietLink href={fumigationActionHref}>
-                            Track Fumigation application
-                          </QuietLink>
-                        </CardFooter>
-                      </Card>
-                    )}
-                  </div>
-                </section>
-              ) : (
-                <EmptySection
-                  id="active-applications"
-                  title="Active applications"
-                  emptyTitle="No active applications"
-                  description="Start Fitness or Fumigation when ready."
-                  icon={ClipboardList}
-                />
-              )}
-              <QuietLink href="/business/applications">
-                View applications
-              </QuietLink>
-            </div>
-            <section aria-labelledby="reminders" className="min-w-0">
-              <h2 id="reminders" className="mb-3 font-semibold">
-                Reminders and deadlines
-              </h2>
-              {state.alerts.length || fitnessReminder || fumigationReminder ? (
-                <ul className="flex flex-col divide-y rounded-lg border px-4">
-                  {fitnessReminder && (
-                    <li className="py-3">
-                      <p className="flex items-center gap-2 font-medium">
-                        <CalendarClock
-                          className="size-4 text-primary"
-                          aria-hidden="true"
-                        />
-                        Fitness Certificate
-                      </p>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        {fitnessReminder}
-                      </p>
-                      <QuietLink href="/business/fitness/certificate">
-                        View certificate
-                      </QuietLink>
-                    </li>
-                  )}
-                  {fumigationReminder && (
-                    <li className="py-3">
-                      <p className="flex items-center gap-2 font-medium">
-                        <CalendarClock
-                          className="size-4 text-primary"
-                          aria-hidden="true"
-                        />
-                        Fumigation Certificate
-                      </p>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        {fumigationReminder}
-                      </p>
-                      <QuietLink href="/business/fumigation/certificate">
-                        View certificate
-                      </QuietLink>
-                    </li>
-                  )}
-                  {[
-                    ...urgentAlerts,
-                    ...state.alerts.filter((alert) => !alert.urgent),
-                  ].map((alert) => (
-                    <li
-                      key={alert.id}
-                      className="flex min-w-0 flex-col gap-1 py-3"
-                    >
-                      <p className="flex items-center gap-2 font-medium">
-                        <BellRing
-                          className="size-4 text-primary"
-                          aria-hidden="true"
-                        />
-                        {alert.title}
-                      </p>
-                      <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                        <Badge
-                          variant={alert.urgent ? "destructive" : "outline"}
-                        >
-                          {alert.kind === "inspection"
-                            ? "Acknowledgement required"
-                            : "Corrective action required"}
-                        </Badge>
-                        <span>
-                          Due <Deadline value={alert.dueAt} />
-                        </span>
-                      </div>
-                      <QuietLink href="/business/inspections">
-                        {alert.kind === "inspection"
-                          ? "View inspection notice"
-                          : "View findings"}
-                      </QuietLink>
-                    </li>
+          <section aria-label="Activity" className="min-w-0">
+            {recentActivity.length === 0 ? (
+              <div className="rounded-lg border border-dashed px-5 py-8 text-center">
+                <p className="font-medium">No recent activity</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Certificate and inspection updates will appear here.
+                </p>
+              </div>
+            ) : (
+              <Table aria-label="Recent activity" className="min-w-[36rem]">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Activity</TableHead>
+                    <TableHead>Reference</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {recentActivity.map((item) => (
+                    <TableRow key={`${item.activity}-${item.reference}`}>
+                      <TableCell>
+                        <DashboardDate value={item.date} />
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {item.activity}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {item.reference}
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </ul>
-              ) : (
-                <Empty className="border px-5 py-6">
-                  <EmptyHeader>
-                    <EmptyMedia variant="icon">
-                      <CalendarClock aria-hidden="true" />
-                    </EmptyMedia>
-                    <EmptyTitle>No reminders yet</EmptyTitle>
-                    <EmptyDescription>
-                      Deadlines and renewals will appear here.
-                    </EmptyDescription>
-                  </EmptyHeader>
-                </Empty>
-              )}
-            </section>
-          </div>
-        </TabsContent>
-        <TabsContent value="records">
-          <div className="grid min-w-0 gap-8 lg:grid-cols-2">
-            {recentFumigationPayment || recentFitnessPayment ? (
-              <section aria-labelledby="recent-receipts" className="min-w-0">
-                <h2 id="recent-receipts" className="mb-3 font-semibold">
-                  Recent receipts
-                </h2>
-                <Card size="sm">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <ReceiptText
-                        className="size-4 text-primary"
-                        aria-hidden="true"
-                      />
-                      {recentFumigationPayment
-                        ? "Fumigation service"
-                        : "Fitness assessment"}
-                    </CardTitle>
-                    <CardDescription>
-                      {recentFumigationPayment ??
-                        formatFitnessReference(recentFitnessPayment ?? "")}{" "}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardFooter>
-                    <QuietLink href="/business/applications">
-                      View application
-                    </QuietLink>
-                  </CardFooter>
-                </Card>
-              </section>
-            ) : (
-              <EmptySection
-                id="recent-receipts"
-                title="Recent receipts"
-                emptyTitle="No receipts yet"
-                description="Payment records will appear here."
-                icon={ReceiptText}
-              />
+                </TableBody>
+              </Table>
             )}
-            {fumigationCertificate || fitnessCertificate ? (
-              <section
-                aria-labelledby="recent-certificates"
-                className="min-w-0"
-              >
-                <h2 id="recent-certificates" className="mb-3 font-semibold">
-                  Recent certificates
-                </h2>
-                <Card size="sm">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <FileBadge2
-                        className="size-4 text-primary"
-                        aria-hidden="true"
-                      />
-                      {fumigationCertificate
-                        ? "Fumigation Certificate"
-                        : "Fitness Certificate"}
-                    </CardTitle>
-                    <CardDescription>
-                      {fumigationCertificate?.id ??
-                        formatFitnessReference(fitnessCertificate?.id ?? "")}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardFooter>
-                    <QuietLink
-                      href={
-                        fumigationCertificate
-                          ? "/business/fumigation/certificate"
-                          : "/business/fitness/certificate"
-                      }
-                    >
-                      View certificate
-                    </QuietLink>
-                  </CardFooter>
-                </Card>
-              </section>
-            ) : (
-              <EmptySection
-                id="recent-certificates"
-                title="Recent certificates"
-                emptyTitle="No certificates yet"
-                description="Issued certificates will appear here."
-                icon={FileBadge2}
-              />
-            )}
-          </div>
+          </section>
         </TabsContent>
       </Tabs>
     </div>

@@ -186,10 +186,10 @@ export function paymentReceiptDocument(
 ): PrintableBusinessDocument | null {
   if (!application.paymentReference) return null
   return {
-    title: `${kind} payment record`,
+    title: `${kind} payment receipt`,
     reference: application.paymentReference,
     filename: filename(
-      `${kind.toLowerCase()}-payment`,
+      `${kind.toLowerCase()}-payment-receipt`,
       application.paymentReference
     ),
     sections: [

@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import { cn } from "@/lib/utils"
 import type { FumigationStage } from "./fumigation-types"
 
 export const fumigationStageLabel: Record<FumigationStage, string> = {
@@ -23,10 +24,12 @@ export function FumigationLink({
   href,
   children,
   variant = "default",
+  className,
 }: {
   href: string
   children: React.ReactNode
   variant?: "default" | "outline" | "link"
+  className?: string
 }) {
   return (
     <Button
@@ -34,7 +37,10 @@ export function FumigationLink({
       role="link"
       render={<a href={href} />}
       variant={variant}
-      className="min-h-11 max-w-full text-left whitespace-normal"
+      className={cn(
+        "min-h-11 max-w-full text-left whitespace-normal",
+        className
+      )}
     >
       {children}
     </Button>

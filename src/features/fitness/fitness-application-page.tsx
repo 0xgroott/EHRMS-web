@@ -8,7 +8,6 @@ import {
   CircleAlert,
   CircleHelp,
   ClipboardCheck,
-  Copy,
   CreditCard,
   Building2,
   Landmark,
@@ -18,14 +17,13 @@ import {
   Wallet,
 } from "lucide-react"
 import { useBusinessSession } from "@/app/business-session"
-import { DocumentDownloadButton } from "@/components/business/document-download-button"
-import { paymentReceiptDocument } from "@/domain/business-document-downloads"
 import { PageHeader } from "@/components/shared/page-header"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
   CardFooter,
@@ -35,6 +33,14 @@ import {
 import { Checkbox } from "@/components/ui/checkbox"
 import { Spinner } from "@/components/ui/spinner"
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
   Field,
   FieldContent,
   FieldGroup,
@@ -43,6 +49,7 @@ import {
   FieldSet,
 } from "@/components/ui/field"
 import { useFitness } from "./fitness-context"
+import { CopyValueButton } from "./copy-value-button"
 import { useFumigation } from "@/features/fumigation/fumigation-context"
 import {
   FumigationLink,
@@ -69,6 +76,18 @@ const PAYMENT_BANK = {
   accountNumber: "0000000000",
   accountName: "EHRCMS Service Collections",
 } as const
+
+function formatApplicationDate(value?: string) {
+  if (!value) return "Not recorded"
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return "Not recorded"
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(date)
+}
 
 export function FitnessApplicationPage({ onPaid }: { onPaid?: () => void }) {
   const { state, isHydrated } = useFitness()
@@ -750,63 +769,6 @@ function ApplicationSteps({ onPaid }: { onPaid?: () => void }) {
   )
 }
 
-function CopyValueButton({ value, label }: { value: string; label: string }) {
-  const [copied, setCopied] = useState(false)
-  const [copyFailed, setCopyFailed] = useState(false)
-  const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  useEffect(
-    () => () => {
-      if (resetTimer.current) clearTimeout(resetTimer.current)
-    },
-    []
-  )
-
-  async function copyValue() {
-    try {
-      await navigator.clipboard.writeText(value)
-      setCopyFailed(false)
-      setCopied(true)
-      if (resetTimer.current) clearTimeout(resetTimer.current)
-      resetTimer.current = setTimeout(() => {
-        setCopied(false)
-        resetTimer.current = null
-      }, 3000)
-    } catch {
-      setCopyFailed(true)
-    }
-  }
-
-  return (
-    <span className="inline-flex items-center gap-1">
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon-xs"
-        onClick={() => void copyValue()}
-        aria-label={`${copied ? "Copied" : "Copy"} ${label}`}
-        title={`${copied ? "Copied" : "Copy"} ${label}`}
-      >
-        <span className="relative size-4">
-          <Copy
-            aria-hidden="true"
-            className={`fitness-copy-icon absolute inset-0 transition-[opacity,transform] duration-200 ${copied ? "scale-75 opacity-0" : "scale-100 opacity-100"}`}
-          />
-          <Check
-            aria-hidden="true"
-            className={`fitness-copy-icon absolute inset-0 transition-[opacity,transform] duration-200 ${copied ? "scale-100 opacity-100" : "scale-75 opacity-0"}`}
-          />
-        </span>
-      </Button>
-      {copyFailed && (
-        <span role="alert" className="text-xs text-destructive">
-          Could not copy
-        </span>
-      )}
-    </span>
-  )
-}
-
 function PaymentDetail({
   label,
   value,
@@ -884,7 +846,6 @@ function FitnessSubmissionSuccess() {
 export function BusinessApplicationsPage() {
   const { state, isHydrated, startNewStaffApplication } = useFitness()
   const [newStaffError, setNewStaffError] = useState("")
-  const { state: businessState } = useBusinessSession()
   const { state: fumigation, isHydrated: fumigationIsHydrated } =
     useFumigation()
   if (!isHydrated || !fumigationIsHydrated) return <FitnessLoading />
@@ -899,6 +860,31 @@ export function BusinessApplicationsPage() {
   const readyNewStaff = uncoveredStaff.some(
     (handler) => handlerReadiness(handler).ready
   )
+  const fitnessComplete = application?.stage === "issued"
+  const fumigationComplete = fumigationApplication?.stage === "issued"
+  const applicationHistory = [
+    ...(state.history ?? []).map((item) => ({
+      key: `fitness-${item.id}`,
+      applicationType: "Fitness application",
+      referenceId: item.id,
+      submittedAt: item.submittedAt ?? item.certificate?.issuedAt,
+      status:
+        item.stage === "issued" ? "Approved" : fitnessStageLabel[item.stage],
+      approved: item.stage === "issued",
+    })),
+    ...(fumigation.history ?? []).map((item) => ({
+      key: `fumigation-${item.id}`,
+      applicationType: "Fumigation application",
+      referenceId: item.id,
+      submittedAt: item.submittedAt ?? item.certificate?.issuedAt,
+      status:
+        item.stage === "issued" ? "Approved" : fumigationStageLabel[item.stage],
+      approved: item.stage === "issued",
+    })),
+  ].sort(
+    (left, right) =>
+      Date.parse(right.submittedAt ?? "") - Date.parse(left.submittedAt ?? "")
+  )
   return (
     <div className="flex max-w-5xl min-w-0 flex-col gap-6 break-words">
       <PageHeader
@@ -911,194 +897,163 @@ export function BusinessApplicationsPage() {
           <AlertDescription>{newStaffError}</AlertDescription>
         </Alert>
       )}
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            <h2>Fitness</h2>
-          </CardTitle>
-          <CardDescription>
-            Assessment for the food handlers at your premises.
-          </CardDescription>
-          <Badge variant="secondary">
-            {application ? fitnessStageLabel[application.stage] : "Not started"}
-          </Badge>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            {application
-              ? `${application.handlerIds.length} food ${application.handlerIds.length === 1 ? "handler" : "handlers"} selected`
-              : "Select eligible food handlers and an approved facility to begin your Fitness application."}
-          </p>
-        </CardContent>
-        <CardFooter className="flex-wrap gap-3">
-          <FitnessLink
-            href={
-              application?.stage === "issued"
-                ? "/business/fitness/certificate"
-                : submitted
+      <section
+        aria-label="Current applications"
+        className="grid gap-5 md:grid-cols-2"
+      >
+        <Card
+          size="sm"
+          role="region"
+          aria-label="Fitness application"
+          className="h-full"
+        >
+          <CardHeader>
+            <CardTitle>
+              <h2>Fitness</h2>
+            </CardTitle>
+            <CardDescription>
+              Assessment for the food handlers at your premises.
+            </CardDescription>
+            <CardAction>
+              <Badge
+                variant={fitnessComplete ? "success" : "warning"}
+                data-tone={fitnessComplete ? "success" : "pending"}
+                className="h-7 px-3"
+              >
+                {fitnessComplete
+                  ? "Approved"
+                  : application
+                    ? fitnessStageLabel[application.stage]
+                    : "Not started"}
+              </Badge>
+            </CardAction>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              {application
+                ? `${application.handlerIds.length} food ${application.handlerIds.length === 1 ? "handler" : "handlers"} selected`
+                : "Select eligible food handlers and an approved facility to begin your Fitness application."}
+            </p>
+          </CardContent>
+          <CardFooter className="mt-auto flex-wrap gap-3">
+            <FitnessLink
+              href={
+                submitted
                   ? "/business/fitness/tracker"
                   : "/business/fitness/apply"
-            }
-          >
-            {application?.stage === "issued"
-              ? "View Fitness Certificate or renew"
-              : submitted
-                ? "Track Fitness application"
-                : application
-                  ? "Continue Fitness application"
-                  : state.history?.length
-                    ? "Start Fitness renewal"
-                    : "Start Fitness application"}
-          </FitnessLink>
-          {application?.stage === "issued" &&
-            (readyNewStaff ? (
-              <Button
-                variant="outline"
-                className="min-h-11"
-                onClick={() => {
-                  setNewStaffError("")
-                  const result = startNewStaffApplication()
-                  if (!result.ok) return setNewStaffError(result.error)
-                  globalThis.location.assign("/business/fitness/apply")
-                }}
-              >
-                Apply for new staff
-              </Button>
-            ) : (
-              <FitnessLink href="/business/food-handlers" variant="outline">
-                {uncoveredStaff.length
-                  ? "Complete new staff records"
-                  : "Add new food handler"}
-              </FitnessLink>
-            ))}
-        </CardFooter>
-      </Card>
-      {(state.history?.length ?? 0) > 0 && (
-        <section
-          aria-labelledby="fitness-application-history"
-          className="space-y-3"
-        >
-          <h2
-            id="fitness-application-history"
-            className="text-lg font-semibold"
-          >
-            Fitness application history
-          </h2>
-          <ul className="divide-y rounded-lg border">
-            {[...(state.history ?? [])].reverse().map((item) => (
-              <li key={item.id} className="p-4 text-sm">
-                <p className="font-medium">{item.id}</p>
-                <p className="mt-1 text-muted-foreground">
-                  {fitnessStageLabel[item.stage]} · {item.handlerIds.length}{" "}
-                  food handlers
-                </p>
-                {item.paymentReference && (
-                  <p className="mt-1 break-all">
-                    Payment reference: {item.paymentReference}
-                  </p>
-                )}
-                <DocumentDownloadButton
-                  document={paymentReceiptDocument(
-                    "Fitness",
-                    item,
-                    businessState.profile
-                  )}
+              }
+            >
+              View Application
+            </FitnessLink>
+            {application?.stage === "issued" &&
+              (readyNewStaff ? (
+                <Button
+                  variant="outline"
+                  className="min-h-11"
+                  onClick={() => {
+                    setNewStaffError("")
+                    const result = startNewStaffApplication()
+                    if (!result.ok) return setNewStaffError(result.error)
+                    globalThis.location.assign("/business/fitness/apply")
+                  }}
                 >
-                  Download payment record
-                </DocumentDownloadButton>
-                {item.certificate && (
-                  <p className="mt-1 break-all">
-                    Certificate: {item.certificate.id}
-                  </p>
-                )}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            <h2>Fumigation</h2>
-          </CardTitle>
-          <CardDescription>
-            Premises fumigation by a licensed provider.
-          </CardDescription>
-          <Badge variant="secondary">
-            {fumigationApplication
-              ? fumigationStageLabel[fumigationApplication.stage]
-              : "Not started"}
-          </Badge>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            {fumigationApplication
-              ? `Requested service month: ${fumigationApplication.requestedPeriod}`
-              : "Choose a provider and review the service total for your premises."}
-          </p>
-        </CardContent>
-        <CardFooter>
-          <FumigationLink
-            href={
-              fumigationApplication?.stage === "issued"
-                ? "/business/fumigation/certificate"
-                : fumigationSubmitted
+                  Apply for new staff
+                </Button>
+              ) : uncoveredStaff.length ? (
+                <FitnessLink href="/business/food-handlers" variant="outline">
+                  Complete new staff records
+                </FitnessLink>
+              ) : null)}
+          </CardFooter>
+        </Card>
+        <Card
+          size="sm"
+          role="region"
+          aria-label="Fumigation application"
+          className="h-full"
+        >
+          <CardHeader>
+            <CardTitle>
+              <h2>Fumigation</h2>
+            </CardTitle>
+            <CardDescription>
+              Premises fumigation by a licensed provider.
+            </CardDescription>
+            <CardAction>
+              <Badge
+                variant={fumigationComplete ? "success" : "warning"}
+                data-tone={fumigationComplete ? "success" : "pending"}
+                className="h-7 px-3"
+              >
+                {fumigationComplete
+                  ? "Approved"
+                  : fumigationApplication
+                    ? fumigationStageLabel[fumigationApplication.stage]
+                    : "Not started"}
+              </Badge>
+            </CardAction>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              {fumigationApplication
+                ? `Requested service month: ${fumigationApplication.requestedPeriod}`
+                : "Choose a provider and review the service total for your premises."}
+            </p>
+          </CardContent>
+          <CardFooter className="mt-auto">
+            <FumigationLink
+              href={
+                fumigationSubmitted
                   ? "/business/fumigation/tracker"
                   : "/business/fumigation/apply"
-            }
-          >
-            {fumigationApplication?.stage === "issued"
-              ? "View Fumigation Certificate or renew"
-              : fumigationSubmitted
-                ? "Track Fumigation application"
-                : fumigationApplication
-                  ? "Continue Fumigation application"
-                  : fumigation.history?.length
-                    ? "Start Fumigation renewal"
-                    : "Start Fumigation application"}
-          </FumigationLink>
-        </CardFooter>
-      </Card>
-      {(fumigation.history?.length ?? 0) > 0 && (
+              }
+            >
+              View Application
+            </FumigationLink>
+          </CardFooter>
+        </Card>
+      </section>
+      {applicationHistory.length > 0 && (
         <section
-          aria-labelledby="fumigation-application-history"
-          className="space-y-3"
+          aria-labelledby="application-history"
+          className="flex flex-col gap-3"
         >
-          <h2
-            id="fumigation-application-history"
-            className="text-lg font-semibold"
-          >
-            Fumigation application history
+          <h2 id="application-history" className="text-lg font-semibold">
+            Application History
           </h2>
-          <ul className="divide-y rounded-lg border">
-            {[...(fumigation.history ?? [])].reverse().map((item) => (
-              <li key={item.id} className="p-4 text-sm">
-                <p className="font-medium">{item.id}</p>
-                <p className="mt-1 text-muted-foreground">
-                  {fumigationStageLabel[item.stage]} · {item.requestedPeriod}
-                </p>
-                {item.paymentReference && (
-                  <p className="mt-1 break-all">
-                    Payment reference: {item.paymentReference}
-                  </p>
-                )}
-                <DocumentDownloadButton
-                  document={paymentReceiptDocument(
-                    "Fumigation",
-                    item,
-                    businessState.profile
-                  )}
-                >
-                  Download payment record
-                </DocumentDownloadButton>
-                {item.certificate && (
-                  <p className="mt-1 break-all">
-                    Certificate: {item.certificate.id}
-                  </p>
-                )}
-              </li>
-            ))}
-          </ul>
+          <div className="rounded-lg border">
+            <Table aria-label="Application History">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Application Type</TableHead>
+                  <TableHead>Reference ID</TableHead>
+                  <TableHead>Submitted</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {applicationHistory.map((item) => (
+                  <TableRow key={item.key}>
+                    <TableCell className="font-medium">
+                      {item.applicationType}
+                    </TableCell>
+                    <TableCell>{item.referenceId}</TableCell>
+                    <TableCell>
+                      {formatApplicationDate(item.submittedAt)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={item.approved ? "success" : "warning"}
+                        data-tone={item.approved ? "success" : "pending"}
+                      >
+                        {item.status}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </section>
       )}
     </div>
