@@ -13,12 +13,17 @@ export const assignedMohAccount: MohAccount = {
   councilId: "phc",
 }
 
+export const assignedMohCredentials = {
+  password: "director-demo",
+  verificationCode: "246810",
+} as const
+
 export function matchMohAccount(
   contact: string,
   password: string
 ): MohAccount | null {
   const normalized = contact.trim().toLowerCase()
-  return password === "director-demo" &&
+  return password === assignedMohCredentials.password &&
     (normalized === assignedMohAccount.id.toLowerCase() ||
       normalized === assignedMohAccount.email)
     ? assignedMohAccount
@@ -26,5 +31,5 @@ export function matchMohAccount(
 }
 
 export function verifyMohCode(code: string): boolean {
-  return code.trim() === "246810"
+  return code.trim() === assignedMohCredentials.verificationCode
 }

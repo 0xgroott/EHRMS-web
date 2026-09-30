@@ -48,26 +48,28 @@ Allow an EHO to securely access the field app.
 ## 2. Home / My Work
 
 **Purpose**  
-Show the EHO's assigned work and what needs attention.
+Show available council work, the EHO's claimed jobs, completed inspections, and follow-up work that needs attention.
 
 **Components**
-- Today's inspections
-- Upcoming inspections
-- Follow-ups due
+- Summary cards: Open, Assigned, Completed, Follow-up
+- Tabs: My Jobs, Follow-up, Completed
+- Search within each work table
+- Job tables with premises, reference, scheduled date, status, and action
+- Overdue status where a pending visit is past its scheduled date
 - Fumigation supervision jobs
-- Status chips: Scheduled, Notice Served, Due, Completed
+- Status chips: Assigned, In progress, Waiting to sync, Follow-up due, Overdue, Completed
 - Sync / offline status
-- Search
 
 **Empty State**
-- “No assigned work right now.”
+- “No assigned jobs.”
 
 **Primary CTA**
-- **Open inspection**
+- **Browse open jobs**
 
 **Alternative Actions**
-- View all inspections
-- Search premises
+- Continue an assigned draft
+- Open a follow-up
+- View a completed record
 - Open fumigation jobs
 
 **Edge Cases**
@@ -81,32 +83,30 @@ Show the EHO's assigned work and what needs attention.
 ## 3. Inspection List
 
 **Purpose**  
-Let the EHO view and filter assigned inspections.
+Let the EHO search available council inspections and claim a job. Claiming removes it from the open queue and creates a draft under My Jobs.
 
 **Components**
-- Inspection cards / rows
+- Searchable inspection table
 - Premises name and address
 - Inspection type
 - Date / time
 - Notice status
-- Assigned officers
-- Filters: Today, Upcoming, Follow-up, Completed
+- Status: Open and, where applicable, Overdue
 
 **Empty State**
-- “No inspections match this filter.”
+- “No open inspections.”
 
 **Primary CTA**
-- **Open inspection**
+- **Assign to me**
 
 **Alternative Actions**
-- Change filter
 - Search inspections
-- View premises
+- Return to My Work
 
 **Edge Cases**
 - Notice not served
 - Inspection rescheduled
-- EHO reassigned
+- Inspection claimed by another EHO before selection
 - Duplicate-looking premises
 
 ---

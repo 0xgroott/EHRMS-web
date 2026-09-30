@@ -213,7 +213,7 @@ export function VerificationForm({
           className="min-h-11"
           onClick={() => onChangeContact()}
         >
-          Change contact
+          Change email
         </Button>
       </div>
     </form>

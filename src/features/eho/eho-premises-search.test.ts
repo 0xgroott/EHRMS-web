@@ -8,7 +8,19 @@ import {
 } from "./eho-premises-search"
 
 describe("EHO premises lookup", () => {
-  it("searches council records by name, reference and address", () => {
+  it("lists council records and searches every directory field", () => {
+    expect(searchPremises("", "phc").map((item) => item.id)).toEqual([
+      "PR-015",
+      "PR-018",
+      "PR-004",
+      "PR-003",
+      "PR-013",
+      "PR-016",
+      "PR-017",
+      "PR-014",
+      "PR-001",
+      "PR-002",
+    ])
     expect(searchPremises("Riverside", "phc").map((item) => item.id)).toEqual([
       "PR-001",
     ])
@@ -18,7 +30,79 @@ describe("EHO premises lookup", () => {
     expect(searchPremises("Aggrey", "phc").map((item) => item.id)).toEqual([
       "PR-004",
     ])
-    expect(searchPremises("", "phc")).toEqual([])
+    expect(searchPremises("Cold Store", "phc").map((item) => item.id)).toEqual([
+      "PR-018",
+      "PR-003",
+    ])
+  })
+
+  it("combines ward, business type and compliance filters", () => {
+    expect(
+      searchPremises("", "phc", {
+        ward: "Diobu",
+        premisesType: "Restaurant",
+        complianceStatus: "Compliant",
+      }).map((item) => item.id)
+    ).toEqual(["PR-001"])
+    expect(
+      searchPremises("", "phc", { complianceStatus: "At Risk" }).map(
+        (item) => item.id
+      )
+    ).toEqual(["PR-017", "PR-014", "PR-002"])
+  })
+
+  it("sorts the directory by ward, business type or status", () => {
+    expect(
+      searchPremises("", "phc", { sort: "ward" }).map((item) => item.id)
+    ).toEqual([
+      "PR-015",
+      "PR-018",
+      "PR-003",
+      "PR-014",
+      "PR-001",
+      "PR-002",
+      "PR-013",
+      "PR-017",
+      "PR-004",
+      "PR-016",
+    ])
+    expect(
+      searchPremises("", "phc", { sort: "business-type" }).map(
+        (item) => item.id
+      )
+    ).toEqual([
+      "PR-004",
+      "PR-015",
+      "PR-018",
+      "PR-003",
+      "PR-016",
+      "PR-002",
+      "PR-013",
+      "PR-014",
+      "PR-017",
+      "PR-001",
+    ])
+    expect(
+      searchPremises("", "phc", { sort: "status" }).map((item) => item.id)
+    ).toEqual([
+      "PR-017",
+      "PR-014",
+      "PR-002",
+      "PR-015",
+      "PR-013",
+      "PR-001",
+      "PR-003",
+      "PR-016",
+      "PR-018",
+      "PR-004",
+    ])
+  })
+
+  it("provides ten distinct premises for the Port Harcourt directory", () => {
+    const results = searchPremises("", "phc")
+
+    expect(results).toHaveLength(10)
+    expect(new Set(results.map((item) => item.id)).size).toBe(10)
   })
 
   it("does not expose another council's record in search results", () => {

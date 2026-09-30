@@ -21,7 +21,8 @@ From **Home / My Work**, the EHO can move into:
 - **Findings Notice → Follow-Up Inspection**
 - **Fumigation Supervision List → Fumigation Supervision Detail**
 - **Premises Search → Premises Compliance View**
-- **Profile / App Status → Sync**
+- **Profile → Account and session information**
+- **Sync Data → Device status and saved-work sync**
 
 ---
 
@@ -43,11 +44,14 @@ From **Home / My Work**, the EHO can move into:
 
 | Clickable item | Destination | What happens there |
 |---|---|---|
-| Inspection card / `Open inspection` | **04. Inspection Overview** | Opens the selected assigned inspection and its readiness information. |
-| `View all inspections` | **03. Inspection List** | Opens the full list of assigned inspections with filters. |
+| `Browse open jobs` | **03. Inspection List** | Opens the available council inspection queue. |
+| My Jobs row / `Open job` or `Continue` | **04. Inspection Overview** | Opens a claimed inspection and its saved draft. |
+| Follow-up row / `Open follow-up` | **11. Follow-Up Inspection** | Opens a verification visit created by completed fieldwork. |
+| Completed row / `View record` | **04. Inspection Overview — completed state** | Opens the signed-off inspection record. |
 | `Search premises` | **14. Premises Search** | Lets the EHO search for a business or premises outside the active inspection flow. |
 | `Open fumigation jobs` | **12. Fumigation Supervision List** | Opens fumigation jobs assigned to the EHO. |
-| Profile / status control | **15. Profile / App Status** | Opens account, device, offline, and sync information. |
+| Profile control | **15. Profile** | Opens the officer's account and session information. |
+| `Sync Data` | **16. Sync Data** | Opens device, offline, queued-work, and sync information. |
 
 ---
 
@@ -55,10 +59,8 @@ From **Home / My Work**, the EHO can move into:
 
 | Clickable item | Destination | What happens there |
 |---|---|---|
-| Inspection row / `Open inspection` | **04. Inspection Overview** | Opens the selected inspection. |
-| `Change filter` | **Same screen** | Updates the list using Today, Upcoming, Follow-up, or Completed filters. |
-| `Search inspections` | **Same screen** | Narrows the inspection list using search. |
-| `View premises` | **05. Premises Compliance View** | Opens the current compliance position for the selected premises. |
+| Inspection row / `Assign to me` | **04. Inspection Overview** | Claims the open inspection, creates a local draft, removes it from the open queue, and opens its overview. |
+| `Search open jobs` | **Same screen** | Narrows the available inspection list by premises, address, or reference. |
 | Back navigation | **02. Home / My Work** | Returns to the EHO's assigned-work overview. |
 
 ---
@@ -220,13 +222,18 @@ New issues can also be recorded.
 
 # 8. Profile, Offline Status, and Sync
 
-## 15. Profile / App Status
+## 15. Profile
+
+| Clickable item | Destination | What happens there |
+|---|---|---|
+| `Sign out` | **01. Sign In** | Ends the EHO session after handling any pending unsynced work. |
+
+## 16. Sync Data
 
 | Clickable item | Destination | What happens there |
 |---|---|---|
 | `Sync now` | **Same screen** | Attempts to upload unsynced field work and refresh cached data. |
-| `Sign out` | **01. Sign In** | Ends the EHO session after handling any pending unsynced work. |
-| Back navigation | **02. Home / My Work** | Returns to the EHO work overview. |
+| Queued inspection | **04. Inspection Overview** | Opens the saved inspection record waiting to sync. |
 
 ### Offline behaviour
 
@@ -277,9 +284,13 @@ Home / My Work
    │      ↓
    │   Premises Compliance View
    │
-   └── Profile / App Status
+   ├── Sync Data
+   │      ↓
+   │   Sync now / Queued work
+   │
+   └── Profile
           ↓
-       Sync now / Sign out
+       Account details / Sign out
 ```
 
 ---
@@ -302,7 +313,8 @@ Home / My Work
 | 12 | Fumigation Supervision List |
 | 13 | Fumigation Supervision Detail |
 | 14 | Premises Search |
-| 15 | Profile / App Status |
+| 15 | Profile |
+| 16 | Sync Data |
 
 ---
 
@@ -321,10 +333,11 @@ These are **not new requirements**. They are destinations or behaviours implied 
 
 ## Lean UX Recommendation
 
-Keep the EHO experience centred around **three primary navigation areas**:
+Keep the EHO experience centred around **four primary navigation areas**:
 
 1. **My Work**
 2. **Premises Search**
-3. **Profile / Sync**
+3. **Sync Data**
+4. **Profile**
 
 Everything else should open contextually from those areas rather than adding more top-level navigation.

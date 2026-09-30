@@ -33,9 +33,11 @@ function BusinessSignIn() {
                 "Unable to sign in. Please try again.",
             }
           window.location.assign(
-            result.state.stage === "complete"
+            result.state.profile?.verified
               ? "/business/dashboard"
-              : "/business/register"
+              : result.state.stage === "verification"
+                ? "/business/verify"
+                : "/business/register"
           )
         }}
         createAccountLink={

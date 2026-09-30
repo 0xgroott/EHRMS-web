@@ -32,13 +32,18 @@ it("provides branded and form regions with the current onboarding step", () => {
   })
   expect(
     within(progress).getByRole("listitem", {
-      name: "Step 1 of 4: Business details",
+      name: "Step 1 of 3: Business details",
     })
   ).toHaveAttribute("aria-current", "step")
   expect(within(progress).getByText("Step 01")).toBeVisible()
   expect(within(progress).getByText("Step 02")).toBeVisible()
   expect(within(progress).getByText("Step 03")).toBeVisible()
-  expect(within(progress).getByText("Step 04")).toBeVisible()
+  expect(within(progress).queryByText("Step 04")).not.toBeInTheDocument()
+  expect(
+    within(progress).getByRole("listitem", {
+      name: "Step 2 of 3: Sign-in details",
+    })
+  ).toBeVisible()
   expect(
     within(progress).queryByText("Business details")
   ).not.toBeInTheDocument()
@@ -58,7 +63,7 @@ it("supports the shorter verified onboarding journey", () => {
       title="Tell us who is registering"
       description="Add your details."
       step={1}
-      steps={["Business identity", "Business and premises"]}
+      steps={["Business identity"]}
     >
       <button>Continue</button>
     </OnboardingShell>
@@ -69,16 +74,14 @@ it("supports the shorter verified onboarding journey", () => {
   })
   expect(
     within(progress).getByRole("listitem", {
-      name: "Step 1 of 2: Business identity",
+      name: "Step 1 of 1: Business identity",
     })
   ).toHaveAttribute("aria-current", "step")
   expect(within(progress).getByText("Step 01")).toBeVisible()
-  expect(within(progress).getByText("Step 02")).toBeVisible()
+  expect(within(progress).queryByText("Step 02")).not.toBeInTheDocument()
   expect(within(progress).queryByText("Step 03")).not.toBeInTheDocument()
   expect(
     within(progress).queryByText("Business identity")
   ).not.toBeInTheDocument()
-  expect(
-    within(progress).queryByText("Business and premises")
-  ).not.toBeInTheDocument()
+  expect(within(progress).queryByText("Business setup")).not.toBeInTheDocument()
 })

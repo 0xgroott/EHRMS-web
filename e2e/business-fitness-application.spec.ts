@@ -84,7 +84,9 @@ test("fitness application uses a dedicated guided screen and confirms submission
   await expect(table.getByRole("row", { name: /Bisi Bello/ })).toContainText(
     "Needs update"
   )
-  await expect(page.getByText("Step 1 of 4")).toHaveCount(0)
+  await expect(
+    page.getByRole("navigation", { name: "Account setup progress" })
+  ).toHaveCount(0)
   const guidanceBox = await progress
     .getByText("What happens next?")
     .locator("..")

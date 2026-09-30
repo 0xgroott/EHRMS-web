@@ -11,16 +11,27 @@ import {
 import { Input } from "@/components/ui/input"
 import { notifySuccess } from "@/components/ui/app-toast"
 import type {
+  BusinessIdentityInput,
   BusinessProfile,
   BusinessProfileDetailsInput,
+  ValidationErrors,
 } from "@/domain/business-types"
-import { validateProfileDetails } from "@/domain/business-validation"
+import {
+  validateBusinessIdentity,
+  validateProfileDetails,
+} from "@/domain/business-validation"
 import { createBusinessRepository } from "@/services/business-repository"
 import { createBusinessStorage } from "@/services/business-storage"
 
-const fields: { name: keyof BusinessProfileDetailsInput; label: string }[] = [
-  { name: "businessName", label: "Registered business name" },
-  { name: "contactName", label: "Contact person" },
+const identityFields: {
+  name: keyof BusinessIdentityInput
+  label: string
+}[] = [{ name: "businessName", label: "Registered business name" }]
+
+const premisesFields: {
+  name: Exclude<keyof BusinessProfileDetailsInput, keyof BusinessIdentityInput>
+  label: string
+}[] = [
   { name: "premisesName", label: "Premises name" },
   { name: "businessType", label: "Business type" },
   { name: "registrationNumber", label: "Registration number (optional)" },
@@ -31,19 +42,25 @@ const fields: { name: keyof BusinessProfileDetailsInput; label: string }[] = [
 function detailsFromProfile(
   profile: BusinessProfile
 ): BusinessProfileDetailsInput {
-  const premises = profile.premises!
+  const premises = profile.premises
   return {
     businessName: profile.businessName,
     contactName: profile.contactName,
-    premisesName: premises.premisesName,
-    businessType: premises.businessType,
-    registrationNumber: premises.registrationNumber ?? "",
-    address: premises.address,
-    ward: premises.ward,
+    premisesName: premises?.premisesName ?? "",
+    businessType: premises?.businessType ?? "",
+    registrationNumber: premises?.registrationNumber ?? "",
+    address: premises?.address ?? "",
+    ward: premises?.ward ?? "",
   }
 }
 
-export function BusinessProfileForm({ profile }: { profile: BusinessProfile }) {
+export function BusinessProfileForm({
+  profile,
+  showPremisesDetails = true,
+}: {
+  profile: BusinessProfile
+  showPremisesDetails?: boolean
+}) {
   const id = useId()
   const { refresh } = useBusinessSession()
   const [values, setValues] = useState(() => detailsFromProfile(profile))
@@ -52,11 +69,17 @@ export function BusinessProfileForm({ profile }: { profile: BusinessProfile }) {
   >({})
   const [saveError, setSaveError] = useState("")
   const [saving, setSaving] = useState(false)
+  const hasPremises = Boolean(profile.premises && showPremisesDetails)
+  const fields = hasPremises
+    ? [...identityFields, ...premisesFields]
+    : identityFields
   const original = detailsFromProfile(profile)
   const dirty = fields.some(
     ({ name }) => (values[name] ?? "").trim() !== (original[name] ?? "").trim()
   )
-  const errors = validateProfileDetails(values)
+  const errors: ValidationErrors<BusinessProfileDetailsInput> = hasPremises
+    ? validateProfileDetails(values)
+    : validateBusinessIdentity(values)
   const valid = !Object.values(errors).some(Boolean)
 
   async function save(event: React.FormEvent<HTMLFormElement>) {
@@ -65,9 +88,13 @@ export function BusinessProfileForm({ profile }: { profile: BusinessProfile }) {
     setSaving(true)
     setSaveError("")
     try {
-      const result = createBusinessRepository(
-        createBusinessStorage()
-      ).updateProfileDetails(values)
+      const repository = createBusinessRepository(createBusinessStorage())
+      const result = hasPremises
+        ? repository.updateProfileDetails(values)
+        : repository.updateBusinessIdentity({
+            businessName: values.businessName,
+            contactName: values.contactName,
+          })
       if (!result.ok) {
         setSaveError(
           Object.values(result.errors).find(Boolean) ?? "Unable to save changes"
@@ -90,10 +117,12 @@ export function BusinessProfileForm({ profile }: { profile: BusinessProfile }) {
   return (
     <section aria-labelledby="business-profile-fields">
       <h2 id="business-profile-fields" className="text-lg font-semibold">
-        Business and premises details
+        {hasPremises ? "Business and premises details" : "Business details"}
       </h2>
       <p className="mt-1 mb-6 text-sm text-muted-foreground">
-        Update the details shown across your business account.
+        {hasPremises
+          ? "Update the details shown across your business account."
+          : "Update the business identity shown across your account."}
       </p>
       <form
         onSubmit={(event) => void save(event)}
@@ -140,7 +169,7 @@ export function BusinessProfileForm({ profile }: { profile: BusinessProfile }) {
             <AlertDescription>{saveError}</AlertDescription>
           </Alert>
         )}
-        <div className="flex flex-wrap justify-end border-t pt-5">
+        <div className="flex flex-wrap justify-end pt-2">
           <Button type="submit" disabled={!dirty || !valid || saving}>
             {saving ? "Saving changes…" : "Save changes"}
           </Button>

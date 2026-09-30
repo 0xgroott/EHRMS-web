@@ -55,6 +55,8 @@ import { Route as EhoPortalInspectionsRouteImport } from './routes/eho._portal.i
 import { Route as EhoPortalMyWorkRouteImport } from './routes/eho._portal.my-work'
 import { Route as EhoPortalPremisesSearchRouteImport } from './routes/eho._portal.premises-search'
 import { Route as EhoPortalProfileRouteImport } from './routes/eho._portal.profile'
+import { Route as EhoPortalSyncDataRouteImport } from './routes/eho._portal.sync-data'
+import { Route as MohBusinessesBusinessIdRouteImport } from './routes/moh.businesses.$businessId'
 import { Route as BusinessPortalFitnessApplyRouteImport } from './routes/business._portal.fitness.apply'
 import { Route as BusinessPortalFitnessCertificateRouteImport } from './routes/business._portal.fitness.certificate'
 import { Route as BusinessPortalFitnessTrackerRouteImport } from './routes/business._portal.fitness.tracker'
@@ -66,12 +68,14 @@ import { Route as BusinessPortalFumigationTrackerRouteImport } from './routes/bu
 import { Route as EhoPortalFumigationJobIdRouteImport } from './routes/eho._portal.fumigation.$jobId'
 import { Route as EhoPortalInspectionsInspectionIdRouteImport } from './routes/eho._portal.inspections.$inspectionId'
 import { Route as EhoPortalPremisesPremisesIdRouteImport } from './routes/eho._portal.premises.$premisesId'
+import { Route as MohBusinessesBusinessIdCertificateRouteImport } from './routes/moh.businesses.$businessId_.certificate'
 import { Route as EhoPortalInspectionsInspectionIdChecklistRouteImport } from './routes/eho._portal.inspections.$inspectionId.checklist'
 import { Route as EhoPortalInspectionsInspectionIdFindingsRouteImport } from './routes/eho._portal.inspections.$inspectionId.findings'
 import { Route as EhoPortalInspectionsInspectionIdFollowUpRouteImport } from './routes/eho._portal.inspections.$inspectionId.follow-up'
 import { Route as EhoPortalInspectionsInspectionIdNoticeRouteImport } from './routes/eho._portal.inspections.$inspectionId.notice'
 import { Route as EhoPortalInspectionsInspectionIdResultRouteImport } from './routes/eho._portal.inspections.$inspectionId.result'
 import { Route as EhoPortalInspectionsInspectionIdReviewRouteImport } from './routes/eho._portal.inspections.$inspectionId.review'
+import { Route as EhoPortalInspectionsInspectionIdChecklistItemIdRouteImport } from './routes/eho._portal.inspections.$inspectionId.checklist.$itemId'
 import { Route as EhoPortalInspectionsInspectionIdIssuesItemIdRouteImport } from './routes/eho._portal.inspections.$inspectionId.issues.$itemId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -308,6 +312,16 @@ const EhoPortalProfileRoute = EhoPortalProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => EhoPortalRoute,
 } as any)
+const EhoPortalSyncDataRoute = EhoPortalSyncDataRouteImport.update({
+  id: '/sync-data',
+  path: '/sync-data',
+  getParentRoute: () => EhoPortalRoute,
+} as any)
+const MohBusinessesBusinessIdRoute = MohBusinessesBusinessIdRouteImport.update({
+  id: '/businesses/$businessId',
+  path: '/businesses/$businessId',
+  getParentRoute: () => MohRoute,
+} as any)
 const BusinessPortalFitnessApplyRoute =
   BusinessPortalFitnessApplyRouteImport.update({
     id: '/fitness/apply',
@@ -374,6 +388,12 @@ const EhoPortalPremisesPremisesIdRoute =
     path: '/premises/$premisesId',
     getParentRoute: () => EhoPortalRoute,
   } as any)
+const MohBusinessesBusinessIdCertificateRoute =
+  MohBusinessesBusinessIdCertificateRouteImport.update({
+    id: '/businesses/$businessId_/certificate',
+    path: '/businesses/$businessId/certificate',
+    getParentRoute: () => MohRoute,
+  } as any)
 const EhoPortalInspectionsInspectionIdChecklistRoute =
   EhoPortalInspectionsInspectionIdChecklistRouteImport.update({
     id: '/checklist',
@@ -409,6 +429,12 @@ const EhoPortalInspectionsInspectionIdReviewRoute =
     id: '/review',
     path: '/review',
     getParentRoute: () => EhoPortalInspectionsInspectionIdRoute,
+  } as any)
+const EhoPortalInspectionsInspectionIdChecklistItemIdRoute =
+  EhoPortalInspectionsInspectionIdChecklistItemIdRouteImport.update({
+    id: '/$itemId',
+    path: '/$itemId',
+    getParentRoute: () => EhoPortalInspectionsInspectionIdChecklistRoute,
   } as any)
 const EhoPortalInspectionsInspectionIdIssuesItemIdRoute =
   EhoPortalInspectionsInspectionIdIssuesItemIdRouteImport.update({
@@ -460,6 +486,8 @@ export interface FileRoutesByFullPath {
   '/eho/my-work': typeof EhoPortalMyWorkRoute
   '/eho/premises-search': typeof EhoPortalPremisesSearchRoute
   '/eho/profile': typeof EhoPortalProfileRoute
+  '/eho/sync-data': typeof EhoPortalSyncDataRoute
+  '/moh/businesses/$businessId': typeof MohBusinessesBusinessIdRoute
   '/premises/': typeof AppPremisesIndexRoute
   '/business/fitness/apply': typeof BusinessPortalFitnessApplyRoute
   '/business/fitness/certificate': typeof BusinessPortalFitnessCertificateRoute
@@ -472,12 +500,14 @@ export interface FileRoutesByFullPath {
   '/eho/fumigation/$jobId': typeof EhoPortalFumigationJobIdRoute
   '/eho/inspections/$inspectionId': typeof EhoPortalInspectionsInspectionIdRouteWithChildren
   '/eho/premises/$premisesId': typeof EhoPortalPremisesPremisesIdRoute
-  '/eho/inspections/$inspectionId/checklist': typeof EhoPortalInspectionsInspectionIdChecklistRoute
+  '/moh/businesses/$businessId/certificate': typeof MohBusinessesBusinessIdCertificateRoute
+  '/eho/inspections/$inspectionId/checklist': typeof EhoPortalInspectionsInspectionIdChecklistRouteWithChildren
   '/eho/inspections/$inspectionId/findings': typeof EhoPortalInspectionsInspectionIdFindingsRoute
   '/eho/inspections/$inspectionId/follow-up': typeof EhoPortalInspectionsInspectionIdFollowUpRoute
   '/eho/inspections/$inspectionId/notice': typeof EhoPortalInspectionsInspectionIdNoticeRoute
   '/eho/inspections/$inspectionId/result': typeof EhoPortalInspectionsInspectionIdResultRoute
   '/eho/inspections/$inspectionId/review': typeof EhoPortalInspectionsInspectionIdReviewRoute
+  '/eho/inspections/$inspectionId/checklist/$itemId': typeof EhoPortalInspectionsInspectionIdChecklistItemIdRoute
   '/eho/inspections/$inspectionId/issues/$itemId': typeof EhoPortalInspectionsInspectionIdIssuesItemIdRoute
 }
 export interface FileRoutesByTo {
@@ -520,6 +550,8 @@ export interface FileRoutesByTo {
   '/eho/my-work': typeof EhoPortalMyWorkRoute
   '/eho/premises-search': typeof EhoPortalPremisesSearchRoute
   '/eho/profile': typeof EhoPortalProfileRoute
+  '/eho/sync-data': typeof EhoPortalSyncDataRoute
+  '/moh/businesses/$businessId': typeof MohBusinessesBusinessIdRoute
   '/premises': typeof AppPremisesIndexRoute
   '/business/fitness/apply': typeof BusinessPortalFitnessApplyRoute
   '/business/fitness/certificate': typeof BusinessPortalFitnessCertificateRoute
@@ -532,12 +564,14 @@ export interface FileRoutesByTo {
   '/eho/fumigation/$jobId': typeof EhoPortalFumigationJobIdRoute
   '/eho/inspections/$inspectionId': typeof EhoPortalInspectionsInspectionIdRouteWithChildren
   '/eho/premises/$premisesId': typeof EhoPortalPremisesPremisesIdRoute
-  '/eho/inspections/$inspectionId/checklist': typeof EhoPortalInspectionsInspectionIdChecklistRoute
+  '/moh/businesses/$businessId/certificate': typeof MohBusinessesBusinessIdCertificateRoute
+  '/eho/inspections/$inspectionId/checklist': typeof EhoPortalInspectionsInspectionIdChecklistRouteWithChildren
   '/eho/inspections/$inspectionId/findings': typeof EhoPortalInspectionsInspectionIdFindingsRoute
   '/eho/inspections/$inspectionId/follow-up': typeof EhoPortalInspectionsInspectionIdFollowUpRoute
   '/eho/inspections/$inspectionId/notice': typeof EhoPortalInspectionsInspectionIdNoticeRoute
   '/eho/inspections/$inspectionId/result': typeof EhoPortalInspectionsInspectionIdResultRoute
   '/eho/inspections/$inspectionId/review': typeof EhoPortalInspectionsInspectionIdReviewRoute
+  '/eho/inspections/$inspectionId/checklist/$itemId': typeof EhoPortalInspectionsInspectionIdChecklistItemIdRoute
   '/eho/inspections/$inspectionId/issues/$itemId': typeof EhoPortalInspectionsInspectionIdIssuesItemIdRoute
 }
 export interface FileRoutesById {
@@ -587,6 +621,8 @@ export interface FileRoutesById {
   '/eho/_portal/my-work': typeof EhoPortalMyWorkRoute
   '/eho/_portal/premises-search': typeof EhoPortalPremisesSearchRoute
   '/eho/_portal/profile': typeof EhoPortalProfileRoute
+  '/eho/_portal/sync-data': typeof EhoPortalSyncDataRoute
+  '/moh/businesses/$businessId': typeof MohBusinessesBusinessIdRoute
   '/_app/premises/': typeof AppPremisesIndexRoute
   '/business/_portal/fitness/apply': typeof BusinessPortalFitnessApplyRoute
   '/business/_portal/fitness/certificate': typeof BusinessPortalFitnessCertificateRoute
@@ -599,12 +635,14 @@ export interface FileRoutesById {
   '/eho/_portal/fumigation/$jobId': typeof EhoPortalFumigationJobIdRoute
   '/eho/_portal/inspections/$inspectionId': typeof EhoPortalInspectionsInspectionIdRouteWithChildren
   '/eho/_portal/premises/$premisesId': typeof EhoPortalPremisesPremisesIdRoute
-  '/eho/_portal/inspections/$inspectionId/checklist': typeof EhoPortalInspectionsInspectionIdChecklistRoute
+  '/moh/businesses/$businessId_/certificate': typeof MohBusinessesBusinessIdCertificateRoute
+  '/eho/_portal/inspections/$inspectionId/checklist': typeof EhoPortalInspectionsInspectionIdChecklistRouteWithChildren
   '/eho/_portal/inspections/$inspectionId/findings': typeof EhoPortalInspectionsInspectionIdFindingsRoute
   '/eho/_portal/inspections/$inspectionId/follow-up': typeof EhoPortalInspectionsInspectionIdFollowUpRoute
   '/eho/_portal/inspections/$inspectionId/notice': typeof EhoPortalInspectionsInspectionIdNoticeRoute
   '/eho/_portal/inspections/$inspectionId/result': typeof EhoPortalInspectionsInspectionIdResultRoute
   '/eho/_portal/inspections/$inspectionId/review': typeof EhoPortalInspectionsInspectionIdReviewRoute
+  '/eho/_portal/inspections/$inspectionId/checklist/$itemId': typeof EhoPortalInspectionsInspectionIdChecklistItemIdRoute
   '/eho/_portal/inspections/$inspectionId/issues/$itemId': typeof EhoPortalInspectionsInspectionIdIssuesItemIdRoute
 }
 export interface FileRouteTypes {
@@ -652,6 +690,8 @@ export interface FileRouteTypes {
     | '/eho/my-work'
     | '/eho/premises-search'
     | '/eho/profile'
+    | '/eho/sync-data'
+    | '/moh/businesses/$businessId'
     | '/premises/'
     | '/business/fitness/apply'
     | '/business/fitness/certificate'
@@ -664,12 +704,14 @@ export interface FileRouteTypes {
     | '/eho/fumigation/$jobId'
     | '/eho/inspections/$inspectionId'
     | '/eho/premises/$premisesId'
+    | '/moh/businesses/$businessId/certificate'
     | '/eho/inspections/$inspectionId/checklist'
     | '/eho/inspections/$inspectionId/findings'
     | '/eho/inspections/$inspectionId/follow-up'
     | '/eho/inspections/$inspectionId/notice'
     | '/eho/inspections/$inspectionId/result'
     | '/eho/inspections/$inspectionId/review'
+    | '/eho/inspections/$inspectionId/checklist/$itemId'
     | '/eho/inspections/$inspectionId/issues/$itemId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -712,6 +754,8 @@ export interface FileRouteTypes {
     | '/eho/my-work'
     | '/eho/premises-search'
     | '/eho/profile'
+    | '/eho/sync-data'
+    | '/moh/businesses/$businessId'
     | '/premises'
     | '/business/fitness/apply'
     | '/business/fitness/certificate'
@@ -724,12 +768,14 @@ export interface FileRouteTypes {
     | '/eho/fumigation/$jobId'
     | '/eho/inspections/$inspectionId'
     | '/eho/premises/$premisesId'
+    | '/moh/businesses/$businessId/certificate'
     | '/eho/inspections/$inspectionId/checklist'
     | '/eho/inspections/$inspectionId/findings'
     | '/eho/inspections/$inspectionId/follow-up'
     | '/eho/inspections/$inspectionId/notice'
     | '/eho/inspections/$inspectionId/result'
     | '/eho/inspections/$inspectionId/review'
+    | '/eho/inspections/$inspectionId/checklist/$itemId'
     | '/eho/inspections/$inspectionId/issues/$itemId'
   id:
     | '__root__'
@@ -778,6 +824,8 @@ export interface FileRouteTypes {
     | '/eho/_portal/my-work'
     | '/eho/_portal/premises-search'
     | '/eho/_portal/profile'
+    | '/eho/_portal/sync-data'
+    | '/moh/businesses/$businessId'
     | '/_app/premises/'
     | '/business/_portal/fitness/apply'
     | '/business/_portal/fitness/certificate'
@@ -790,12 +838,14 @@ export interface FileRouteTypes {
     | '/eho/_portal/fumigation/$jobId'
     | '/eho/_portal/inspections/$inspectionId'
     | '/eho/_portal/premises/$premisesId'
+    | '/moh/businesses/$businessId_/certificate'
     | '/eho/_portal/inspections/$inspectionId/checklist'
     | '/eho/_portal/inspections/$inspectionId/findings'
     | '/eho/_portal/inspections/$inspectionId/follow-up'
     | '/eho/_portal/inspections/$inspectionId/notice'
     | '/eho/_portal/inspections/$inspectionId/result'
     | '/eho/_portal/inspections/$inspectionId/review'
+    | '/eho/_portal/inspections/$inspectionId/checklist/$itemId'
     | '/eho/_portal/inspections/$inspectionId/issues/$itemId'
   fileRoutesById: FileRoutesById
 }
@@ -1131,6 +1181,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EhoPortalProfileRouteImport
       parentRoute: typeof EhoPortalRoute
     }
+    '/eho/_portal/sync-data': {
+      id: '/eho/_portal/sync-data'
+      path: '/sync-data'
+      fullPath: '/eho/sync-data'
+      preLoaderRoute: typeof EhoPortalSyncDataRouteImport
+      parentRoute: typeof EhoPortalRoute
+    }
+    '/moh/businesses/$businessId': {
+      id: '/moh/businesses/$businessId'
+      path: '/businesses/$businessId'
+      fullPath: '/moh/businesses/$businessId'
+      preLoaderRoute: typeof MohBusinessesBusinessIdRouteImport
+      parentRoute: typeof MohRoute
+    }
     '/business/_portal/fitness/apply': {
       id: '/business/_portal/fitness/apply'
       path: '/fitness/apply'
@@ -1208,6 +1272,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EhoPortalPremisesPremisesIdRouteImport
       parentRoute: typeof EhoPortalRoute
     }
+    '/moh/businesses/$businessId_/certificate': {
+      id: '/moh/businesses/$businessId_/certificate'
+      path: '/businesses/$businessId/certificate'
+      fullPath: '/moh/businesses/$businessId/certificate'
+      preLoaderRoute: typeof MohBusinessesBusinessIdCertificateRouteImport
+      parentRoute: typeof MohRoute
+    }
     '/eho/_portal/inspections/$inspectionId/checklist': {
       id: '/eho/_portal/inspections/$inspectionId/checklist'
       path: '/checklist'
@@ -1249,6 +1320,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/eho/inspections/$inspectionId/review'
       preLoaderRoute: typeof EhoPortalInspectionsInspectionIdReviewRouteImport
       parentRoute: typeof EhoPortalInspectionsInspectionIdRoute
+    }
+    '/eho/_portal/inspections/$inspectionId/checklist/$itemId': {
+      id: '/eho/_portal/inspections/$inspectionId/checklist/$itemId'
+      path: '/$itemId'
+      fullPath: '/eho/inspections/$inspectionId/checklist/$itemId'
+      preLoaderRoute: typeof EhoPortalInspectionsInspectionIdChecklistItemIdRouteImport
+      parentRoute: typeof EhoPortalInspectionsInspectionIdChecklistRoute
     }
     '/eho/_portal/inspections/$inspectionId/issues/$itemId': {
       id: '/eho/_portal/inspections/$inspectionId/issues/$itemId'
@@ -1377,8 +1455,23 @@ const EhoPortalFumigationRouteChildren: EhoPortalFumigationRouteChildren = {
 const EhoPortalFumigationRouteWithChildren =
   EhoPortalFumigationRoute._addFileChildren(EhoPortalFumigationRouteChildren)
 
+interface EhoPortalInspectionsInspectionIdChecklistRouteChildren {
+  EhoPortalInspectionsInspectionIdChecklistItemIdRoute: typeof EhoPortalInspectionsInspectionIdChecklistItemIdRoute
+}
+
+const EhoPortalInspectionsInspectionIdChecklistRouteChildren: EhoPortalInspectionsInspectionIdChecklistRouteChildren =
+  {
+    EhoPortalInspectionsInspectionIdChecklistItemIdRoute:
+      EhoPortalInspectionsInspectionIdChecklistItemIdRoute,
+  }
+
+const EhoPortalInspectionsInspectionIdChecklistRouteWithChildren =
+  EhoPortalInspectionsInspectionIdChecklistRoute._addFileChildren(
+    EhoPortalInspectionsInspectionIdChecklistRouteChildren,
+  )
+
 interface EhoPortalInspectionsInspectionIdRouteChildren {
-  EhoPortalInspectionsInspectionIdChecklistRoute: typeof EhoPortalInspectionsInspectionIdChecklistRoute
+  EhoPortalInspectionsInspectionIdChecklistRoute: typeof EhoPortalInspectionsInspectionIdChecklistRouteWithChildren
   EhoPortalInspectionsInspectionIdFindingsRoute: typeof EhoPortalInspectionsInspectionIdFindingsRoute
   EhoPortalInspectionsInspectionIdFollowUpRoute: typeof EhoPortalInspectionsInspectionIdFollowUpRoute
   EhoPortalInspectionsInspectionIdNoticeRoute: typeof EhoPortalInspectionsInspectionIdNoticeRoute
@@ -1390,7 +1483,7 @@ interface EhoPortalInspectionsInspectionIdRouteChildren {
 const EhoPortalInspectionsInspectionIdRouteChildren: EhoPortalInspectionsInspectionIdRouteChildren =
   {
     EhoPortalInspectionsInspectionIdChecklistRoute:
-      EhoPortalInspectionsInspectionIdChecklistRoute,
+      EhoPortalInspectionsInspectionIdChecklistRouteWithChildren,
     EhoPortalInspectionsInspectionIdFindingsRoute:
       EhoPortalInspectionsInspectionIdFindingsRoute,
     EhoPortalInspectionsInspectionIdFollowUpRoute:
@@ -1428,6 +1521,7 @@ interface EhoPortalRouteChildren {
   EhoPortalMyWorkRoute: typeof EhoPortalMyWorkRoute
   EhoPortalPremisesSearchRoute: typeof EhoPortalPremisesSearchRoute
   EhoPortalProfileRoute: typeof EhoPortalProfileRoute
+  EhoPortalSyncDataRoute: typeof EhoPortalSyncDataRoute
   EhoPortalPremisesPremisesIdRoute: typeof EhoPortalPremisesPremisesIdRoute
 }
 
@@ -1437,6 +1531,7 @@ const EhoPortalRouteChildren: EhoPortalRouteChildren = {
   EhoPortalMyWorkRoute: EhoPortalMyWorkRoute,
   EhoPortalPremisesSearchRoute: EhoPortalPremisesSearchRoute,
   EhoPortalProfileRoute: EhoPortalProfileRoute,
+  EhoPortalSyncDataRoute: EhoPortalSyncDataRoute,
   EhoPortalPremisesPremisesIdRoute: EhoPortalPremisesPremisesIdRoute,
 }
 
@@ -1462,12 +1557,17 @@ interface MohRouteChildren {
   MohHomeRoute: typeof MohHomeRoute
   MohSignInRoute: typeof MohSignInRoute
   MohIndexRoute: typeof MohIndexRoute
+  MohBusinessesBusinessIdRoute: typeof MohBusinessesBusinessIdRoute
+  MohBusinessesBusinessIdCertificateRoute: typeof MohBusinessesBusinessIdCertificateRoute
 }
 
 const MohRouteChildren: MohRouteChildren = {
   MohHomeRoute: MohHomeRoute,
   MohSignInRoute: MohSignInRoute,
   MohIndexRoute: MohIndexRoute,
+  MohBusinessesBusinessIdRoute: MohBusinessesBusinessIdRoute,
+  MohBusinessesBusinessIdCertificateRoute:
+    MohBusinessesBusinessIdCertificateRoute,
 }
 
 const MohRouteWithChildren = MohRoute._addFileChildren(MohRouteChildren)

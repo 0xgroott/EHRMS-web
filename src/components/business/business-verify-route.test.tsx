@@ -46,73 +46,64 @@ describe("BusinessVerify route", () => {
       .click(screen.getByRole("button", { name: "Verify and continue" }))
 
     await waitFor(() => {
-      expect(assign).toHaveBeenCalledWith("/business/setup")
+      expect(assign).toHaveBeenCalledWith("/business/dashboard")
     })
     expect(assign).toHaveBeenCalledTimes(1)
     expect(assign).not.toHaveBeenCalledWith("/business/register")
   })
 
-  it.each([
-    ["Email address", "updated@example.test", "email"],
-    ["Phone number", "08098765433", "phone"],
-  ])(
-    "edits populated %s without replacing the profile",
-    async (label, value, field) => {
-      const repository = createBusinessRepository(createBusinessStorage())
-      repository.verifyContact("123456")
-      repository.savePremisesDraft(
+  it("edits the populated email without exposing phone during onboarding", async () => {
+    const value = "updated@example.test"
+    const repository = createBusinessRepository(createBusinessStorage())
+    repository.verifyContact("123456")
+    repository.savePremisesDraft(
+      {
+        premisesName: "Saved kitchen",
+        businessType: "Restaurant",
+        address: "Draft address",
+        ward: "Diobu",
+        councilId: "phc",
+      },
+      [
         {
-          premisesName: "Saved kitchen",
-          businessType: "Restaurant",
-          address: "Draft address",
-          ward: "Diobu",
-          councilId: "phc",
+          id: "DOC-SAVED",
+          name: "saved.pdf",
+          size: 123,
+          category: "registration",
         },
-        [
-          {
-            id: "DOC-SAVED",
-            name: "saved.pdf",
-            size: 123,
-            category: "registration",
-          },
-        ]
-      )
-      repository.updateContact({
-        email: validAccount.email,
-        phone: validAccount.phone,
-      })
-      const before = repository.getState().profile!
-      render(
-        <Providers>
-          <BusinessVerify />
-        </Providers>
-      )
-      fireEvent.click(
-        await screen.findByRole("button", { name: "Change contact" })
-      )
-      expect(await screen.findByLabelText("Email address")).toHaveValue(
-        before.email
-      )
-      expect(screen.getByLabelText("Phone number")).toHaveValue(before.phone)
-      fireEvent.change(screen.getByLabelText(label), { target: { value } })
-      fireEvent.click(
-        screen.getByRole("button", { name: "Save contact and continue" })
-      )
-      expect(
-        await screen.findByLabelText("6-digit verification code")
-      ).toBeVisible()
-      expect(repository.getState().profile).toEqual({
-        ...before,
-        [field]: value,
-      })
-      expect(
-        screen.getByText(
-          field === "email" ? /u\*\*\*@example.test/ : /••••••5433/
-        )
-      ).toBeVisible()
-      expect(assign).not.toHaveBeenCalled()
-    }
-  )
+      ]
+    )
+    repository.updateContact({
+      email: validAccount.email,
+      phone: validAccount.phone,
+    })
+    const before = repository.getState().profile!
+    render(
+      <Providers>
+        <BusinessVerify />
+      </Providers>
+    )
+    fireEvent.click(await screen.findByRole("button", { name: "Change email" }))
+    expect(await screen.findByLabelText("Email address")).toHaveValue(
+      before.email
+    )
+    expect(screen.queryByLabelText("Phone number")).not.toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText("Email address"), {
+      target: { value },
+    })
+    fireEvent.click(
+      screen.getByRole("button", { name: "Save email and continue" })
+    )
+    expect(
+      await screen.findByLabelText("6-digit verification code")
+    ).toBeVisible()
+    expect(repository.getState().profile).toEqual({
+      ...before,
+      email: value,
+    })
+    expect(screen.getByText(/u\*\*\*@example.test/)).toBeVisible()
+    expect(assign).not.toHaveBeenCalled()
+  })
 
   it("recovers an expired persisted code through resend and verification", async () => {
     const storage = createBusinessStorage()
@@ -139,14 +130,13 @@ describe("BusinessVerify route", () => {
       target: { value: "123456" },
     })
     fireEvent.click(screen.getByRole("button", { name: "Verify and continue" }))
-    await waitFor(() => expect(assign).toHaveBeenCalledWith("/business/setup"))
+    await waitFor(() =>
+      expect(assign).toHaveBeenCalledWith("/business/dashboard")
+    )
     expect(storage.read().stage).toBe("setup")
   })
 
-  it.each([
-    ["Email address", "ada@riverside.ng", "new@example.test"],
-    ["Phone number", "08031234567", "08098765433"],
-  ])(
+  it.each([["Email address", "ada@riverside.ng", "new@example.test"]])(
     "retains contact data and recovers from duplicate %s",
     async (label, duplicate, replacement) => {
       const repository = createBusinessRepository(createBusinessStorage())
@@ -157,12 +147,12 @@ describe("BusinessVerify route", () => {
         </Providers>
       )
       fireEvent.click(
-        await screen.findByRole("button", { name: "Change contact" })
+        await screen.findByRole("button", { name: "Change email" })
       )
       const input = await screen.findByLabelText(label)
       fireEvent.change(input, { target: { value: duplicate } })
       fireEvent.click(
-        screen.getByRole("button", { name: "Save contact and continue" })
+        screen.getByRole("button", { name: "Save email and continue" })
       )
       await waitFor(() =>
         expect(input).toHaveAccessibleDescription(/already registered/)
@@ -170,7 +160,7 @@ describe("BusinessVerify route", () => {
       expect(repository.getState()).toEqual(before)
       fireEvent.change(input, { target: { value: replacement } })
       fireEvent.click(
-        screen.getByRole("button", { name: "Save contact and continue" })
+        screen.getByRole("button", { name: "Save email and continue" })
       )
       expect(
         await screen.findByLabelText("6-digit verification code")
@@ -184,13 +174,11 @@ describe("BusinessVerify route", () => {
         <BusinessVerify />
       </Providers>
     )
-    fireEvent.click(
-      await screen.findByRole("button", { name: "Change contact" })
-    )
+    fireEvent.click(await screen.findByRole("button", { name: "Change email" }))
     const input = await screen.findByLabelText("Email address")
     fireEvent.change(input, { target: { value: "invalid" } })
     fireEvent.click(
-      screen.getByRole("button", { name: "Save contact and continue" })
+      screen.getByRole("button", { name: "Save email and continue" })
     )
     await waitFor(() =>
       expect(input).toHaveAccessibleDescription(/valid email/)
@@ -200,12 +188,12 @@ describe("BusinessVerify route", () => {
       throw new Error("full")
     })
     fireEvent.click(
-      screen.getByRole("button", { name: "Save contact and continue" })
+      screen.getByRole("button", { name: "Save email and continue" })
     )
     expect(await screen.findByRole("alert")).toHaveTextContent(/Unable to save/)
     expect(input).toHaveValue("fixed@example.test")
     fireEvent.click(
-      screen.getByRole("button", { name: "Save contact and continue" })
+      screen.getByRole("button", { name: "Save email and continue" })
     )
     expect(
       await screen.findByLabelText("6-digit verification code")

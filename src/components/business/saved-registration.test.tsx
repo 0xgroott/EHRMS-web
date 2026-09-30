@@ -56,7 +56,7 @@ describe("saved registration entry", () => {
       )
       await waitFor(() =>
         expect(assign).toHaveBeenCalledWith(
-          stage === "setup" ? "/business/setup" : "/business/verify"
+          stage === "setup" ? "/business/dashboard" : "/business/verify"
         )
       )
       expect(repository.getState()).toEqual(before)

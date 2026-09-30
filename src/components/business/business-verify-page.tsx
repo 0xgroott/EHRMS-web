@@ -17,18 +17,6 @@ function maskEmail(email: string) {
   return `${localPart.slice(0, 1)}***@${domain}`
 }
 
-function maskPhone(phone: string) {
-  const digits = phone.replace(/\D/g, "")
-  if (digits.length < 4) return "your registered phone number"
-  return `••••••${digits.slice(-4)}`
-}
-
-function maskDestination(email: string, phone: string) {
-  return [email ? maskEmail(email) : "", phone ? maskPhone(phone) : ""]
-    .filter(Boolean)
-    .join(" or ")
-}
-
 function errorMessage(result: BusinessRepositoryResult) {
   if (result.ok) return undefined
   return (
@@ -67,13 +55,11 @@ export function BusinessVerify() {
 
   return (
     <OnboardingShell
-      title={
-        editingContact ? "Change your contact details" : "Verify your contact"
-      }
+      title={editingContact ? "Change your email" : "Verify your email"}
       description={
         editingContact
-          ? "Update your email or phone number. Your business details stay saved."
-          : "Enter the code we sent to confirm your registration details."
+          ? "Update your email address. Your business details stay saved."
+          : "Enter the code we sent to confirm your email address."
       }
       step={3}
     >
@@ -84,17 +70,17 @@ export function BusinessVerify() {
           onSubmit={async (input) => {
             const result = createBusinessRepository(
               createBusinessStorage()
-            ).updateContact(input)
+            ).updateContact({ ...input, phone: profile.phone })
             if (!result.ok)
               return { fieldErrors: result.errors, error: result.errors.state }
             await session.refresh()
             setEditingContact(false)
-            notifySuccess("Contact details updated")
+            notifySuccess("Email address updated")
           }}
         />
       ) : (
         <VerificationForm
-          maskedDestination={maskDestination(profile.email, profile.phone)}
+          maskedDestination={maskEmail(profile.email)}
           expiresAt={session.state.verificationExpiresAt ?? 0}
           onVerify={async (code) => {
             const result = createBusinessRepository(
@@ -104,8 +90,8 @@ export function BusinessVerify() {
             if (error) return { error }
             completionInProgress.current = true
             await session.refresh()
-            notifySuccessAfterNavigation("Contact verified")
-            globalThis.location.assign("/business/setup")
+            notifySuccessAfterNavigation("Email verified")
+            globalThis.location.assign("/business/dashboard")
           }}
           onResend={async () => {
             const result = createBusinessRepository(

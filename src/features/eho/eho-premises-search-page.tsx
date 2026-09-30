@@ -1,29 +1,38 @@
 import { useEffect, useRef, useState } from "react"
-import { Link } from "@tanstack/react-router"
-import {
-  ArrowLeft,
-  ArrowRight,
-  Camera,
-  Clock3,
-  MapPin,
-  Search,
-  X,
-} from "lucide-react"
-import { seedDatabase } from "@/data/seeds"
-import type { Premises } from "@/domain/types"
+import { ArrowRight, Camera, MapPin, Search, X } from "lucide-react"
+import type { ComplianceStatus, Premises } from "@/domain/types"
 import { EmptyState } from "@/components/shared/empty-state"
 import { PageHeader } from "@/components/shared/page-header"
 import { StatusBadge } from "@/components/shared/status-badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
   belongsToOtherCouncil,
-  readRecentPremises,
   referenceFromCode,
   searchPremises,
 } from "./eho-premises-search"
+import type { PremisesSort } from "./eho-premises-search"
+import { EhoPremisesAvatar } from "./eho-premises-avatar"
 import { useEho } from "./eho-session"
 
 type BarcodeDetectorInstance = {
@@ -33,33 +42,57 @@ type BarcodeDetectorConstructor = new (options: {
   formats: string[]
 }) => BarcodeDetectorInstance
 
-function PremisesRow({ premises }: { premises: Premises }) {
+const complianceStatuses: ComplianceStatus[] = [
+  "Compliant",
+  "At Risk",
+  "Non-compliant",
+  "Not Found",
+]
+
+const sortOptions: Array<{ value: PremisesSort; label: string }> = [
+  { value: "business-name", label: "Business name" },
+  { value: "ward", label: "Ward" },
+  { value: "business-type", label: "Business type" },
+  { value: "status", label: "Status" },
+]
+
+function PremisesLink({ premises }: { premises: Premises }) {
+  return (
+    <Button
+      variant="outline"
+      className="min-h-11"
+      nativeButton={false}
+      render={
+        <a
+          href={`/eho/premises/${encodeURIComponent(premises.id)}?source=search`}
+        />
+      }
+    >
+      View
+      <ArrowRight data-icon="inline-end" aria-hidden="true" />
+    </Button>
+  )
+}
+
+function MobilePremisesCard({ premises }: { premises: Premises }) {
   return (
     <Card className="gap-0 py-0">
-      <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-        <div className="min-w-0 space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <StatusBadge status={premises.complianceStatus} />
-            <span className="text-xs text-muted-foreground">{premises.id}</span>
-          </div>
-          <h3 className="font-semibold">{premises.businessName}</h3>
-          <p className="inline-flex items-start gap-1.5 text-sm text-muted-foreground">
+      <CardContent className="flex flex-col gap-4 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <StatusBadge status={premises.complianceStatus} />
+          <span className="text-xs text-muted-foreground">{premises.id}</span>
+        </div>
+        <div className="min-w-0">
+          <h2 className="font-semibold">{premises.businessName}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {premises.premisesType} · {premises.ward}
+          </p>
+          <p className="mt-2 flex items-start gap-1.5 text-sm text-muted-foreground">
             <MapPin className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-            {premises.address} · {premises.ward}
+            {premises.address}
           </p>
         </div>
-        <Button
-          variant="outline"
-          className="min-h-11 self-start sm:self-auto"
-          nativeButton={false}
-          render={
-            <a
-              href={`/eho/premises/${encodeURIComponent(premises.id)}?source=search`}
-            />
-          }
-        >
-          Open premises <ArrowRight aria-hidden="true" />
-        </Button>
+        <PremisesLink premises={premises} />
       </CardContent>
     </Card>
   )
@@ -68,7 +101,10 @@ function PremisesRow({ premises }: { premises: Premises }) {
 export function EhoPremisesSearchPage() {
   const { officer } = useEho()
   const [query, setQuery] = useState("")
-  const [recentIds, setRecentIds] = useState<string[]>([])
+  const [ward, setWard] = useState("all")
+  const [premisesType, setPremisesType] = useState("all")
+  const [complianceStatus, setComplianceStatus] = useState("all")
+  const [sort, setSort] = useState<PremisesSort>("business-name")
   const [scanOpen, setScanOpen] = useState(false)
   const [code, setCode] = useState("")
   const [scanError, setScanError] = useState("")
@@ -77,9 +113,6 @@ export function EhoPremisesSearchPage() {
   const streamRef = useRef<MediaStream | null>(null)
   const frameRef = useRef<number | null>(null)
 
-  useEffect(() => {
-    if (officer) setRecentIds(readRecentPremises(localStorage, officer.id))
-  }, [officer])
   useEffect(
     () => () => {
       if (frameRef.current !== null) cancelAnimationFrame(frameRef.current)
@@ -88,14 +121,36 @@ export function EhoPremisesSearchPage() {
     []
   )
 
-  const results = officer ? searchPremises(query, officer.councilId) : []
-  const recent = recentIds
-    .map((id) =>
-      seedDatabase.premises.find(
-        (item) => item.id === id && item.councilId === officer?.councilId
-      )
-    )
-    .filter((item): item is Premises => !!item)
+  const councilPremises = officer ? searchPremises("", officer.councilId) : []
+  const wards = [...new Set(councilPremises.map((item) => item.ward))].sort()
+  const premisesTypes = [
+    ...new Set(councilPremises.map((item) => item.premisesType)),
+  ].sort()
+  const results = officer
+    ? searchPremises(query, officer.councilId, {
+        ward: ward === "all" ? undefined : ward,
+        premisesType: premisesType === "all" ? undefined : premisesType,
+        complianceStatus:
+          complianceStatus === "all"
+            ? undefined
+            : (complianceStatus as ComplianceStatus),
+        sort,
+      })
+    : []
+  const controlsActive =
+    !!query.trim() ||
+    ward !== "all" ||
+    premisesType !== "all" ||
+    complianceStatus !== "all" ||
+    sort !== "business-name"
+
+  function resetDirectory() {
+    setQuery("")
+    setWard("all")
+    setPremisesType("all")
+    setComplianceStatus("all")
+    setSort("business-name")
+  }
 
   function stopCamera() {
     if (frameRef.current !== null) cancelAnimationFrame(frameRef.current)
@@ -111,6 +166,7 @@ export function EhoPremisesSearchPage() {
       setScanError("Enter a valid premises reference, such as PR-001.")
       return
     }
+    resetDirectory()
     setQuery(reference)
     setScanOpen(false)
     setScanError("")
@@ -174,50 +230,167 @@ export function EhoPremisesSearchPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <Link
-        to="/eho/my-work"
-        className="inline-flex min-h-11 items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="size-4" aria-hidden="true" /> My Work
-      </Link>
+    <div className="flex flex-col gap-6">
       <PageHeader
-        eyebrow="Field reference"
-        title="Premises Search"
-        description="Find a premises by name, reference or address."
+        title="All Premises"
+        description="Browse businesses registered with Port Harcourt City Council."
+        divided={false}
       />
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <div className="relative min-w-0 flex-1">
-          <Search
-            className="pointer-events-none absolute top-3.5 left-3 size-4 text-muted-foreground"
-            aria-hidden="true"
-          />
-          <label htmlFor="premises-search" className="sr-only">
-            Search premises
-          </label>
-          <Input
-            id="premises-search"
-            className="min-h-11 pl-10"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Name, reference or address"
-          />
+
+      <section aria-label="Find premises" className="flex flex-col gap-6">
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="relative min-w-0 flex-1">
+            <Search
+              className="pointer-events-none absolute top-3.5 left-3 size-4 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <label htmlFor="premises-search" className="sr-only">
+              Search premises
+            </label>
+            <Input
+              id="premises-search"
+              type="search"
+              className="min-h-11 pl-10"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search name, reference, address, ward or type"
+            />
+          </div>
+          <Button
+            variant="outline"
+            className="min-h-11"
+            onClick={() => {
+              setScanOpen((open) => !open)
+              setScanError("")
+              if (scanOpen) stopCamera()
+            }}
+          >
+            <Camera data-icon="inline-start" aria-hidden="true" /> Scan code
+          </Button>
         </div>
-        <Button
-          variant="outline"
-          className="min-h-11"
-          onClick={() => {
-            setScanOpen((open) => !open)
-            setScanError("")
-            if (scanOpen) stopCamera()
-          }}
-        >
-          <Camera aria-hidden="true" /> Scan code
-        </Button>
-      </div>
+
+        <FieldGroup className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <Field className="gap-2">
+            <FieldLabel htmlFor="premises-ward">Ward</FieldLabel>
+            <Select
+              items={[
+                { value: "all", label: "All wards" },
+                ...wards.map((item) => ({ value: item, label: item })),
+              ]}
+              value={ward}
+              onValueChange={(value) => setWard(value ?? "all")}
+            >
+              <SelectTrigger
+                id="premises-ward"
+                aria-label="Filter by ward"
+                className="min-h-11 w-full"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="all">All wards</SelectItem>
+                  {wards.map((item) => (
+                    <SelectItem key={item} value={item}>
+                      {item}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field className="gap-2">
+            <FieldLabel htmlFor="premises-type">Business type</FieldLabel>
+            <Select
+              items={[
+                { value: "all", label: "All business types" },
+                ...premisesTypes.map((item) => ({ value: item, label: item })),
+              ]}
+              value={premisesType}
+              onValueChange={(value) => setPremisesType(value ?? "all")}
+            >
+              <SelectTrigger
+                id="premises-type"
+                aria-label="Filter by business type"
+                className="min-h-11 w-full"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="all">All business types</SelectItem>
+                  {premisesTypes.map((item) => (
+                    <SelectItem key={item} value={item}>
+                      {item}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field className="gap-2">
+            <FieldLabel htmlFor="premises-status">Status</FieldLabel>
+            <Select
+              items={[
+                { value: "all", label: "All statuses" },
+                ...complianceStatuses.map((status) => ({
+                  value: status,
+                  label: status,
+                })),
+              ]}
+              value={complianceStatus}
+              onValueChange={(value) => setComplianceStatus(value ?? "all")}
+            >
+              <SelectTrigger
+                id="premises-status"
+                aria-label="Filter by status"
+                className="min-h-11 w-full"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="all">All statuses</SelectItem>
+                  {complianceStatuses.map((status) => (
+                    <SelectItem key={status} value={status}>
+                      {status}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field className="gap-2">
+            <FieldLabel htmlFor="premises-sort">Sort by</FieldLabel>
+            <Select
+              items={sortOptions}
+              value={sort}
+              onValueChange={(value) => setSort(value ?? "business-name")}
+            >
+              <SelectTrigger
+                id="premises-sort"
+                aria-label="Sort premises"
+                className="min-h-11 w-full"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {sortOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </Field>
+        </FieldGroup>
+      </section>
+
       {scanOpen && (
         <Card className="gap-0 py-0">
-          <CardContent className="space-y-4 p-4 sm:p-5">
+          <CardContent className="flex flex-col gap-4 p-4 sm:p-5">
             <div className="flex items-center justify-between gap-3">
               <h2 className="font-semibold">Find by code</h2>
               <Button
@@ -245,7 +418,7 @@ export function EhoPremisesSearchPage() {
             <Button
               type="button"
               variant="outline"
-              className="min-h-11"
+              className="min-h-11 w-fit"
               onClick={cameraActive ? stopCamera : startCamera}
             >
               {cameraActive ? "Stop camera" : "Start camera"}
@@ -279,52 +452,89 @@ export function EhoPremisesSearchPage() {
           </CardContent>
         </Card>
       )}
-      {query.trim() ? (
-        <section className="space-y-3" aria-label="Search results">
-          <p className="text-xs font-medium text-muted-foreground">
-            {results.length} {results.length === 1 ? "result" : "results"}
-          </p>
-          {results.length ? (
-            results.map((premises) => (
-              <PremisesRow key={premises.id} premises={premises} />
-            ))
-          ) : (
-            <EmptyState
-              title="No premises found"
-              description={
-                officer && belongsToOtherCouncil(query, officer.councilId)
-                  ? "This reference belongs to another council."
-                  : "Try another name, address or reference."
-              }
-            />
-          )}
-          {!results.length && (
+
+      <section aria-label="Premises directory" className="flex flex-col gap-2">
+        <div className="flex min-h-9 flex-wrap items-center justify-between gap-3">
+          <p className="text-sm font-medium">{results.length} premises</p>
+          {controlsActive && (
             <Button
-              variant="outline"
+              variant="ghost"
               className="min-h-11"
-              onClick={() => setQuery("")}
+              onClick={resetDirectory}
             >
-              Retry search
+              {query.trim() &&
+              ward === "all" &&
+              premisesType === "all" &&
+              complianceStatus === "all" &&
+              sort === "business-name"
+                ? "Clear search"
+                : "Clear filters"}
             </Button>
           )}
-        </section>
-      ) : (
-        <section className="space-y-3" aria-label="Recent premises">
-          <div className="flex items-center gap-2">
-            <Clock3 className="size-4 text-primary" aria-hidden="true" />
-            <h2 className="font-semibold">Recent premises</h2>
-          </div>
-          {recent.length ? (
-            recent.map((premises) => (
-              <PremisesRow key={premises.id} premises={premises} />
-            ))
-          ) : (
-            <p className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-              Premises you open will appear here for quick access.
-            </p>
-          )}
-        </section>
-      )}
+        </div>
+
+        {results.length ? (
+          <>
+            <div className="hidden overflow-hidden rounded-xl border bg-background md:block">
+              <Table>
+                <TableCaption className="sr-only">
+                  Port Harcourt City Council premises
+                </TableCaption>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Business</TableHead>
+                    <TableHead>Business type</TableHead>
+                    <TableHead>Ward</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {results.map((premises) => (
+                    <TableRow key={premises.id}>
+                      <TableCell className="min-w-64 whitespace-normal">
+                        <div className="flex items-center gap-3">
+                          <EhoPremisesAvatar name={premises.businessName} />
+                          <div className="min-w-0">
+                            <span className="block font-medium">
+                              {premises.businessName}
+                            </span>
+                            <span className="mt-1 block text-xs text-muted-foreground">
+                              {premises.id} · {premises.address}
+                            </span>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{premises.premisesType}</TableCell>
+                      <TableCell>{premises.ward}</TableCell>
+                      <TableCell>
+                        <StatusBadge status={premises.complianceStatus} />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <PremisesLink premises={premises} />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            <div className="grid gap-3 md:hidden">
+              {results.map((premises) => (
+                <MobilePremisesCard key={premises.id} premises={premises} />
+              ))}
+            </div>
+          </>
+        ) : (
+          <EmptyState
+            title="No premises found"
+            description={
+              officer && belongsToOtherCouncil(query, officer.councilId)
+                ? "This reference belongs to another council."
+                : "Try another search or clear one of the filters."
+            }
+          />
+        )}
+      </section>
     </div>
   )
 }

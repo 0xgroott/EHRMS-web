@@ -55,11 +55,11 @@ export function getBusinessNextAction(
   if (!input.profileComplete)
     return {
       id: "complete-profile",
-      title: "Complete your business profile",
+      title: "Complete business verification",
       description:
-        "Add your premises and council details before starting certificate applications.",
-      href: "/business/setup",
-      label: "Complete business setup",
+        "Add your business, premises, and council details before starting certificate applications.",
+      href: "/business/settings#kyb",
+      label: "Complete KYB",
     }
   const urgent = getUrgentBusinessAlerts(input.alerts).at(0)
   if (urgent)

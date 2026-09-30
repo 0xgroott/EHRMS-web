@@ -1,25 +1,45 @@
 import { useState } from "react"
-import { Link } from "@tanstack/react-router"
+import { Link, useNavigate } from "@tanstack/react-router"
 import {
   ArrowLeft,
   ArrowRight,
-  Camera,
   CheckCircle2,
   ClipboardCheck,
-  FileBadge2,
-  Save,
 } from "lucide-react"
 import { seedDatabase } from "@/data/seeds"
 import { EmptyState } from "@/components/shared/empty-state"
 import { PageHeader } from "@/components/shared/page-header"
 import { StatusBadge } from "@/components/shared/status-badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { assignments, checklist } from "./eho-model"
-import type { Evidence, InspectionAnswer, Issue } from "./eho-model"
+import type {
+  ChecklistItem,
+  Evidence,
+  InspectionAnswer,
+  Issue,
+} from "./eho-model"
 import {
   canStart,
   reviewErrors,
@@ -28,6 +48,8 @@ import {
   submitInspection,
 } from "./eho-state"
 import { useEho } from "./eho-session"
+import { inspectionCheckComplete } from "./eho-inspection-journey"
+import { readTaskProgress } from "./eho-task-progress"
 
 const answers: InspectionAnswer[] = [
   "Satisfactory",
@@ -45,18 +67,311 @@ function contextFor(id: string) {
   }
 }
 
-export function EhoChecklistPage({ inspectionId }: { inspectionId: string }) {
-  const { assignment, premises } = contextFor(inspectionId)
+function noticeHasBeenServed(
+  inspectionId: string,
+  officerId: string | undefined
+) {
+  const assignment = assignments.find((item) => item.id === inspectionId)
+  if (!assignment) return false
+  if (assignment.notice === "Served") return true
+  if (!officerId || typeof window === "undefined") return false
+  return Boolean(
+    readTaskProgress(localStorage, officerId, assignment).noticeSentAt
+  )
+}
+
+function evidenceKind(type: string) {
+  if (type.startsWith("image/")) return "Image"
+  if (type.startsWith("video/")) return "Video"
+  if (type === "application/pdf") return "PDF"
+  return "File"
+}
+
+function fileSize(size: number) {
+  if (size < 1024) return `${size} B`
+  if (size < 1024 * 1024) return `${Math.ceil(size / 1024)} KB`
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`
+}
+
+function EvidenceUploadField({
+  id,
+  evidence,
+  onChange,
+}: {
+  id: string
+  evidence: Evidence[]
+  onChange: (evidence: Evidence[]) => void
+}) {
+  function addFiles(files: FileList | null) {
+    if (!files) return
+    const additions = Array.from(files, (file) => ({
+      name: file.name,
+      type: file.type,
+      size: file.size,
+    }))
+    const unique = [...evidence]
+    for (const file of additions) {
+      if (
+        !unique.some(
+          (existing) =>
+            existing.name === file.name &&
+            existing.type === file.type &&
+            existing.size === file.size
+        )
+      )
+        unique.push(file)
+    }
+    onChange(unique)
+  }
+
+  return (
+    <Field>
+      <FieldLabel htmlFor={id}>Evidence files</FieldLabel>
+      <Input
+        id={id}
+        type="file"
+        multiple
+        accept="image/*,video/*,application/pdf"
+        className="h-auto py-2"
+        onChange={(event) => {
+          addFiles(event.currentTarget.files)
+          event.currentTarget.value = ""
+        }}
+      />
+      <FieldDescription>Add multiple images, videos, or PDFs.</FieldDescription>
+      {evidence.length > 0 && (
+        <div
+          className="overflow-hidden rounded-lg border"
+          aria-label={`${evidence.length} selected evidence ${evidence.length === 1 ? "file" : "files"}`}
+        >
+          <div className="flex items-center justify-between gap-3 bg-muted/40 px-3 py-2">
+            <p className="text-sm font-medium">Selected evidence</p>
+            <Badge variant="secondary">{evidence.length}</Badge>
+          </div>
+          <ul className="divide-y">
+            {evidence.map((file, index) => (
+              <li
+                key={`${file.name}-${file.size}-${index}`}
+                className="flex items-center justify-between gap-3 px-3 py-2.5"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium">{file.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {evidenceKind(file.type)} · {fileSize(file.size)}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  aria-label={`Remove ${file.name}`}
+                  onClick={() =>
+                    onChange(
+                      evidence.filter((_, itemIndex) => itemIndex !== index)
+                    )
+                  }
+                >
+                  Remove
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </Field>
+  )
+}
+
+function ContraventionDialog({
+  inspectionId,
+  item,
+  hasIssues,
+  noticeServed,
+  onSaved,
+}: {
+  inspectionId: string
+  item: ChecklistItem
+  hasIssues: boolean
+  noticeServed: boolean
+  onSaved: () => void
+}) {
   const { getDraft, updateDraft } = useEho()
+  const [open, setOpen] = useState(false)
+  const [description, setDescription] = useState("")
+  const [action, setAction] = useState("")
+  const [deadline, setDeadline] = useState("")
+  const [notes, setNotes] = useState("")
+  const [evidence, setEvidence] = useState<Evidence[]>([])
+  const [error, setError] = useState("")
+
+  function resetForm() {
+    setDescription("")
+    setAction("")
+    setDeadline("")
+    setNotes("")
+    setEvidence([])
+    setError("")
+  }
+
+  function handleOpenChange(nextOpen: boolean) {
+    setOpen(nextOpen)
+    if (!nextOpen) resetForm()
+  }
+
+  function save(event: React.FormEvent) {
+    event.preventDefault()
+    if (!description.trim() || !action.trim() || !deadline) {
+      setError("Describe the issue, required corrective action, and deadline.")
+      return
+    }
+
+    const issue: Issue = {
+      id: crypto.randomUUID(),
+      itemId: item.id,
+      description: description.trim(),
+      action: action.trim(),
+      deadline,
+      notes: notes.trim(),
+      evidence,
+    }
+    if (!updateDraft(saveIssue(getDraft(inspectionId), issue, noticeServed))) {
+      setError("Could not save this issue. Try again.")
+      return
+    }
+
+    onSaved()
+    handleOpenChange(false)
+  }
+
+  const fieldId = `contravention-${item.id}`
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogTrigger
+        render={
+          <Button
+            variant={hasIssues ? "outline" : "default"}
+            className="min-h-11"
+          />
+        }
+      >
+        {hasIssues ? "Add another" : "Report contravention"}
+      </DialogTrigger>
+      <DialogContent className="h-[min(42rem,calc(100dvh-2rem))] overflow-hidden sm:max-w-xl">
+        <form
+          onSubmit={save}
+          className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)_auto]"
+        >
+          <DialogHeader className="gap-1">
+            <DialogTitle>Report contravention</DialogTitle>
+            <DialogDescription>
+              {item.label} · Record the issue, corrective action, and deadline.
+            </DialogDescription>
+          </DialogHeader>
+          <FieldGroup className="min-h-0 [scrollbar-width:none] gap-4 overflow-y-auto overscroll-contain py-4 [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden [&>[data-slot=field]]:gap-2">
+            <Field data-invalid={Boolean(error && !description.trim())}>
+              <FieldLabel htmlFor={`${fieldId}-description`}>
+                Description of issue
+              </FieldLabel>
+              <Textarea
+                id={`${fieldId}-description`}
+                value={description}
+                onChange={(event) => {
+                  setDescription(event.target.value)
+                  setError("")
+                }}
+                aria-invalid={Boolean(error && !description.trim())}
+                rows={2}
+                className="min-h-14"
+                required
+              />
+            </Field>
+            <Field data-invalid={Boolean(error && !action.trim())}>
+              <FieldLabel htmlFor={`${fieldId}-action`}>
+                Required corrective action
+              </FieldLabel>
+              <Textarea
+                id={`${fieldId}-action`}
+                value={action}
+                onChange={(event) => {
+                  setAction(event.target.value)
+                  setError("")
+                }}
+                aria-invalid={Boolean(error && !action.trim())}
+                rows={2}
+                className="min-h-14"
+                required
+              />
+            </Field>
+            <Field data-invalid={Boolean(error && !deadline)}>
+              <FieldLabel htmlFor={`${fieldId}-deadline`}>Deadline</FieldLabel>
+              <Input
+                id={`${fieldId}-deadline`}
+                type="date"
+                value={deadline}
+                onChange={(event) => {
+                  setDeadline(event.target.value)
+                  setError("")
+                }}
+                aria-invalid={Boolean(error && !deadline)}
+                required
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor={`${fieldId}-notes`}>
+                Additional notes (optional)
+              </FieldLabel>
+              <Textarea
+                id={`${fieldId}-notes`}
+                value={notes}
+                onChange={(event) => setNotes(event.target.value)}
+                rows={2}
+                className="min-h-14"
+              />
+            </Field>
+            <EvidenceUploadField
+              id={`${fieldId}-evidence`}
+              evidence={evidence}
+              onChange={setEvidence}
+            />
+            <FieldError>{error}</FieldError>
+          </FieldGroup>
+          <DialogFooter className="border-t pt-4">
+            <DialogClose render={<Button type="button" variant="outline" />}>
+              Cancel
+            </DialogClose>
+            <Button type="submit">Save contravention</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+export function EhoChecklistPage({
+  inspectionId,
+  itemId,
+}: {
+  inspectionId: string
+  itemId?: string
+}) {
+  const { assignment, premises } = contextFor(inspectionId)
+  const { officer, getDraft, updateDraft } = useEho()
   const [message, setMessage] = useState("")
   if (!assignment) return <EmptyState title="Inspection not found" />
+  const itemIndex = itemId
+    ? checklist.findIndex((item) => item.id === itemId)
+    : 0
+  const activeItem = checklist.at(itemIndex)
+  if (!activeItem) return <EmptyState title="Checklist item not found" />
   const draft = getDraft(inspectionId)
-  if (!canStart(assignment) || draft.status !== "draft")
+  const noticeServed = noticeHasBeenServed(inspectionId, officer?.id)
+  if (!canStart(assignment, noticeServed) || draft.status !== "draft")
     return (
       <div className="space-y-4">
         <Alert>
           <AlertDescription>
-            {!canStart(assignment)
+            {!canStart(assignment, noticeServed)
               ? "The required notice must be served before this inspection can begin."
               : "This inspection has already been submitted on this device."}
           </AlertDescription>
@@ -75,209 +390,164 @@ export function EhoChecklistPage({ inspectionId }: { inspectionId: string }) {
         </Button>
       </div>
     )
-  const completed = checklist.filter(
-    (item) => draft.answers[item.id] !== undefined
-  ).length
+  const currentComplete = inspectionCheckComplete(draft, activeItem.id)
+  const previousItem = itemIndex > 0 ? checklist.at(itemIndex - 1) : undefined
+  const nextItem = checklist.at(itemIndex + 1)
+  const previousLink = previousItem ? (
+    <Link
+      to="/eho/inspections/$inspectionId/checklist/$itemId"
+      params={{ inspectionId, itemId: previousItem.id }}
+    />
+  ) : (
+    <Link to="/eho/inspections/$inspectionId" params={{ inspectionId }} />
+  )
+  const nextLink = nextItem ? (
+    <Link
+      to="/eho/inspections/$inspectionId/checklist/$itemId"
+      params={{ inspectionId, itemId: nextItem.id }}
+    />
+  ) : (
+    <Link
+      to="/eho/inspections/$inspectionId/review"
+      params={{ inspectionId }}
+    />
+  )
   return (
-    <div className="space-y-6">
-      <Link
-        to="/eho/inspections/$inspectionId"
-        params={{ inspectionId }}
-        className="inline-flex min-h-11 items-center gap-2 text-sm text-muted-foreground"
-      >
-        <ArrowLeft className="size-4" />
-        Inspection overview
-      </Link>
+    <div className="mx-auto max-w-[43rem] space-y-6">
       <PageHeader
         eyebrow={`${inspectionId} · Field checklist`}
         title={premises?.businessName ?? "Inspection checklist"}
         description="Choose one answer for each check. Changes save to this device as you work."
+        divided={false}
       />
-      <div className="rounded-lg border bg-background p-4">
-        <div className="flex items-center justify-between gap-3 text-sm">
-          <span className="font-medium">Checklist progress</span>
-          <span aria-live="polite">
-            {completed} of {checklist.length} answered
-          </span>
-        </div>
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
-          <div
-            className="h-full rounded-full bg-primary"
-            style={{ width: `${(100 * completed) / checklist.length}%` }}
-          />
-        </div>
-      </div>
-      <section
-        aria-label="Certificate checks"
-        className="rounded-xl border bg-card p-4 sm:p-5"
-      >
-        <div className="flex items-start gap-3">
-          <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
-            <FileBadge2 className="size-5" aria-hidden="true" />
-          </span>
-          <div>
-            <h2 className="font-semibold">Certificate checks</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Review the recorded status before assessing the premises.
-            </p>
-          </div>
-        </div>
-        {premises?.certificates.length ? (
-          <ul className="mt-4 divide-y border-t">
-            {premises.certificates.map((certificate) => (
-              <li
-                key={certificate.id}
-                className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-3"
-              >
-                <div>
-                  <p className="text-sm font-medium">{certificate.type}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {certificate.id ?? "Reference unavailable"}
-                    {certificate.expiresAt &&
-                      certificate.status !== "Not Found" &&
-                      ` · Expires ${certificate.expiresAt}`}
-                  </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-3">
-                  <StatusBadge status={certificate.status} />
-                  {certificate.id && (
-                    <a
-                      href={`/eho/premises/${encodeURIComponent(assignment.premisesId)}?inspection=${encodeURIComponent(inspectionId)}&certificate=${encodeURIComponent(certificate.id)}`}
-                      aria-label={`View ${certificate.type} certificate`}
-                      className="inline-flex min-h-11 items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-                    >
-                      View record{" "}
-                      <ArrowRight className="size-4" aria-hidden="true" />
-                    </a>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="mt-4 border-t pt-4 text-sm text-muted-foreground">
-            No certificate records found for this premises.
-          </p>
-        )}
-      </section>
-      <div className="grid gap-4">
-        {checklist.map((item) => (
-          <Card key={item.id}>
-            <CardHeader>
-              <p className="text-xs font-semibold tracking-wider text-primary uppercase">
-                {item.section}
-              </p>
-              <CardTitle>{item.label}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <fieldset>
-                <legend className="mb-2 text-sm font-medium">
-                  Assessment<span className="sr-only"> for {item.label}</span>
-                </legend>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {answers.map((answer) => (
-                    <label
-                      key={answer}
-                      className={`flex min-h-11 cursor-pointer items-center gap-2 rounded-md border p-3 text-sm focus-within:ring-2 focus-within:ring-ring ${draft.answers[item.id] === answer ? "border-primary bg-primary/5 font-medium" : "hover:bg-muted/50"}`}
-                    >
-                      <input
-                        type="radio"
-                        name={`answer-${item.id}`}
-                        value={answer}
-                        checked={draft.answers[item.id] === answer}
-                        onChange={() => {
-                          if (!updateDraft(saveAnswer(draft, item.id, answer)))
-                            setMessage("Unable to save this answer. Try again.")
-                          else setMessage("Saved on this device")
-                        }}
-                      />
-                      {answer}
-                    </label>
-                  ))}
-                </div>
-              </fieldset>
+      <Card>
+        <CardHeader>
+          <CardTitle>{activeItem.label}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <fieldset>
+            <legend className="mb-2 text-sm font-medium">
+              Assessment
+              <span className="sr-only"> for {activeItem.label}</span>
+            </legend>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {answers.map((answer) => (
+                <label
+                  key={answer}
+                  className={`flex min-h-11 cursor-pointer items-center gap-2 rounded-md border p-3 text-sm focus-within:ring-2 focus-within:ring-ring ${draft.answers[activeItem.id] === answer ? "border-primary bg-primary/5 font-medium" : "hover:bg-muted/50"}`}
+                >
+                  <input
+                    type="radio"
+                    name={`answer-${activeItem.id}`}
+                    value={answer}
+                    checked={draft.answers[activeItem.id] === answer}
+                    onChange={() => {
+                      if (
+                        !updateDraft(
+                          saveAnswer(draft, activeItem.id, answer, noticeServed)
+                        )
+                      )
+                        setMessage("Unable to save this answer. Try again.")
+                      else setMessage("Saved on this device")
+                    }}
+                  />
+                  {answer}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          {draft.answers[activeItem.id] &&
+            draft.answers[activeItem.id] !== "Contravention" && (
               <div className="grid gap-2">
                 <label
-                  htmlFor={`note-${item.id}`}
+                  htmlFor={`note-${activeItem.id}`}
                   className="text-sm font-medium"
                 >
                   Notes (optional)
                 </label>
                 <Textarea
-                  id={`note-${item.id}`}
-                  value={draft.notes[item.id] ?? ""}
+                  id={`note-${activeItem.id}`}
+                  value={draft.notes[activeItem.id] ?? ""}
                   onChange={(event) =>
                     updateDraft({
                       ...draft,
-                      notes: { ...draft.notes, [item.id]: event.target.value },
+                      notes: {
+                        ...draft.notes,
+                        [activeItem.id]: event.target.value,
+                      },
                     })
                   }
                 />
               </div>
-              {draft.answers[item.id] === "Contravention" && (
-                <div className="space-y-2 rounded-md border border-amber-200 bg-amber-50 p-3">
-                  <p className="text-sm text-amber-950">
-                    {
-                      draft.issues.filter((issue) => issue.itemId === item.id)
-                        .length
-                    }{" "}
-                    issue(s) recorded. Add a corrective action and deadline.
-                  </p>
+            )}
+          {draft.answers[activeItem.id] === "Contravention" && (
+            <div className="space-y-2 rounded-md border border-amber-200 bg-amber-50 p-3">
+              <p className="text-sm text-amber-950">
+                {draft.issues.filter((issue) => issue.itemId === activeItem.id)
+                  .length === 1
+                  ? "1 issue recorded."
+                  : `${draft.issues.filter((issue) => issue.itemId === activeItem.id).length} issues recorded.`}{" "}
+                Add a corrective action and deadline.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {draft.issues.some(
+                  (issue) => issue.itemId === activeItem.id
+                ) && (
                   <Button
-                    variant="outline"
                     className="min-h-11"
                     nativeButton={false}
                     render={
                       <Link
                         to="/eho/inspections/$inspectionId/issues/$itemId"
-                        params={{ inspectionId, itemId: item.id }}
+                        params={{ inspectionId, itemId: activeItem.id }}
                       />
                     }
                   >
-                    Record contravention
+                    Review and edit
                   </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                )}
+                <ContraventionDialog
+                  inspectionId={inspectionId}
+                  item={activeItem}
+                  hasIssues={draft.issues.some(
+                    (issue) => issue.itemId === activeItem.id
+                  )}
+                  noticeServed={noticeServed}
+                  onSaved={() =>
+                    setMessage("Contravention saved on this device")
+                  }
+                />
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
       {message && (
         <p role="status" className="text-sm text-muted-foreground">
           {message}
         </p>
       )}
-      <div className="flex flex-wrap gap-3 border-t pt-5">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-5">
         <Button
           variant="outline"
           className="min-h-11"
-          onClick={() =>
-            window.location.assign(`/eho/inspections/${inspectionId}`)
-          }
-        >
-          <Save />
-          Save and continue later
-        </Button>
-        <Button
-          className="min-h-11"
-          onClick={() =>
-            window.location.assign(`/eho/inspections/${inspectionId}/review`)
-          }
-        >
-          Complete inspection
-        </Button>
-        <Button
-          variant="link"
-          className="min-h-11"
           nativeButton={false}
-          render={
-            <a
-              href={`/eho/premises/${assignment.premisesId}?inspection=${inspectionId}`}
-            />
-          }
+          render={previousLink}
         >
-          View premises compliance
+          <ArrowLeft data-icon="inline-start" aria-hidden="true" />
+          Back
         </Button>
+        {currentComplete ? (
+          <Button className="min-h-11" nativeButton={false} render={nextLink}>
+            {nextItem ? "Next" : "Review inspection"}
+            <ArrowRight data-icon="inline-end" aria-hidden="true" />
+          </Button>
+        ) : (
+          <Button className="min-h-11" disabled>
+            {nextItem ? "Next" : "Review inspection"}
+            <ArrowRight data-icon="inline-end" aria-hidden="true" />
+          </Button>
+        )}
       </div>
     </div>
   )
@@ -292,18 +562,20 @@ export function EhoIssuePage({
 }) {
   const assignment = assignments.find((item) => item.id === inspectionId)
   const item = checklist.find((check) => check.id === itemId)
-  const { getDraft, updateDraft } = useEho()
+  const { officer, getDraft, updateDraft } = useEho()
+  const navigate = useNavigate()
   const [editingId, setEditingId] = useState("")
   const [description, setDescription] = useState("")
   const [action, setAction] = useState("")
   const [deadline, setDeadline] = useState("")
   const [notes, setNotes] = useState("")
-  const [evidence, setEvidence] = useState<Evidence | undefined>()
+  const [evidence, setEvidence] = useState<Evidence[]>([])
   const [error, setError] = useState("")
   if (!assignment || !item)
     return <EmptyState title="Checklist item not found" />
   const draft = getDraft(inspectionId)
-  if (!canStart(assignment) || draft.status !== "draft")
+  const noticeServed = noticeHasBeenServed(inspectionId, officer?.id)
+  if (!canStart(assignment, noticeServed) || draft.status !== "draft")
     return (
       <Alert>
         <AlertDescription>This inspection cannot be edited.</AlertDescription>
@@ -316,7 +588,7 @@ export function EhoIssuePage({
     setAction(issue.action)
     setDeadline(issue.deadline)
     setNotes(issue.notes)
-    setEvidence(issue.evidence)
+    setEvidence(issue.evidence ?? [])
     setError("")
   }
   function save(event: React.FormEvent) {
@@ -334,20 +606,23 @@ export function EhoIssuePage({
       notes: notes.trim(),
       evidence,
     }
-    if (updateDraft(saveIssue(draft, issue)))
-      window.location.assign(`/eho/inspections/${inspectionId}/checklist`)
-    else setError("Could not save this issue. Try again.")
+    if (!updateDraft(saveIssue(draft, issue, noticeServed))) {
+      setError("Could not save this issue. Try again.")
+      return
+    }
+    if (itemId === "food-storage")
+      void navigate({
+        to: "/eho/inspections/$inspectionId/checklist",
+        params: { inspectionId },
+      })
+    else
+      void navigate({
+        to: "/eho/inspections/$inspectionId/checklist/$itemId",
+        params: { inspectionId, itemId },
+      })
   }
   return (
     <div className="max-w-3xl space-y-6">
-      <Link
-        to="/eho/inspections/$inspectionId/checklist"
-        params={{ inspectionId }}
-        className="inline-flex min-h-11 items-center gap-2 text-sm text-muted-foreground"
-      >
-        <ArrowLeft className="size-4" />
-        Back to checklist
-      </Link>
       <PageHeader
         eyebrow={item.section}
         title={`Contravention · ${item.label}`}
@@ -436,35 +711,11 @@ export function EhoIssuePage({
                 onChange={(event) => setNotes(event.target.value)}
               />
             </div>
-            <div className="grid gap-2">
-              <label
-                htmlFor="issue-evidence"
-                className="flex items-center gap-2 text-sm font-medium"
-              >
-                <Camera className="size-4" />
-                Evidence file (optional)
-              </label>
-              <Input
-                id="issue-evidence"
-                type="file"
-                accept="image/jpeg,image/png,application/pdf"
-                className="h-auto min-h-11 py-2"
-                onChange={(event) => {
-                  const file = event.target.files?.[0]
-                  if (file)
-                    setEvidence({
-                      name: file.name,
-                      type: file.type,
-                      size: file.size,
-                    })
-                }}
-              />
-              <p className="text-xs text-muted-foreground">
-                Only file details are saved on this device. The file itself is
-                not uploaded or retained.
-              </p>
-              {evidence && <p className="text-sm">Selected: {evidence.name}</p>}
-            </div>
+            <EvidenceUploadField
+              id="issue-evidence"
+              evidence={evidence}
+              onChange={setEvidence}
+            />
             {error && (
               <p role="alert" className="text-sm text-destructive">
                 {error}
@@ -480,10 +731,17 @@ export function EhoIssuePage({
                 className="min-h-11"
                 nativeButton={false}
                 render={
-                  <Link
-                    to="/eho/inspections/$inspectionId/checklist"
-                    params={{ inspectionId }}
-                  />
+                  itemId === "food-storage" ? (
+                    <Link
+                      to="/eho/inspections/$inspectionId/checklist"
+                      params={{ inspectionId }}
+                    />
+                  ) : (
+                    <Link
+                      to="/eho/inspections/$inspectionId/checklist/$itemId"
+                      params={{ inspectionId, itemId }}
+                    />
+                  )
                 }
               >
                 Cancel
@@ -498,11 +756,12 @@ export function EhoIssuePage({
 
 export function EhoReviewPage({ inspectionId }: { inspectionId: string }) {
   const { assignment, premises } = contextFor(inspectionId)
-  const { getDraft, updateDraft } = useEho()
+  const { officer, getDraft, updateDraft } = useEho()
   const [error, setError] = useState("")
   if (!assignment) return <EmptyState title="Inspection not found" />
   const draft = getDraft(inspectionId)
-  if (!canStart(assignment) || draft.status !== "draft")
+  const noticeServed = noticeHasBeenServed(inspectionId, officer?.id)
+  if (!canStart(assignment, noticeServed) || draft.status !== "draft")
     return (
       <Alert>
         <AlertDescription>
@@ -519,10 +778,12 @@ export function EhoReviewPage({ inspectionId }: { inspectionId: string }) {
       }
       const completed = submitInspection(
         draft,
-        typeof navigator !== "undefined" && !navigator.onLine
+        typeof navigator !== "undefined" && !navigator.onLine,
+        undefined,
+        noticeServed
       )
       if (updateDraft(completed))
-        window.location.assign(`/eho/inspections/${inspectionId}/result`)
+        window.location.assign(`/eho/inspections/${inspectionId}`)
       else setError("Unable to save the submission. Try again.")
     } catch {
       setError(
@@ -532,14 +793,6 @@ export function EhoReviewPage({ inspectionId }: { inspectionId: string }) {
   }
   return (
     <div className="max-w-4xl space-y-6">
-      <Link
-        to="/eho/inspections/$inspectionId/checklist"
-        params={{ inspectionId }}
-        className="inline-flex min-h-11 items-center gap-2 text-sm text-muted-foreground"
-      >
-        <ArrowLeft className="size-4" />
-        Edit checklist
-      </Link>
       <PageHeader
         eyebrow={`${inspectionId} · Final review`}
         title="Review & Submit"
@@ -564,8 +817,11 @@ export function EhoReviewPage({ inspectionId }: { inspectionId: string }) {
           </p>
           <p>
             <strong className="block">Evidence</strong>
-            {draft.issues.filter((issue) => issue.evidence).length} file
-            detail(s)
+            {draft.issues.reduce(
+              (count, issue) => count + (issue.evidence?.length ?? 0),
+              0
+            )}{" "}
+            file detail(s)
           </p>
         </CardContent>
       </Card>

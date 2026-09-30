@@ -14,7 +14,7 @@ describe("EHO premises inspection history", () => {
     ).toEqual([
       expect.objectContaining({
         id: "EIN-104",
-        date: "2026-09-10",
+        date: "2026-09-14",
         status: "Completed",
         findings: 1,
         href: "/eho/inspections/EIN-104/result",

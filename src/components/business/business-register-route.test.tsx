@@ -25,7 +25,7 @@ describe("BusinessRegister fresh identity route", () => {
     vi.unstubAllGlobals()
   })
 
-  it("collects business identity and continues directly to premises setup", async () => {
+  it("collects business identity and enters the portal with KYB pending", async () => {
     render(
       <Providers>
         <BusinessRegister />
@@ -41,7 +41,7 @@ describe("BusinessRegister fresh identity route", () => {
     await user.click(screen.getByRole("button", { name: "Continue" }))
 
     await waitFor(() =>
-      expect(assign).toHaveBeenCalledExactlyOnceWith("/business/setup")
+      expect(assign).toHaveBeenCalledExactlyOnceWith("/business/dashboard")
     )
     expect(createBusinessStorage(localStorage).read()).toMatchObject({
       stage: "setup",

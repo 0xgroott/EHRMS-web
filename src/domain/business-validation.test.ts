@@ -9,7 +9,7 @@ describe("business onboarding validation", () => {
   const validAccount = {
     businessName: "Riverside Kitchen",
     contactName: "Ada Okafor",
-    phone: "08031234567",
+    phone: "",
     email: "ada@riverside.ng",
     password: "strong-password",
     acceptedTerms: true,
@@ -28,13 +28,8 @@ describe("business onboarding validation", () => {
     expect(validatePremises(validPremises)).toEqual({})
   })
 
-  it("accepts spaced international phone numbers", () => {
-    expect(
-      validateAccount({
-        ...validAccount,
-        phone: "+234 803 123 4567",
-      })
-    ).toEqual({})
+  it("does not require a phone number during account creation", () => {
+    expect(validateAccount(validAccount)).toEqual({})
   })
 
   it("accepts a password at the 10-character boundary", () => {
@@ -46,26 +41,11 @@ describe("business onboarding validation", () => {
     ).toEqual({})
   })
 
-  it("requires 10 to 15 digits and a leading plus only", () => {
-    for (const phone of [
-      "          ",
-      "1         ",
-      "++++++++++",
-      "123456789",
-      "1234567890123456",
-      "123+4567890",
-    ]) {
-      expect(validateAccount({ ...validAccount, phone }).phone).toBe(
-        "Enter a valid phone number"
-      )
-    }
-  })
-
   it("requires consent and a strong password", () => {
     const errors = validateAccount({
       businessName: "Riverside Kitchen",
       contactName: "Ada Okafor",
-      phone: "08031234567",
+      phone: "",
       email: "ada@riverside.ng",
       password: "short",
       acceptedTerms: false,

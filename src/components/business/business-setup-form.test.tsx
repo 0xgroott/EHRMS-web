@@ -41,7 +41,6 @@ function renderSetup(
     initialValues: validPremises,
     initialDocuments: [],
     contactEmail: "ada@riverside.ng",
-    contactPhone: "08031234567",
     onSaveDraft: vi.fn().mockResolvedValue(undefined),
     onComplete: vi.fn().mockResolvedValue(undefined),
     onExit: vi.fn(),
@@ -51,13 +50,32 @@ function renderSetup(
   return props
 }
 
+async function goToLocation(user = userEvent.setup()) {
+  await user.click(screen.getByRole("button", { name: "Continue" }))
+  return user
+}
+
+async function goToReview(user = userEvent.setup()) {
+  await goToLocation(user)
+  await user.click(screen.getByRole("button", { name: "Continue" }))
+  return user
+}
+
 describe("BusinessSetupForm", () => {
   afterEach(() => {
     vi.useRealTimers()
   })
 
-  it("organizes setup fields into three separated groups", () => {
+  it("presents the KYB fields as three focused steps", async () => {
     renderSetup()
+
+    const progress = screen.getByRole("list", { name: "KYB progress" })
+    expect(within(progress).getByText("Step 01")).toHaveAttribute(
+      "aria-current",
+      "step"
+    )
+    expect(within(progress).getByText("Step 02")).toBeVisible()
+    expect(within(progress).getByText("Step 03")).toBeVisible()
 
     const businessDetails = screen.getByRole("group", {
       name: "Business details",
@@ -71,6 +89,12 @@ describe("BusinessSetupForm", () => {
     expect(
       within(businessDetails).getByLabelText("Registration number (optional)")
     ).toBeVisible()
+    expect(
+      screen.queryByRole("group", { name: "Premises location" })
+    ).not.toBeInTheDocument()
+
+    const user = userEvent.setup()
+    await user.click(screen.getByRole("button", { name: "Continue" }))
 
     const premisesLocation = screen.getByRole("group", {
       name: "Premises location",
@@ -80,18 +104,33 @@ describe("BusinessSetupForm", () => {
     ).toBeVisible()
     expect(within(premisesLocation).getByLabelText("Ward")).toBeVisible()
     expect(within(premisesLocation).getByLabelText("Council")).toBeVisible()
-    expect(premisesLocation).toHaveClass("border-t", "pt-10")
+    expect(
+      screen.queryByRole("group", { name: "Business details" })
+    ).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: "Continue" }))
 
     const contactAndDocuments = screen.getByRole("group", {
-      name: "Contact and documents",
+      name: "Documents and review",
     })
     expect(
-      within(contactAndDocuments).getByLabelText("Account contact details")
+      within(contactAndDocuments).getByLabelText("Account email")
     ).toBeVisible()
+    expect(
+      within(contactAndDocuments).getByText("ada@riverside.ng")
+    ).toBeVisible()
+    expect(
+      within(contactAndDocuments).queryByText("Phone")
+    ).not.toBeInTheDocument()
     expect(
       within(contactAndDocuments).getByLabelText(/Supporting document/)
     ).toBeVisible()
-    expect(contactAndDocuments).toHaveClass("border-t", "pt-10")
+    expect(screen.getByRole("button", { name: "Complete KYB" })).toBeVisible()
+
+    await user.click(screen.getByRole("button", { name: "Back" }))
+    expect(
+      screen.getByRole("group", { name: "Premises location" })
+    ).toBeVisible()
 
     expect(
       screen.queryByRole("group", { name: "Registration details" })
@@ -101,6 +140,34 @@ describe("BusinessSetupForm", () => {
     ).not.toBeInTheDocument()
   })
 
+  it("validates only the current step before continuing", async () => {
+    renderSetup({
+      initialValues: {
+        ...validPremises,
+        premisesName: "",
+        businessType: "",
+        address: "",
+      },
+    })
+
+    await userEvent
+      .setup()
+      .click(screen.getByRole("button", { name: "Continue" }))
+
+    expect(screen.getByLabelText("Premises name")).toHaveAccessibleDescription(
+      "Enter the premises name"
+    )
+    expect(screen.getByLabelText("Business type")).toHaveAccessibleDescription(
+      "Choose a business type"
+    )
+    expect(
+      screen.queryByText("Enter the premises address")
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole("group", { name: "Business details" })
+    ).toBeVisible()
+  })
+
   it("shows required address and council errors when continuing", async () => {
     const onComplete = vi.fn()
     renderSetup({
@@ -108,9 +175,8 @@ describe("BusinessSetupForm", () => {
       onComplete,
     })
 
-    await userEvent
-      .setup()
-      .click(screen.getByRole("button", { name: "Save and continue" }))
+    const user = await goToLocation()
+    await user.click(screen.getByRole("button", { name: "Continue" }))
 
     expect(
       screen.getByLabelText("Premises address")
@@ -136,7 +202,7 @@ describe("BusinessSetupForm", () => {
   it("shows council seed options and keeps document metadata only", async () => {
     const onSaveDraft = vi.fn().mockResolvedValue(undefined)
     renderSetup({ onSaveDraft })
-    const user = userEvent.setup()
+    const user = await goToReview()
 
     const document = new File(["private document contents"], "permit.pdf", {
       type: "application/pdf",
@@ -160,6 +226,7 @@ describe("BusinessSetupForm", () => {
 
   it("rejects unsupported document types without changing the form", async () => {
     renderSetup()
+    await goToReview()
     const document = new File(["script"], "payload.exe", {
       type: "application/octet-stream",
     })
@@ -193,7 +260,7 @@ describe("BusinessSetupForm", () => {
       .mockRejectedValueOnce(new Error("offline"))
       .mockResolvedValueOnce(undefined)
     renderSetup({ onSaveDraft })
-    const user = userEvent.setup()
+    const user = await goToLocation()
     await user.clear(screen.getByLabelText("Ward"))
     await user.type(screen.getByLabelText("Ward"), "Oginigba")
 
@@ -213,16 +280,16 @@ describe("BusinessSetupForm", () => {
     })
     const onComplete = vi.fn().mockReturnValue(pending)
     renderSetup({ onComplete })
-    const user = userEvent.setup()
-    await user.click(screen.getByRole("button", { name: "Save and continue" }))
+    const user = await goToReview()
+    await user.click(screen.getByRole("button", { name: "Complete KYB" }))
 
     await waitFor(() =>
       expect(onComplete).toHaveBeenCalledExactlyOnceWith(validPremises, [])
     )
     expect(
-      screen.getByRole("button", { name: "Completing setup…" })
+      screen.getByRole("button", { name: "Completing KYB…" })
     ).toBeDisabled()
-    await user.click(screen.getByRole("button", { name: "Completing setup…" }))
+    await user.click(screen.getByRole("button", { name: "Completing KYB…" }))
     expect(onComplete).toHaveBeenCalledTimes(1)
     await act(async () => {
       resolve()
@@ -236,7 +303,7 @@ describe("BusinessSetupForm", () => {
     renderSetup({ onSaveDraft, onExit })
     await userEvent
       .setup()
-      .click(screen.getByRole("button", { name: "Save draft and exit" }))
+      .click(screen.getByRole("button", { name: "Save draft" }))
 
     await waitFor(() => expect(onSaveDraft).toHaveBeenCalledTimes(1))
     expect(onExit).toHaveBeenCalledExactlyOnceWith()
@@ -249,7 +316,8 @@ describe("BusinessSetupForm", () => {
     const user = userEvent.setup()
 
     await user.type(screen.getByLabelText("Premises name"), " Updated")
-    await user.click(screen.getByRole("button", { name: "Save and continue" }))
+    await goToReview(user)
+    await user.click(screen.getByRole("button", { name: "Complete KYB" }))
     await waitFor(() => expect(onComplete).toHaveBeenCalledTimes(1))
 
     await new Promise((resolve) => window.setTimeout(resolve, 650))
@@ -272,11 +340,12 @@ describe("BusinessSetupForm", () => {
       events.push("complete")
     })
     renderSetup({ onSaveDraft, onComplete })
-    const user = userEvent.setup()
+    const user = await goToLocation()
 
     await user.type(screen.getByLabelText("Ward"), " Updated")
     await waitFor(() => expect(onSaveDraft).toHaveBeenCalledTimes(1))
-    await user.click(screen.getByRole("button", { name: "Save and continue" }))
+    await user.click(screen.getByRole("button", { name: "Continue" }))
+    await user.click(screen.getByRole("button", { name: "Complete KYB" }))
     expect(onComplete).not.toHaveBeenCalled()
 
     resolveDraft()
@@ -300,7 +369,7 @@ describe("BusinessSetupForm", () => {
       .mockImplementationOnce(() => firstSave)
       .mockImplementationOnce(() => secondSave)
     renderSetup({ onSaveDraft })
-    const user = userEvent.setup()
+    const user = await goToLocation()
 
     await user.type(screen.getByLabelText("Ward"), " first")
     await waitFor(() => expect(onSaveDraft).toHaveBeenCalledTimes(1))
@@ -326,16 +395,14 @@ describe("BusinessSetupForm", () => {
       .mockImplementationOnce(() => firstCompletion)
       .mockResolvedValueOnce(undefined)
     renderSetup({ onComplete })
-    const user = userEvent.setup()
-    const premisesName = screen.getByLabelText("Premises name")
+    const user = await goToReview()
+    const documentInput = screen.getByLabelText(/Supporting document/)
 
-    await user.click(screen.getByRole("button", { name: "Save and continue" }))
+    await user.click(screen.getByRole("button", { name: "Complete KYB" }))
     expect(
-      await screen.findByRole("button", { name: "Completing setup…" })
+      await screen.findByRole("button", { name: "Completing KYB…" })
     ).toBeDisabled()
-    expect(premisesName).toBeDisabled()
-    await user.type(premisesName, " Lost edit")
-    expect(premisesName).toHaveValue(validPremises.premisesName)
+    expect(documentInput).toBeDisabled()
 
     rejectCompletion(new Error("completion unavailable"))
     await waitFor(() =>
@@ -343,9 +410,9 @@ describe("BusinessSetupForm", () => {
         "Unable to complete setup"
       )
     )
-    expect(premisesName).toBeEnabled()
+    expect(documentInput).toBeEnabled()
 
-    await user.click(screen.getByRole("button", { name: "Save and continue" }))
+    await user.click(screen.getByRole("button", { name: "Complete KYB" }))
     await waitFor(() => expect(onComplete).toHaveBeenCalledTimes(2))
     expect(onComplete).toHaveBeenLastCalledWith(validPremises, [])
   })

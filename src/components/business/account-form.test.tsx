@@ -15,7 +15,7 @@ afterAll(() => vi.unstubAllGlobals())
 const account: BusinessAccountInput = {
   businessName: "Riverside Kitchen",
   contactName: "Ada Okafor",
-  phone: "08031234567",
+  phone: "",
   email: "ada@riverside.ng",
   password: "secure-demo-password",
   acceptedTerms: true,
@@ -29,7 +29,6 @@ async function fillAccount(values = account) {
     values.contactName
   )
   await user.click(screen.getByRole("button", { name: "Continue" }))
-  await user.type(screen.getByLabelText("Phone number"), values.phone)
   await user.type(screen.getByLabelText("Email address"), values.email)
   await user.type(screen.getByLabelText("Password"), values.password)
   if (values.acceptedTerms) await user.click(screen.getByRole("checkbox"))
@@ -55,12 +54,7 @@ describe("AccountForm", () => {
           title="Create your business account"
           description="Add your details."
           step={step}
-          steps={[
-            "Business details",
-            "Account access",
-            "Verify contact",
-            "Business and premises",
-          ]}
+          steps={["Business details", "Sign-in details", "Verify email"]}
         >
           <AccountForm
             onSubmit={vi.fn()}
@@ -77,7 +71,7 @@ describe("AccountForm", () => {
         .querySelector('[aria-current="step"]')
 
     expect(currentStep()).toHaveTextContent("Step 01")
-    expect(currentStep()).toHaveAccessibleName("Step 1 of 4: Business details")
+    expect(currentStep()).toHaveAccessibleName("Step 1 of 3: Business details")
     const user = userEvent.setup()
     await user.type(
       screen.getByLabelText("Business name"),
@@ -89,14 +83,14 @@ describe("AccountForm", () => {
     )
     await user.click(screen.getByRole("button", { name: "Continue" }))
     expect(currentStep()).toHaveTextContent("Step 02")
-    expect(currentStep()).toHaveAccessibleName("Step 2 of 4: Account access")
+    expect(currentStep()).toHaveAccessibleName("Step 2 of 3: Sign-in details")
 
     await user.click(screen.getByRole("button", { name: "Back" }))
     expect(currentStep()).toHaveTextContent("Step 01")
-    expect(currentStep()).toHaveAccessibleName("Step 1 of 4: Business details")
+    expect(currentStep()).toHaveAccessibleName("Step 1 of 3: Business details")
   })
 
-  it("splits business identity from contact and security details", async () => {
+  it("splits business identity from sign-in details without asking for a phone number", async () => {
     renderAccount()
 
     expect(
@@ -118,9 +112,9 @@ describe("AccountForm", () => {
     await user.click(screen.getByRole("button", { name: "Continue" }))
 
     expect(
-      screen.getByRole("heading", { name: "Account access" })
+      screen.getByRole("heading", { name: "Sign-in details" })
     ).toBeVisible()
-    expect(screen.getByLabelText("Phone number")).toBeVisible()
+    expect(screen.queryByLabelText("Phone number")).not.toBeInTheDocument()
     expect(screen.getByLabelText("Email address")).toBeVisible()
     expect(screen.getByLabelText("Password")).toBeVisible()
     expect(screen.queryByLabelText("Business name")).not.toBeInTheDocument()
@@ -134,7 +128,7 @@ describe("AccountForm", () => {
     )
   })
 
-  it("associates required-field errors with all six controls", async () => {
+  it("associates required-field errors with the onboarding controls", async () => {
     const onSubmit = renderAccount()
     const user = userEvent.setup()
     await user.click(screen.getByRole("button", { name: "Continue" }))
@@ -163,7 +157,6 @@ describe("AccountForm", () => {
     await user.click(screen.getByRole("button", { name: "Continue" }))
     await user.click(screen.getByRole("button", { name: "Create account" }))
     for (const [label, error] of [
-      ["Phone number", "Enter a valid phone number"],
       ["Email address", "Enter a valid email address"],
       ["Password", "Use at least 10 characters"],
     ]) {
@@ -181,10 +174,7 @@ describe("AccountForm", () => {
     expect(onSubmit).not.toHaveBeenCalled()
   })
 
-  it.each([
-    ["Email address", "ada@riverside.ng", "new@example.test", "email"],
-    ["Phone number", "08031234567", "08098765433", "phone"],
-  ])(
+  it.each([["Email address", "ada@riverside.ng", "new@example.test", "email"]])(
     "shows duplicate %s inline and permits correction",
     async (label, duplicate, replacement, field) => {
       localStorage.clear()
@@ -201,7 +191,6 @@ describe("AccountForm", () => {
       const user = await fillAccount({
         ...account,
         email: "unique@example.test",
-        phone: "08098765432",
         [field]: duplicate,
       })
       await user.click(screen.getByRole("button", { name: "Create account" }))
@@ -224,12 +213,10 @@ describe("AccountForm", () => {
     const user = await fillAccount({
       ...account,
       email: "invalid",
-      phone: "123",
       password: "short",
     })
     await user.click(screen.getByRole("button", { name: "Create account" }))
     expect(screen.getByLabelText("Email address")).toHaveValue("invalid")
-    expect(screen.getByLabelText("Phone number")).toHaveValue("123")
     expect(screen.getByLabelText("Password")).toHaveValue("short")
     expect(onSubmit).not.toHaveBeenCalled()
   })
@@ -314,7 +301,7 @@ describe("AccountForm", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Unable to create your account. Please try again."
     )
-    expect(screen.getByLabelText("Phone number")).toHaveValue(account.phone)
+    expect(screen.queryByLabelText("Phone number")).not.toBeInTheDocument()
     expect(screen.getByLabelText("Email address")).toHaveValue(account.email)
     expect(screen.getByLabelText("Password")).toHaveValue(account.password)
     expect(screen.getByRole("checkbox")).toBeChecked()

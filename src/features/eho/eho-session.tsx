@@ -3,10 +3,17 @@ import { useQueryClient } from "@tanstack/react-query"
 import type { ReactNode } from "react"
 import { assignments, officers } from "./eho-model"
 import type { Fieldwork, Officer } from "./eho-model"
-import { initialFieldwork, readFieldwork, saveFieldwork } from "./eho-state"
+import {
+  claimAssignment as claimAssignmentState,
+  initialFieldwork,
+  readFieldwork,
+  removeLegacyDefaultAnswer,
+  saveFieldwork,
+} from "./eho-state"
 
 const SESSION_KEY = "ehrcms:eho:session:v1"
 const FIELDWORK_KEY = "ehrcms:eho:fieldwork:v1:"
+const UNSEEDED_CHECKLIST_KEY = "ehrcms:eho:unseeded-checklist:v1:"
 
 type EhoContextValue = {
   officer: Officer | null
@@ -17,6 +24,7 @@ type EhoContextValue = {
   signIn: (officer: Officer) => boolean
   signOut: () => boolean
   getDraft: (id: string) => Fieldwork
+  claimAssignment: (id: string) => boolean
   updateDraft: (draft: Fieldwork) => boolean
 }
 const EhoContext = createContext<EhoContextValue | null>(null)
@@ -40,12 +48,19 @@ export function EhoProvider({ children }: { children: ReactNode }) {
       setSignedOut(false)
       if (account) {
         const stored = readFieldwork(localStorage, account.id)
-        const next =
+        let next =
           localStorage.getItem(FIELDWORK_KEY + account.id) === null
             ? initialFieldwork()
             : stored
+        if (
+          localStorage.getItem(UNSEEDED_CHECKLIST_KEY + account.id) === null
+        ) {
+          next = removeLegacyDefaultAnswer(next)
+          localStorage.setItem(UNSEEDED_CHECKLIST_KEY + account.id, "done")
+        }
         if (localStorage.getItem(FIELDWORK_KEY + account.id) === null)
           saveFieldwork(localStorage, account.id, next)
+        else if (next !== stored) saveFieldwork(localStorage, account.id, next)
         setFieldwork(next)
         queryClient.setQueryData(["eho", "fieldwork", account.id], next)
       }
@@ -63,12 +78,17 @@ export function EhoProvider({ children }: { children: ReactNode }) {
       setOfficer(account)
       setSignedOut(false)
       const saved = readFieldwork(localStorage, account.id)
-      const next =
+      let next =
         localStorage.getItem(FIELDWORK_KEY + account.id) === null
           ? initialFieldwork()
           : saved
+      if (localStorage.getItem(UNSEEDED_CHECKLIST_KEY + account.id) === null) {
+        next = removeLegacyDefaultAnswer(next)
+        localStorage.setItem(UNSEEDED_CHECKLIST_KEY + account.id, "done")
+      }
       if (localStorage.getItem(FIELDWORK_KEY + account.id) === null)
         saveFieldwork(localStorage, account.id, next)
+      else if (next !== saved) saveFieldwork(localStorage, account.id, next)
       setFieldwork(next)
       queryClient.setQueryData(["eho", "fieldwork", account.id], next)
       setError(null)
@@ -130,6 +150,24 @@ export function EhoProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  function claimAssignment(id: string) {
+    if (!officer) return false
+    const assignment = assignments.find((item) => item.id === id)
+    if (!assignment) return false
+    const next = claimAssignmentState(fieldwork, assignment, officer.name)
+    if (next === fieldwork) return true
+    try {
+      saveFieldwork(localStorage, officer.id, next)
+      setFieldwork(next)
+      queryClient.setQueryData(["eho", "fieldwork", officer.id], next)
+      setError(null)
+      return true
+    } catch {
+      setError("Could not assign this inspection on this device. Try again.")
+      return false
+    }
+  }
+
   return (
     <EhoContext.Provider
       value={{
@@ -141,6 +179,7 @@ export function EhoProvider({ children }: { children: ReactNode }) {
         signIn,
         signOut,
         getDraft,
+        claimAssignment,
         updateDraft,
       }}
     >

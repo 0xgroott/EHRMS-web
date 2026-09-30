@@ -27,7 +27,10 @@ describe("business next action", () => {
         profileComplete: false,
         alerts: [alert("a")],
       })
-    ).toMatchObject({ id: "complete-profile", href: "/business/setup" })
+    ).toMatchObject({
+      id: "complete-profile",
+      href: "/business/settings#kyb",
+    })
   })
   it("chooses urgent alerts before food handlers, earliest deadline then id, without mutating input", () => {
     const alerts = [

@@ -39,7 +39,7 @@ export interface Issue {
   action: string
   deadline: string
   notes: string
-  evidence?: Evidence
+  evidence?: Evidence[]
 }
 export interface Fieldwork {
   assignmentId: string
@@ -72,7 +72,7 @@ export const assignments: Assignment[] = [
     id: "EIN-101",
     premisesId: "PR-002",
     type: "Routine food premises inspection",
-    scheduledAt: "2026-09-22",
+    scheduledAt: "2026-09-25",
     notice: "Served",
     acknowledgement: "Acknowledged by business",
     officers: ["Ebi Briggs"],
@@ -92,7 +92,7 @@ export const assignments: Assignment[] = [
     id: "EIN-103",
     premisesId: "PR-001",
     type: "Food premises inspection",
-    scheduledAt: "2026-09-20",
+    scheduledAt: "2026-09-24",
     notice: "Served",
     acknowledgement: "Acknowledged by business",
     officers: ["Ebi Briggs", "Tamuno George"],
@@ -102,10 +102,20 @@ export const assignments: Assignment[] = [
     id: "EIN-104",
     premisesId: "PR-004",
     type: "Previous routine inspection",
-    scheduledAt: "2026-09-10",
+    scheduledAt: "2026-09-14",
     notice: "Served",
     acknowledgement: "Acknowledged by business",
     officers: ["Ebi Briggs"],
+    kind: "Routine",
+  },
+  {
+    id: "EIN-105",
+    premisesId: "PR-015",
+    type: "Premises inspection",
+    scheduledAt: "2026-10-01",
+    notice: "Not served",
+    acknowledgement: "Awaiting service",
+    officers: [],
     kind: "Routine",
   },
 ]

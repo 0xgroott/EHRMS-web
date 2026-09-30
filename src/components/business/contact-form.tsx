@@ -39,7 +39,7 @@ export function ContactForm({
         setError(result?.error)
         setErrors(result?.fieldErrors ?? {})
       } catch {
-        setError("Unable to save your contact details. Please try again.")
+        setError("Unable to save your email address. Please try again.")
       }
     },
   })
@@ -54,10 +54,7 @@ export function ContactForm({
     >
       <FieldGroup>
         {(
-          [
-            { name: "email", label: "Email address", type: "email" },
-            { name: "phone", label: "Phone number", type: "tel" },
-          ] as const
+          [{ name: "email", label: "Email address", type: "email" }] as const
         ).map(({ name, label, type }) => (
           <form.Field key={name} name={name}>
             {(field) => (
@@ -101,7 +98,7 @@ export function ContactForm({
         {(pending) => (
           <>
             <Button type="submit" disabled={pending} className="min-h-11">
-              {pending ? "Saving contact…" : "Save contact and continue"}
+              {pending ? "Saving email…" : "Save email and continue"}
             </Button>
             <Button
               type="button"

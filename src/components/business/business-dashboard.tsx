@@ -355,7 +355,7 @@ export function BusinessDashboard({
   )
   return (
     <div className="flex min-w-0 flex-col gap-8 break-words">
-      <PageHeader eyebrow="Business portal" title="Business dashboard" />
+      <PageHeader eyebrow="Business portal" title="Home" />
       {urgentAlerts.length > 0 && (
         <Alert variant="destructive">
           <BellRing aria-hidden="true" />
@@ -408,7 +408,11 @@ export function BusinessDashboard({
           </CardContent>
           <CardFooter>
             <QuietLink
-              href={profile ? "/business/settings" : "/business/setup"}
+              href={
+                profileComplete
+                  ? "/business/settings"
+                  : "/business/settings#kyb"
+              }
             >
               View profile
             </QuietLink>

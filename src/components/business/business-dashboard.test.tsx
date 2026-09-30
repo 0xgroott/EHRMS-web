@@ -37,7 +37,7 @@ describe("business dashboard", () => {
     const user = userEvent.setup()
     render(<BusinessDashboard state={returningBusinessState} />)
     expect(
-      screen.getByRole("heading", { level: 1, name: "Business dashboard" })
+      screen.getByRole("heading", { level: 1, name: "Home" })
     ).toBeInTheDocument()
     expect(screen.getByText("Riverside Kitchen & Foods")).toBeInTheDocument()
     expect(screen.queryByText(/12 Abonnema Wharf Road/)).not.toBeInTheDocument()
@@ -219,7 +219,7 @@ describe("business dashboard", () => {
     )
     expect(screen.getByRole("link", { name: "View profile" })).toHaveAttribute(
       "href",
-      "/business/setup"
+      "/business/settings#kyb"
     )
     expect(screen.getByText("Profile incomplete")).toBeInTheDocument()
     expect(screen.queryByText("Non-compliant")).not.toBeInTheDocument()

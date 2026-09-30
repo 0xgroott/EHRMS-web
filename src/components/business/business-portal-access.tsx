@@ -13,9 +13,7 @@ export function BusinessPortalAccess({ children }: { children: ReactNode }) {
       ? "/business/register"
       : !state.profile.verified || state.stage === "verification"
         ? "/business/verify"
-        : state.stage !== "complete" || !state.profile.premises
-          ? "/business/setup"
-          : null
+        : null
   useEffect(() => {
     if (!isHydrated || !destination || redirecting.current) return
     redirecting.current = true

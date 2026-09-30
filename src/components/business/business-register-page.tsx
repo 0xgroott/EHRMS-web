@@ -55,7 +55,7 @@ export function BusinessRegister() {
               }
             identityCompletionInProgress.current = true
             await session.refresh()
-            globalThis.location.assign("/business/setup")
+            globalThis.location.assign("/business/dashboard")
           }}
         />
       </OnboardingShell>
@@ -65,7 +65,7 @@ export function BusinessRegister() {
   return (
     <OnboardingShell
       title="Create your business account"
-      description="Start with your business and contact details. All fields are required."
+      description="Set up your business account in three short steps."
       step={accountStep}
       steps={BUSINESS_REGISTRATION_STEPS}
     >

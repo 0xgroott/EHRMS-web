@@ -1,5 +1,7 @@
 import type { Fieldwork, Issue } from "./eho-model"
 
+export const FOLLOW_UP_PROGRESS_EVENT = "ehrcms:eho-follow-up-progress"
+
 export type Verification = "Resolved" | "Still outstanding" | "Unable to verify"
 export type FollowUpStatus = "draft" | "completed"
 
@@ -139,4 +141,8 @@ export function saveFollowUp(
     followUpStorageKey(officerId, record.sourceId),
     JSON.stringify(record)
   )
+  if (typeof window !== "undefined")
+    window.dispatchEvent(
+      new CustomEvent(FOLLOW_UP_PROGRESS_EVENT, { detail: record })
+    )
 }

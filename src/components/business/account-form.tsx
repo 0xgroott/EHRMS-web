@@ -57,7 +57,6 @@ const businessFields = [
 ] as const
 
 const accessFields = [
-  { name: "phone", label: "Phone number", type: "tel", autoComplete: "tel" },
   {
     name: "email",
     label: "Email address",
@@ -161,12 +160,12 @@ export function AccountForm({
           tabIndex={-1}
           className="text-lg font-semibold tracking-tight outline-none"
         >
-          {page === 1 ? "Business details" : "Account access"}
+          {page === 1 ? "Business details" : "Sign-in details"}
         </h2>
         <p className="text-sm leading-relaxed text-muted-foreground">
           {page === 1
             ? "Tell us about the business and the person responsible for it."
-            : "Add the contact details and password you will use to sign in."}
+            : "Choose the email address and password you will use to sign in."}
         </p>
       </div>
       {page === 1 && firstStepContent}

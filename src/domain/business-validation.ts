@@ -26,9 +26,6 @@ export function validateAccount(
     errors.contactName = "Enter the contact person's name"
   if (!/^\S+@\S+\.\S+$/.test(value.email))
     errors.email = "Enter a valid email address"
-  const normalizedPhone = value.phone.replace(/ /g, "")
-  if (!/^\+?[0-9]{10,15}$/.test(normalizedPhone))
-    errors.phone = "Enter a valid phone number"
   if (value.password.length < 10) errors.password = "Use at least 10 characters"
   if (!value.acceptedTerms)
     errors.acceptedTerms = "Accept the terms and privacy notice"

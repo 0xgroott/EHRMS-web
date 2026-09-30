@@ -1,7 +1,6 @@
 import { cn } from "@/lib/utils"
 
 export function PageHeader({
-  eyebrow,
   title,
   description,
   actions,
@@ -22,11 +21,6 @@ export function PageHeader({
       )}
     >
       <div>
-        {eyebrow && (
-          <p className="mb-2 text-xs font-semibold tracking-[0.16em] text-primary uppercase">
-            {eyebrow}
-          </p>
-        )}
         <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
           {title}
         </h1>

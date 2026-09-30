@@ -125,9 +125,6 @@ export function FumigationApplicationPage({ onPaid }: { onPaid?: () => void }) {
         </FumigationLink>
 
         <div className="mx-auto mt-10 max-w-[43rem] lg:mt-[clamp(4rem,10vh,8rem)]">
-          <p className="mb-3 text-xs font-semibold tracking-[0.17em] text-primary uppercase">
-            Fumigation certificate · Application
-          </p>
           <div
             key={step}
             className="fitness-step-panel rounded-2xl border border-border/80 bg-background p-5 shadow-[0_16px_45px_-38px_rgba(10,42,38,.35)] sm:p-8"
@@ -441,10 +438,7 @@ function ExistingApplication({ stage }: { stage: string }) {
         <ArrowLeft aria-hidden="true" /> Back to applications
       </FumigationLink>
       <div className="mx-auto mt-10 max-w-[43rem] rounded-2xl border bg-background p-6 sm:p-8">
-        <p className="text-xs font-semibold tracking-[0.17em] text-primary uppercase">
-          Fumigation certificate
-        </p>
-        <h1 className="mt-2 text-2xl font-semibold">
+        <h1 className="text-2xl font-semibold">
           {issued ? "Certificate issued" : "Application underway"}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">

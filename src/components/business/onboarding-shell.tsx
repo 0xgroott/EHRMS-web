@@ -13,15 +13,11 @@ type OnboardingShellProps = {
 
 export const BUSINESS_REGISTRATION_STEPS = [
   "Business details",
-  "Account access",
-  "Verify contact",
-  "Business and premises",
+  "Sign-in details",
+  "Verify email",
 ] as const
 const defaultSteps = BUSINESS_REGISTRATION_STEPS
-export const VERIFIED_BUSINESS_ONBOARDING_STEPS = [
-  "Business identity",
-  "Business and premises",
-] as const
+export const VERIFIED_BUSINESS_ONBOARDING_STEPS = ["Business identity"] as const
 const benefits = [
   { icon: ClipboardCheck, text: "Track your applications in one place." },
   { icon: FileCheck2, text: "Keep your certificates within reach." },

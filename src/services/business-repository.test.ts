@@ -312,6 +312,36 @@ describe("business repository", () => {
     )
   })
 
+  it("updates business identity before KYB without changing the setup stage", () => {
+    const repository = createBusinessRepository(
+      createBusinessStorage(localStorage)
+    )
+    repository.signInDemo(
+      ONBOARDING_BUSINESS_CREDENTIALS.email,
+      ONBOARDING_BUSINESS_CREDENTIALS.password
+    )
+    repository.saveBusinessIdentity({
+      businessName: "Harbour Foods",
+      contactName: "Amaka Nwosu",
+    })
+
+    const result = repository.updateBusinessIdentity({
+      businessName: " Harbour Market Foods ",
+      contactName: " Amaka Okafor ",
+    })
+
+    expect(result).toMatchObject({
+      ok: true,
+      state: {
+        stage: "setup",
+        profile: {
+          businessName: "Harbour Market Foods",
+          contactName: "Amaka Okafor",
+        },
+      },
+    })
+  })
+
   it("rejects invalid profile changes without modifying storage", () => {
     const repository = createBusinessRepository(
       createBusinessStorage(localStorage)

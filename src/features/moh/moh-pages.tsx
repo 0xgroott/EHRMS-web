@@ -1,21 +1,88 @@
 import { useEffect, useState } from "react"
-import { Link } from "@tanstack/react-router"
-import {
-  ArrowLeft,
-  ArrowRight,
-  LogOut,
-  ShieldCheck,
-  Stethoscope,
-} from "lucide-react"
+import { Link, useLocation } from "@tanstack/react-router"
+import { ArrowLeft, ArrowRight, ShieldCheck } from "lucide-react"
 import { seedDatabase } from "@/data/seeds"
-import { PageHeader } from "@/components/shared/page-header"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { matchMohAccount, verifyMohCode } from "./moh-account"
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import {
+  assignedMohAccount,
+  assignedMohCredentials,
+  matchMohAccount,
+  verifyMohCode,
+} from "./moh-account"
 import type { MohAccount } from "./moh-account"
+import { MohBusinessReview, MohDashboard } from "./moh-approval-pages"
+import { MohCertificateView } from "./moh-certificate-page"
+import { findMohSubmission, mohSubmissions } from "./moh-approvals"
+import { MohHeader } from "./moh-header"
 import { useMoh } from "./moh-session"
+import { MohSidebar } from "./moh-sidebar"
+
+export function MohAssignedAccountAccess({
+  onUse,
+  disabled = false,
+}: {
+  onUse: (account: MohAccount) => void
+  disabled?: boolean
+}) {
+  return (
+    <Card size="sm">
+      <CardHeader>
+        <CardTitle>Quick access</CardTitle>
+        <CardDescription>
+          Use the assigned MOH account for this workspace.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <dl className="grid gap-x-5 gap-y-3 text-sm sm:grid-cols-2">
+          <div>
+            <dt className="text-muted-foreground">Staff ID</dt>
+            <dd className="mt-0.5 font-medium">{assignedMohAccount.id}</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Email</dt>
+            <dd className="mt-0.5 font-medium break-all">
+              {assignedMohAccount.email}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Password</dt>
+            <dd className="mt-0.5 font-medium">
+              {assignedMohCredentials.password}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Verification code</dt>
+            <dd className="mt-0.5 font-medium tabular-nums">
+              {assignedMohCredentials.verificationCode}
+            </dd>
+          </div>
+        </dl>
+      </CardContent>
+      <CardFooter>
+        <Button
+          type="button"
+          className="min-h-11 w-full"
+          disabled={disabled}
+          onClick={() => onUse(assignedMohAccount)}
+        >
+          Use assigned account
+          <ArrowRight data-icon="inline-end" aria-hidden="true" />
+        </Button>
+      </CardFooter>
+    </Card>
+  )
+}
 
 export function MohSignInPage() {
   const session = useMoh()
@@ -98,6 +165,14 @@ export function MohSignInPage() {
             <Alert variant="destructive" role="alert">
               <AlertDescription>{error || session.error}</AlertDescription>
             </Alert>
+          )}
+          {!pendingAccount && (
+            <MohAssignedAccountAccess
+              disabled={!session.hydrated}
+              onUse={(account) => {
+                if (session.signIn(account)) window.location.assign("/moh/home")
+              }}
+            />
           )}
           {pendingAccount ? (
             <form className="grid gap-5" onSubmit={submitCode} noValidate>
@@ -191,8 +266,15 @@ export function MohSignInPage() {
   )
 }
 
-export function MohHomePage() {
+function MohWorkspace({
+  title,
+  children,
+}: {
+  title: string
+  children: React.ReactNode
+}) {
   const { account, hydrated, signedOut, error, signOut } = useMoh()
+  const pathname = useLocation({ select: (location) => location.pathname })
   useEffect(() => {
     if (hydrated && !account)
       window.location.replace(signedOut ? "/" : "/moh/sign-in")
@@ -206,65 +288,122 @@ export function MohHomePage() {
   const council = seedDatabase.councils.find(
     (item) => item.id === account.councilId
   )
+  const councilName = council?.name ?? "Council"
   return (
-    <div className="min-h-svh bg-muted/30">
-      <header className="flex min-h-16 items-center justify-between gap-4 border-b bg-background px-5 md:px-10">
-        <div className="flex items-center gap-3 font-semibold">
-          <span className="grid size-9 place-items-center rounded-lg bg-primary text-primary-foreground">
-            <ShieldCheck className="size-5" aria-hidden="true" />
-          </span>{" "}
-          EHRCMS{" "}
-          <span className="hidden text-sm font-normal text-muted-foreground sm:inline">
-            MOH / Director
-          </span>
-        </div>
-        <Button
-          variant="outline"
-          className="min-h-11"
-          onClick={() => {
+    <SidebarProvider>
+      <a
+        href="#moh-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-30 focus:rounded-md focus:bg-background focus:p-3 focus:outline-2 focus:outline-ring"
+      >
+        Skip to content
+      </a>
+      <MohSidebar pathname={pathname} />
+      <SidebarInset className="min-w-0">
+        <MohHeader
+          title={title}
+          accountName={account.name}
+          councilName={councilName}
+          onSignOut={() => {
             if (signOut()) window.location.assign("/")
           }}
-        >
-          <LogOut aria-hidden="true" /> Sign out
-        </Button>
-      </header>
-      <main className="mx-auto max-w-5xl space-y-6 px-5 py-10 md:px-10">
-        <PageHeader
-          eyebrow="MOH / Director"
-          title="MOH workspace"
-          description={`Signed in as ${account.name} · ${council?.name ?? "Council"} Council`}
         />
-        {error && (
-          <Alert variant="destructive" role="alert">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-        <Card className="max-w-2xl">
-          <CardHeader>
-            <CardTitle
-              role="heading"
-              aria-level={2}
-              className="flex items-center gap-2"
-            >
-              <Stethoscope className="size-5 text-primary" aria-hidden="true" />{" "}
-              Your account
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <p>
-              <span className="text-muted-foreground">Staff ID:</span>{" "}
-              {account.id}
-            </p>
-            <p>
-              <span className="text-muted-foreground">Email:</span>{" "}
-              {account.email}
-            </p>
-            <p className="pt-3 text-muted-foreground">
-              No cases are assigned to this account.
-            </p>
-          </CardContent>
-        </Card>
-      </main>
-    </div>
+        <div
+          id="moh-content"
+          tabIndex={-1}
+          className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 pb-20 outline-none md:p-6 md:pb-24 lg:p-8 lg:pb-28"
+        >
+          {error && (
+            <Alert variant="destructive" role="alert">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          {children}
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
   )
+}
+
+export function MohHomePage() {
+  const { decisions } = useMoh()
+  return (
+    <MohWorkspace title="Dashboard">
+      <MohDashboard submissions={mohSubmissions} decisions={decisions} />
+    </MohWorkspace>
+  )
+}
+
+export function MohBusinessReviewPage({
+  submissionId,
+}: {
+  submissionId: string
+}) {
+  const { decisions, approveHealthApproval, denyHealthApproval } = useMoh()
+  const submission = findMohSubmission(submissionId)
+
+  return (
+    <MohWorkspace title="Business review">
+      {submission ? (
+        <MohBusinessReview
+          submission={submission}
+          decision={decisions[submission.id]}
+          onApprove={approveHealthApproval}
+          onDeny={denyHealthApproval}
+        />
+      ) : (
+        <div className="flex max-w-xl flex-col gap-4 py-12">
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Submission not found
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            This Health Approval submission may have been removed or the link
+            may be incorrect.
+          </p>
+          <Button
+            variant="outline"
+            className="min-h-11 w-fit"
+            nativeButton={false}
+            render={<Link to="/moh/home" />}
+          >
+            Return to dashboard
+          </Button>
+        </div>
+      )}
+    </MohWorkspace>
+  )
+}
+
+export function MohCertificatePage({ submissionId }: { submissionId: string }) {
+  const { account, decisions, hydrated, signedOut } = useMoh()
+  const submission = findMohSubmission(submissionId)
+  const decision = decisions[submissionId]
+
+  useEffect(() => {
+    if (hydrated && !account)
+      window.location.replace(signedOut ? "/" : "/moh/sign-in")
+  }, [hydrated, account, signedOut])
+
+  if (!hydrated || !account)
+    return (
+      <main className="grid min-h-svh place-items-center" role="status">
+        Opening MOH sign-in…
+      </main>
+    )
+
+  if (!submission || decision?.outcome !== "approved")
+    return (
+      <main className="grid min-h-svh place-items-center px-4">
+        <div className="max-w-xl text-center">
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Certificate unavailable
+          </h1>
+          <p className="mt-3 text-sm text-muted-foreground">
+            This certificate is not available because the Health Approval has
+            not been issued or the submission could not be found.
+          </p>
+        </div>
+      </main>
+    )
+
+  return <MohCertificateView submission={submission} decision={decision} />
 }

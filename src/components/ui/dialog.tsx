@@ -79,6 +79,28 @@ function DialogContent({
   )
 }
 
+function DialogFullscreenContent({
+  className,
+  children,
+  ...props
+}: DialogPrimitive.Popup.Props) {
+  return (
+    <DialogPortal>
+      <DialogOverlay />
+      <DialogPrimitive.Popup
+        data-slot="dialog-content"
+        className={cn(
+          "fixed inset-0 z-50 grid h-dvh w-screen overflow-y-auto bg-background text-foreground outline-none",
+          className
+        )}
+        {...props}
+      >
+        {children}
+      </DialogPrimitive.Popup>
+    </DialogPortal>
+  )
+}
+
 function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -148,6 +170,7 @@ export {
   DialogContent,
   DialogDescription,
   DialogFooter,
+  DialogFullscreenContent,
   DialogHeader,
   DialogOverlay,
   DialogPortal,

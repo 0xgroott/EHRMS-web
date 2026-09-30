@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react"
 import { Link } from "@tanstack/react-router"
 import {
   ArrowLeft,
@@ -15,6 +16,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { assignments } from "./eho-model"
 import { noticeFor } from "./eho-notice"
+import { createTaskProgress, readTaskProgress } from "./eho-task-progress"
+import type { InspectionTaskProgress } from "./eho-task-progress"
 import { useEho } from "./eho-session"
 
 function Detail({ label, value }: { label: string; value: string }) {
@@ -28,6 +31,8 @@ function Detail({ label, value }: { label: string; value: string }) {
 
 export function EhoNoticePage({ inspectionId }: { inspectionId: string }) {
   const { officer, fieldwork } = useEho()
+  const [savedProgress, setSavedProgress] =
+    useState<InspectionTaskProgress | null>(null)
   const assignment = assignments.find(
     (item) =>
       item.id === inspectionId && item.officers.includes(officer?.name ?? "")
@@ -39,6 +44,11 @@ export function EhoNoticePage({ inspectionId }: { inspectionId: string }) {
       item.councilId === officer?.councilId
   )
 
+  useEffect(() => {
+    if (!assignment || !officer) return
+    setSavedProgress(readTaskProgress(localStorage, officer.id, assignment))
+  }, [assignment, officer])
+
   if (!assignment || !notice || !premises)
     return (
       <EmptyState
@@ -46,6 +56,14 @@ export function EhoNoticePage({ inspectionId }: { inspectionId: string }) {
         description="Choose an assigned inspection from My Work."
       />
     )
+
+  const progress =
+    savedProgress?.assignmentId === inspectionId
+      ? savedProgress
+      : createTaskProgress(assignment)
+  const readyToInspect = Boolean(
+    progress.acknowledgedAt && progress.appointmentDate
+  )
 
   return (
     <div className="space-y-6">
@@ -60,7 +78,11 @@ export function EhoNoticePage({ inspectionId }: { inspectionId: string }) {
         eyebrow={notice.reference}
         title="Inspection notice"
         description={`${premises.businessName} · ${assignment.type}`}
-        actions={<StatusBadge status={assignment.notice} />}
+        actions={
+          <StatusBadge
+            status={progress.noticeSentAt ? "Served" : "Not served"}
+          />
+        }
       />
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(17rem,1fr)]">
         <Card>
@@ -90,7 +112,10 @@ export function EhoNoticePage({ inspectionId }: { inspectionId: string }) {
             <dl className="grid gap-5 text-sm sm:grid-cols-2">
               <Detail label="Inspection reference" value={assignment.id} />
               <Detail label="Notice reference" value={notice.reference} />
-              <Detail label="Scheduled visit" value={assignment.scheduledAt} />
+              <Detail
+                label="Scheduled visit"
+                value={progress.appointmentDate ?? "Not scheduled"}
+              />
               <Detail label="Inspection type" value={assignment.type} />
             </dl>
             <div className="flex flex-wrap gap-3">
@@ -131,8 +156,8 @@ export function EhoNoticePage({ inspectionId }: { inspectionId: string }) {
                   <Detail
                     label="Service"
                     value={
-                      notice.servedAt
-                        ? `Served ${notice.servedAt}`
+                      progress.noticeSentAt
+                        ? `Served ${progress.noticeSentAt.slice(0, 10)}`
                         : "Awaiting service"
                     }
                   />
@@ -141,9 +166,9 @@ export function EhoNoticePage({ inspectionId }: { inspectionId: string }) {
                   <Detail
                     label="Business acknowledgement"
                     value={
-                      notice.acknowledgedAt
-                        ? `Acknowledged ${notice.acknowledgedAt}`
-                        : notice.servedAt
+                      progress.acknowledgedAt
+                        ? `Acknowledged ${progress.acknowledgedAt.slice(0, 10)}`
+                        : progress.noticeSentAt
                           ? "Awaiting acknowledgement"
                           : "Not available before service"
                     }
@@ -158,11 +183,25 @@ export function EhoNoticePage({ inspectionId }: { inspectionId: string }) {
               </dl>
             </CardContent>
           </Card>
-          {assignment.notice === "Not served" ? (
+          {!progress.noticeSentAt ? (
             <Alert role="status">
               <AlertDescription>
                 The notice has not been served. Inspection fieldwork cannot
                 begin until service is recorded.
+              </AlertDescription>
+            </Alert>
+          ) : !progress.acknowledgedAt ? (
+            <Alert role="status">
+              <AlertDescription>
+                The notice has been sent. The business must acknowledge receipt
+                before an inspection appointment can be scheduled.
+              </AlertDescription>
+            </Alert>
+          ) : !progress.appointmentDate ? (
+            <Alert role="status">
+              <AlertDescription>
+                The business acknowledged the notice. Schedule the appointment
+                from the inspection overview before starting fieldwork.
               </AlertDescription>
             </Alert>
           ) : (
@@ -187,7 +226,7 @@ export function EhoNoticePage({ inspectionId }: { inspectionId: string }) {
             >
               View inspection result <ArrowRight aria-hidden="true" />
             </Button>
-          ) : assignment.notice === "Served" ? (
+          ) : readyToInspect ? (
             <Button
               className="min-h-11"
               nativeButton={false}

@@ -24,7 +24,7 @@ export function SavedRegistration() {
       (state.stage === "verification" || state.stage === "setup")
     ) {
       globalThis.location.assign(
-        state.stage === "setup" ? "/business/setup" : "/business/verify"
+        state.stage === "setup" ? "/business/dashboard" : "/business/verify"
       )
     } else {
       setError("Unable to resume this registration. Please try again.")

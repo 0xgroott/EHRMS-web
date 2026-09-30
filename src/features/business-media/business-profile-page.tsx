@@ -1,6 +1,7 @@
 import { useRef, useState } from "react"
 import { ImagePlus, Trash2, Upload } from "lucide-react"
 import { useBusinessSession } from "@/app/business-session"
+import { seedDatabase } from "@/data/seeds"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -102,7 +103,11 @@ function PhotoSlot({
   )
 }
 
-export function BusinessProfilePage() {
+export function BusinessProfilePage({
+  showPremisesDetails = true,
+}: {
+  showPremisesDetails?: boolean
+}) {
   const { state: business, isHydrated: businessReady } = useBusinessSession()
   const {
     media,
@@ -137,6 +142,9 @@ export function BusinessProfilePage() {
     .map((word) => word[0])
     .join("")
   const photoCount = media.photos.filter(Boolean).length
+  const council = seedDatabase.councils.find(
+    (item) => item.id === premises?.councilId
+  )
 
   async function selectAvatar(file: File) {
     setBusy(true)
@@ -160,7 +168,7 @@ export function BusinessProfilePage() {
     <div className="flex min-w-0 flex-col gap-8 pb-12">
       <section
         aria-labelledby="business-identity"
-        className="grid min-w-0 gap-6 border-b pb-7 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center sm:gap-8"
+        className="grid min-w-0 gap-6 pb-2 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center sm:gap-8"
       >
         <Avatar className="size-24 sm:size-28">
           {media.avatar && (
@@ -180,9 +188,11 @@ export function BusinessProfilePage() {
           >
             {profile.businessName}
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {premises?.premisesName ?? "Premises details not recorded"}
-          </p>
+          {showPremisesDetails && (
+            <p className="mt-1 text-sm text-muted-foreground">
+              {premises?.premisesName ?? "Premises details not recorded"}
+            </p>
+          )}
           <FieldGroup className="mt-5 max-w-md">
             <Field>
               <Input
@@ -236,12 +246,45 @@ export function BusinessProfilePage() {
         </div>
       </section>
 
-      <BusinessProfileForm profile={profile} />
+      <BusinessProfileForm
+        profile={profile}
+        showPremisesDetails={showPremisesDetails}
+      />
 
-      <section
-        aria-labelledby="premises-images"
-        className="min-w-0 border-t pt-8"
-      >
+      <section aria-labelledby="business-record" className="max-w-4xl">
+        <h2 id="business-record" className="text-lg font-semibold">
+          Business record
+        </h2>
+        <p className="mt-1 mb-6 text-sm text-muted-foreground">
+          Reference details assigned to this business and premises.
+        </p>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Field>
+            <label htmlFor="business-council" className="text-sm font-medium">
+              Council
+            </label>
+            <Input
+              id="business-council"
+              value={council?.name ?? premises?.councilId ?? "Not recorded"}
+              readOnly
+              className="min-h-11 bg-muted/40 shadow-none"
+            />
+          </Field>
+          <Field>
+            <label htmlFor="business-reference" className="text-sm font-medium">
+              Business reference
+            </label>
+            <Input
+              id="business-reference"
+              value={profile.id}
+              readOnly
+              className="min-h-11 bg-muted/40 shadow-none"
+            />
+          </Field>
+        </div>
+      </section>
+
+      <section aria-labelledby="premises-images" className="min-w-0 pt-2">
         <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 id="premises-images" className="text-lg font-semibold">

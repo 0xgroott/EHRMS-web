@@ -222,9 +222,6 @@ function ApplicationSteps({ onPaid }: { onPaid?: () => void }) {
           <ArrowLeft aria-hidden="true" /> Back to applications
         </FitnessLink>
         <div className="mx-auto mt-10 max-w-[43rem] lg:mt-[clamp(4rem,10vh,8rem)]">
-          <p className="mb-3 text-xs font-semibold tracking-[0.17em] text-primary uppercase">
-            Fitness certificate · Application
-          </p>
           <div
             key={step}
             className="fitness-step-panel rounded-2xl border border-border/80 bg-background p-5 shadow-[0_16px_45px_-38px_rgba(10,42,38,.35)] sm:p-8"

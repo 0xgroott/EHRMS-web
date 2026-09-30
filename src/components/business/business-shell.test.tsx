@@ -109,6 +109,65 @@ describe("Business shell", () => {
     expect(await screen.findByText("Riverside Kitchen & Foods")).toBeVisible()
     expect(screen.getAllByRole("main")).toHaveLength(1)
     expect(document.querySelector("#business-content")).toHaveClass("pb-20")
+    expect(
+      screen.queryByRole("region", { name: "Business verification required" })
+    ).not.toBeInTheDocument()
+  })
+
+  it("shows a persistent KYB banner for verified businesses without completed details", async () => {
+    const state = structuredClone(returningBusinessState)
+    state.stage = "setup"
+    if (state.profile) state.profile.premises = undefined
+    createBusinessStorage(localStorage).write(state)
+
+    shell("/business/dashboard")
+
+    const banner = await screen.findByRole("region", {
+      name: "Business verification required",
+    })
+    expect(banner).toHaveTextContent("Complete KYB to use the app")
+    expect(banner).not.toHaveTextContent(
+      "Add your business and premises details in Settings."
+    )
+    expect(banner).toHaveClass("rounded-xl", "bg-rose-50")
+    expect(banner.parentElement).toHaveAttribute("id", "business-content")
+    expect(banner.querySelector("svg")).toHaveClass("size-8")
+    expect(
+      within(banner).getByRole("link", { name: "Complete KYB" })
+    ).toHaveAttribute("href", "/business/settings#kyb")
+  })
+
+  it.each([
+    "/business/food-handlers",
+    "/business/applications",
+    "/business/certificates",
+  ])("does not show the KYB banner on %s", async (path) => {
+    const state = structuredClone(returningBusinessState)
+    state.stage = "setup"
+    if (state.profile) state.profile.premises = undefined
+    createBusinessStorage(localStorage).write(state)
+
+    shell(path)
+
+    await screen.findByRole("heading", { name: "Page content" })
+    expect(
+      screen.queryByRole("region", { name: "Business verification required" })
+    ).not.toBeInTheDocument()
+  })
+
+  it("keeps the KYB banner on Settings", async () => {
+    const state = structuredClone(returningBusinessState)
+    state.stage = "setup"
+    if (state.profile) state.profile.premises = undefined
+    createBusinessStorage(localStorage).write(state)
+
+    shell("/business/settings")
+
+    expect(
+      await screen.findByRole("region", {
+        name: "Business verification required",
+      })
+    ).toBeVisible()
   })
 
   it("collapses desktop navigation and retains accessible link names", async () => {
@@ -186,15 +245,6 @@ describe("Business portal access", () => {
       },
       "/business/verify",
     ],
-    ["setup", { ...returningBusinessState, stage: "setup" }, "/business/setup"],
-    [
-      "missing premises",
-      {
-        ...returningBusinessState,
-        profile: { ...returningBusinessState.profile, premises: undefined },
-      },
-      "/business/setup",
-    ],
   ])(
     "redirects %s once without rendering protected content",
     async (_name, state, expected) => {
@@ -215,6 +265,28 @@ describe("Business portal access", () => {
       expect(screen.queryByText("Protected content")).not.toBeInTheDocument()
     }
   )
+
+  it("admits a verified account while KYB is still incomplete", async () => {
+    const state = structuredClone(returningBusinessState)
+    state.stage = "setup"
+    if (state.profile) state.profile.premises = undefined
+    createBusinessStorage(localStorage).write(state)
+    const assign = vi.fn()
+    vi.stubGlobal("location", { assign })
+
+    render(
+      <Providers>
+        <BusinessPortalAccess>
+          <h1>Protected content</h1>
+        </BusinessPortalAccess>
+      </Providers>
+    )
+
+    expect(
+      await screen.findByRole("heading", { name: "Protected content" })
+    ).toBeVisible()
+    expect(assign).not.toHaveBeenCalled()
+  })
 
   it("admits a completed account only after hydration", async () => {
     const assign = vi.fn()

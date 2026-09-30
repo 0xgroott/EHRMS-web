@@ -1,16 +1,51 @@
 import { seedDatabase } from "@/data/seeds"
-import type { Premises } from "@/domain/types"
+import type { ComplianceStatus, Premises } from "@/domain/types"
 
-export function searchPremises(query: string, councilId: string): Premises[] {
+export type PremisesSort = "business-name" | "ward" | "business-type" | "status"
+
+export interface PremisesDirectoryOptions {
+  ward?: string
+  premisesType?: string
+  complianceStatus?: ComplianceStatus
+  sort?: PremisesSort
+}
+
+const collator = new Intl.Collator("en-NG", { sensitivity: "base" })
+
+const sortValue = (premises: Premises, sort: PremisesSort) => {
+  if (sort === "ward") return premises.ward
+  if (sort === "business-type") return premises.premisesType
+  if (sort === "status") return premises.complianceStatus
+  return premises.businessName
+}
+
+export function searchPremises(
+  query: string,
+  councilId: string,
+  options: PremisesDirectoryOptions = {}
+): Premises[] {
   const normalized = query.trim().toLocaleLowerCase()
-  if (!normalized) return []
-  return seedDatabase.premises.filter(
-    (premises) =>
-      premises.councilId === councilId &&
-      `${premises.businessName} ${premises.tradingName} ${premises.id} ${premises.address} ${premises.ward}`
-        .toLocaleLowerCase()
-        .includes(normalized)
-  )
+  const sort = options.sort ?? "business-name"
+
+  return seedDatabase.premises
+    .filter(
+      (premises) =>
+        premises.councilId === councilId &&
+        (!normalized ||
+          `${premises.businessName} ${premises.tradingName} ${premises.id} ${premises.address} ${premises.ward} ${premises.premisesType}`
+            .toLocaleLowerCase()
+            .includes(normalized)) &&
+        (!options.ward || premises.ward === options.ward) &&
+        (!options.premisesType ||
+          premises.premisesType === options.premisesType) &&
+        (!options.complianceStatus ||
+          premises.complianceStatus === options.complianceStatus)
+    )
+    .sort(
+      (left, right) =>
+        collator.compare(sortValue(left, sort), sortValue(right, sort)) ||
+        collator.compare(left.businessName, right.businessName)
+    )
 }
 
 export function belongsToOtherCouncil(query: string, councilId: string) {

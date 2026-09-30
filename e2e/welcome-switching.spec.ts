@@ -85,7 +85,10 @@ test("welcome selection supports MOH verification and sign-out", async ({
   await page.getByRole("button", { name: "Verify and sign in" }).click()
   await expect(page).toHaveURL(/\/moh\/home$/)
   await expect(
-    page.getByRole("heading", { level: 1, name: "MOH workspace" })
+    page.getByRole("heading", {
+      level: 1,
+      name: "Health Approval decisions",
+    })
   ).toBeVisible()
   expect(
     await page.evaluate(

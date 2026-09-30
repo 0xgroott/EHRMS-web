@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { initialFieldwork } from "./eho-state"
+import { assignments } from "./eho-model"
+import { createDraft, initialFieldwork } from "./eho-state"
 import { blankReview, saveReview } from "./eho-fumigation"
 import { createFollowUp, saveFollowUp } from "./eho-follow-up"
 import { summarizeDeviceWork, syncMessage } from "./eho-profile-state"
@@ -24,6 +25,7 @@ describe("EHO device status", () => {
       },
     })
     const fieldwork = initialFieldwork()
+    fieldwork["EIN-103"] = createDraft(assignments[2])
     fieldwork["EIN-104"] = { ...fieldwork["EIN-104"]!, status: "queued" }
     expect(summarizeDeviceWork(storage, "EHO-001", fieldwork)).toEqual({
       inspectionDrafts: 1,

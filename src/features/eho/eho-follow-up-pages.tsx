@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link } from "@tanstack/react-router"
-import { ArrowLeft, CheckCircle2, ClipboardList } from "lucide-react"
+import { CheckCircle2, ClipboardList } from "lucide-react"
 import { seedDatabase } from "@/data/seeds"
 import { EmptyState } from "@/components/shared/empty-state"
 import { PageHeader } from "@/components/shared/page-header"
@@ -49,14 +49,6 @@ export function EhoFindingsPage({ inspectionId }: { inspectionId: string }) {
   const scenario = followUpScenarios[inspectionId]
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <Link
-        to="/eho/inspections/$inspectionId/result"
-        params={{ inspectionId }}
-        className="inline-flex min-h-11 items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="size-4" aria-hidden="true" />
-        Inspection result
-      </Link>
       <PageHeader
         eyebrow={`${inspectionId} · Local findings`}
         title="Findings summary"
@@ -228,14 +220,6 @@ export function EhoFollowUpPage({ inspectionId }: { inspectionId: string }) {
   const errors = followUpErrors(record, source, true)
   return (
     <div className="mx-auto max-w-3xl space-y-6 pb-10">
-      <Link
-        to="/eho/inspections/$inspectionId/findings"
-        params={{ inspectionId }}
-        className="inline-flex min-h-11 items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="size-4" aria-hidden="true" />
-        Findings summary
-      </Link>
       <PageHeader
         eyebrow={`${scenario.reference} · ${scenario.scheduledAt}`}
         title="Follow-up verification"

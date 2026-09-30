@@ -36,6 +36,11 @@ export const inspectionNotices: Partial<Record<string, InspectionNotice>> = {
     servedAt: "2026-09-06",
     acknowledgedAt: "2026-09-07",
   },
+  "EIN-105": {
+    assignmentId: "EIN-105",
+    reference: "NTC-105",
+    issuedAt: "2026-09-26",
+  },
 }
 
 export function noticeFor(assignment: Assignment): InspectionNotice | null {

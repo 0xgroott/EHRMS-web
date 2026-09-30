@@ -1,6 +1,7 @@
 import { assignments, checklist, officers } from "./eho-model"
 import type {
   Assignment,
+  Evidence,
   Fieldwork,
   InspectionAnswer,
   Issue,
@@ -38,13 +39,16 @@ export function accountError(contact: string, password: string): string {
   return "Staff ID, email or password is incorrect."
 }
 
-export function canStart(assignment: Assignment): boolean {
-  return assignment.notice === "Served"
+export function canStart(
+  assignment: Assignment,
+  noticeServed = false
+): boolean {
+  return assignment.notice === "Served" || noticeServed
 }
 
-function noticeAllows(draft: Fieldwork): boolean {
+function noticeAllows(draft: Fieldwork, noticeServed = false): boolean {
   const assignment = assignments.find((item) => item.id === draft.assignmentId)
-  return !!assignment && canStart(assignment)
+  return !!assignment && canStart(assignment, noticeServed)
 }
 
 export function createDraft(assignment: Assignment): Fieldwork {
@@ -58,14 +62,30 @@ export function createDraft(assignment: Assignment): Fieldwork {
   }
 }
 
+export function claimAssignment(
+  fieldwork: Partial<Record<string, Fieldwork>>,
+  assignment: Assignment,
+  officerName: string
+): Partial<Record<string, Fieldwork>> {
+  if (fieldwork[assignment.id]) return fieldwork
+  return {
+    ...fieldwork,
+    [assignment.id]: {
+      ...createDraft(assignment),
+      attendingOfficers: [officerName],
+    },
+  }
+}
+
 export function saveAnswer(
   draft: Fieldwork,
   itemId: string,
-  answer: InspectionAnswer
+  answer: InspectionAnswer,
+  noticeServed = false
 ): Fieldwork {
   if (
     draft.status !== "draft" ||
-    !noticeAllows(draft) ||
+    !noticeAllows(draft, noticeServed) ||
     !checklist.some((item) => item.id === itemId)
   )
     return draft
@@ -79,10 +99,14 @@ export function saveAnswer(
   }
 }
 
-export function saveIssue(draft: Fieldwork, issue: Issue): Fieldwork {
+export function saveIssue(
+  draft: Fieldwork,
+  issue: Issue,
+  noticeServed = false
+): Fieldwork {
   if (
     draft.status !== "draft" ||
-    !noticeAllows(draft) ||
+    !noticeAllows(draft, noticeServed) ||
     !checklist.some((item) => item.id === issue.itemId)
   )
     return draft
@@ -119,10 +143,11 @@ export function reviewErrors(draft: Fieldwork): string[] {
 export function submitInspection(
   draft: Fieldwork,
   offline: boolean,
-  now = new Date().toISOString()
+  now = new Date().toISOString(),
+  noticeServed = false
 ): Fieldwork {
   if (draft.status !== "draft") return draft
-  if (!noticeAllows(draft))
+  if (!noticeAllows(draft, noticeServed))
     throw new Error("The required notice must be served before submission.")
   if (reviewErrors(draft).length)
     throw new Error("Complete the checklist before submitting.")
@@ -170,14 +195,40 @@ function validFieldwork(value: unknown, id: string): value is Fieldwork {
         typeof issue.deadline === "string" &&
         typeof issue.notes === "string" &&
         (!issue.evidence ||
-          (typeof issue.evidence.name === "string" &&
-            typeof issue.evidence.type === "string" &&
-            typeof issue.evidence.size === "number"))
+          (Array.isArray(issue.evidence) &&
+            issue.evidence.every((evidence) => validEvidence(evidence))))
     ) &&
     Array.isArray(draft.attendingOfficers) &&
     draft.attendingOfficers.every((name) => typeof name === "string") &&
     (draft.status === "draft" || typeof draft.submittedAt === "string")
   )
+}
+
+function validEvidence(value: unknown): value is Evidence {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false
+  const evidence = value as Partial<Evidence>
+  return (
+    typeof evidence.name === "string" &&
+    typeof evidence.type === "string" &&
+    typeof evidence.size === "number"
+  )
+}
+
+function normalizeEvidence(value: unknown): unknown {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return value
+  const draft = value as Record<string, unknown>
+  if (!Array.isArray(draft.issues)) return value
+  return {
+    ...draft,
+    issues: draft.issues.map((issue) => {
+      if (!issue || typeof issue !== "object" || Array.isArray(issue))
+        return issue
+      const record = issue as Record<string, unknown>
+      return validEvidence(record.evidence)
+        ? { ...record, evidence: [record.evidence] }
+        : issue
+    }),
+  }
 }
 
 export function readFieldwork(
@@ -191,11 +242,15 @@ export function readFieldwork(
     const parsed: unknown = JSON.parse(raw)
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
       return {}
-    const entries = Object.entries(parsed).filter(
-      ([id, value]) =>
+    const entries: Array<[string, Fieldwork]> = []
+    for (const [id, value] of Object.entries(parsed)) {
+      const normalized = normalizeEvidence(value)
+      if (
         assignments.some((assignment) => assignment.id === id) &&
-        validFieldwork(value, id)
-    )
+        validFieldwork(normalized, id)
+      )
+        entries.push([id, normalized])
+    }
     return Object.fromEntries(entries)
   } catch {
     return {}
@@ -210,12 +265,26 @@ export function saveFieldwork(
   storage.setItem(prefix + officerId, JSON.stringify(state))
 }
 
-export function initialFieldwork(): Partial<Record<string, Fieldwork>> {
-  const draft = saveAnswer(
-    createDraft(assignments[2]),
-    "food-storage",
-    "Satisfactory"
+export function removeLegacyDefaultAnswer(
+  state: Partial<Record<string, Fieldwork>>
+): Partial<Record<string, Fieldwork>> {
+  const draft = state["EIN-103"]
+  if (
+    !draft ||
+    draft.status !== "draft" ||
+    Object.keys(draft.answers).length !== 1 ||
+    draft.answers["food-storage"] !== "Satisfactory" ||
+    Object.keys(draft.notes).length > 0 ||
+    draft.issues.length > 0
   )
+    return state
+  return {
+    ...state,
+    [draft.assignmentId]: { ...draft, answers: {} },
+  }
+}
+
+export function initialFieldwork(): Partial<Record<string, Fieldwork>> {
   const completed = assignments[3]
   let finished = createDraft(completed)
   for (const item of checklist)
@@ -229,11 +298,10 @@ export function initialFieldwork(): Partial<Record<string, Fieldwork>> {
     notes: "Follow-up required to verify the corrective action.",
   })
   return {
-    [draft.assignmentId]: draft,
     [completed.id]: submitInspection(
       finished,
       false,
-      "2026-09-10T12:00:00.000Z"
+      "2026-09-14T12:00:00.000Z"
     ),
   }
 }

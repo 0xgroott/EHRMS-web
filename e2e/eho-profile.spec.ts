@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test"
 
-test("EHO can review device status and sign out without losing saved work", async ({
+test("EHO can review sync data and profile separately without losing saved work", async ({
   page,
   context,
 }) => {
@@ -57,10 +57,18 @@ test("EHO can review device status and sign out without losing saved work", asyn
     localStorage.setItem(key, JSON.stringify(stored))
   })
   await page.reload()
-  await page.getByRole("link", { name: "Profile / Sync" }).click()
+  const sidebar = page.locator("aside")
+  await expect(sidebar.getByText("Assigned work for Ebi Briggs")).toHaveCount(0)
+  await expect(sidebar.getByText("Ebi Briggs", { exact: true })).toBeVisible()
+  await expect(sidebar.getByText("EHO", { exact: true })).toBeVisible()
+  await expect(sidebar.getByRole("button", { name: "Logout" })).toBeVisible()
+  await sidebar.getByRole("link", { name: "Sync Data" }).click()
   await expect(
-    page.getByRole("heading", { level: 1, name: "Profile / Sync" })
+    page.getByRole("heading", { level: 1, name: "Sync Data" })
   ).toBeVisible()
+  await expect(
+    page.locator("main").getByRole("link", { name: "My Work", exact: true })
+  ).toHaveCount(0)
   await expect(page.getByText("Last sync: None recorded")).toBeVisible()
   await expect(
     page.getByRole("heading", { name: "Waiting to sync" })
@@ -88,9 +96,21 @@ test("EHO can review device status and sign out without losing saved work", asyn
       () => document.documentElement.scrollWidth <= window.innerWidth
     )
   ).toBe(true)
+  await page.getByRole("button", { name: "Open EHO navigation" }).click()
+  await expect(sidebar.getByText("Ebi Briggs", { exact: true })).toBeVisible()
+  await expect(sidebar.getByText("EHO", { exact: true })).toBeVisible()
+  await expect(sidebar.getByRole("button", { name: "Logout" })).toBeVisible()
+  await sidebar.getByRole("link", { name: /Profile — Ebi Briggs, EHO/ }).click()
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Profile" })
+  ).toBeVisible()
+  await expect(page.getByText("Last sync: None recorded")).toHaveCount(0)
+  await expect(
+    page.locator("main").getByText("Ebi Briggs", { exact: true })
+  ).toBeVisible()
   await page.getByRole("button", { name: "Sign out", exact: true }).click()
   await expect(
-    page.getByText("saved records stay on this device after sign-out.")
+    page.getByText(/Saved records stay on this device after sign-out/)
   ).toBeVisible()
   await page.getByRole("button", { name: "Stay signed in" }).click()
   await expect(page).toHaveURL(/\/eho\/profile$/)
@@ -110,7 +130,7 @@ test("EHO can review device status and sign out without losing saved work", asyn
   }).toPass({ timeout: 15_000 })
   await page.getByRole("button", { name: "Sign in", exact: true }).click()
   await expect(page).toHaveURL(/\/eho\/my-work$/)
-  await page.goto("/eho/profile")
+  await page.goto("/eho/sync-data")
   await expect(
     page.getByRole("link", { name: /Inspection EIN-104/ })
   ).toBeVisible()

@@ -165,6 +165,25 @@ export function createBusinessRepository(
         )
       )
     },
+    updateBusinessIdentity(
+      input: BusinessIdentityInput
+    ): BusinessRepositoryResult {
+      const errors = validateBusinessIdentity(input)
+      if (hasErrors(errors)) return failure(errors)
+
+      const state = storage.read()
+      if (!state.profile?.verified) {
+        return failure({ state: "Sign in to edit the business profile" })
+      }
+
+      return write(
+        withProfile(state, {
+          ...state.profile,
+          businessName: input.businessName.trim(),
+          contactName: input.contactName.trim(),
+        })
+      )
+    },
     createAccount(input: BusinessAccountInput): BusinessRepositoryResult {
       const errors = {
         ...validateAccount(input),

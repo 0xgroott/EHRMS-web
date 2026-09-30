@@ -210,7 +210,7 @@ describe("VerificationForm", () => {
 
     await userEvent
       .setup()
-      .click(screen.getByRole("button", { name: "Change contact" }))
+      .click(screen.getByRole("button", { name: "Change email" }))
 
     expect(onChangeContact).toHaveBeenCalledExactlyOnceWith()
   })

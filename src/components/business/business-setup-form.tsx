@@ -41,7 +41,6 @@ type BusinessSetupFormProps = {
   initialValues: BusinessPremisesInput
   initialDocuments: BusinessDocument[]
   contactEmail: string
-  contactPhone: string
   onSaveDraft: SetupAction
   onComplete: SetupAction
   onExit: () => void
@@ -104,13 +103,16 @@ export function BusinessSetupForm({
   initialValues,
   initialDocuments,
   contactEmail,
-  contactPhone,
   onSaveDraft,
   onComplete,
   onExit,
   heading,
 }: BusinessSetupFormProps) {
   const id = useId()
+  const [step, setStep] = useState<1 | 2 | 3>(1)
+  const [stepErrors, setStepErrors] = useState<
+    Partial<Record<keyof BusinessPremisesInput, string>>
+  >({})
   const [documents, setDocuments] = useState<BusinessDocument[]>(() => [
     ...initialDocuments,
   ])
@@ -317,6 +319,39 @@ export function BusinessSetupForm({
     return typeof error === "string" ? error : fallback
   }
 
+  function clearStepError(name: keyof BusinessPremisesInput) {
+    setStepErrors((current) => {
+      if (!current[name]) return current
+      const next = { ...current }
+      delete next[name]
+      return next
+    })
+  }
+
+  function continueToNextStep() {
+    const errors = validatePremises(form.state.values)
+    const fields =
+      step === 1
+        ? (["premisesName", "businessType"] as const)
+        : (["address", "ward", "councilId"] as const)
+    const currentErrors = Object.fromEntries(
+      fields.flatMap((field) => (errors[field] ? [[field, errors[field]]] : []))
+    ) as Partial<Record<keyof BusinessPremisesInput, string>>
+
+    if (Object.keys(currentErrors).length > 0) {
+      setStepErrors(currentErrors)
+      const firstInvalid = fields.find((field) => currentErrors[field])
+      const suffix = firstInvalid === "councilId" ? "council" : firstInvalid
+      window.requestAnimationFrame(() => {
+        document.getElementById(`${id}-${suffix}`)?.focus()
+      })
+      return
+    }
+
+    setStepErrors({})
+    setStep((current) => (current === 1 ? 2 : 3))
+  }
+
   return (
     <form
       noValidate
@@ -327,6 +362,27 @@ export function BusinessSetupForm({
       className="flex flex-col gap-8"
     >
       {heading}
+      <ol
+        aria-label="KYB progress"
+        className="grid grid-cols-3 gap-3 border-b border-border/60 pb-6"
+      >
+        {[1, 2, 3].map((item) => (
+          <li key={item} className="min-w-0">
+            <span
+              aria-current={step === item ? "step" : undefined}
+              className={
+                step === item
+                  ? "block border-t-2 border-primary pt-3 text-xs font-semibold text-foreground"
+                  : step > item
+                    ? "block border-t-2 border-primary/40 pt-3 text-xs font-medium text-foreground"
+                    : "block border-t-2 border-border pt-3 text-xs font-medium text-muted-foreground"
+              }
+            >
+              Step {String(item).padStart(2, "0")}
+            </span>
+          </li>
+        ))}
+      </ol>
       <form.Subscribe selector={(state) => state.values}>
         {(values) => (
           <AutosaveObserver
@@ -347,271 +403,293 @@ export function BusinessSetupForm({
         </Alert>
       )}
 
-      <FieldSet>
-        <FieldLegend>Business details</FieldLegend>
-        <FieldGroup>
-          <form.Field name="premisesName">
-            {(field) => {
-              const error = fieldError(field)
-              return (
-                <Field data-invalid={!!error}>
-                  <FieldLabel htmlFor={`${id}-premises-name`}>
-                    Premises name
-                  </FieldLabel>
-                  <Input
-                    id={`${id}-premises-name`}
-                    name={field.name}
-                    required
-                    disabled={isExiting}
-                    value={field.state.value}
-                    onChange={(event) => field.handleChange(event.target.value)}
-                    onBlur={field.handleBlur}
-                    aria-invalid={!!error}
-                    aria-describedby={
-                      error ? `${id}-premises-name-error` : undefined
-                    }
-                    className="min-h-11"
-                  />
-                  {error && (
-                    <FieldError id={`${id}-premises-name-error`}>
-                      {error}
-                    </FieldError>
-                  )}
-                </Field>
-              )
-            }}
-          </form.Field>
-          <form.Field name="businessType">
-            {(field) => {
-              const error = fieldError(field)
-              return (
-                <Field data-invalid={!!error}>
-                  <FieldLabel htmlFor={`${id}-business-type`}>
-                    Business type
-                  </FieldLabel>
-                  <Select
-                    disabled={isExiting}
-                    value={field.state.value}
-                    onValueChange={(value) => field.handleChange(value ?? "")}
-                  >
-                    <SelectTrigger
-                      id={`${id}-business-type`}
+      {step === 1 && (
+        <FieldSet>
+          <FieldLegend>Business details</FieldLegend>
+          <FieldGroup>
+            <form.Field name="premisesName">
+              {(field) => {
+                const error = fieldError(field, stepErrors.premisesName)
+                return (
+                  <Field data-invalid={!!error}>
+                    <FieldLabel htmlFor={`${id}-premises-name`}>
+                      Premises name
+                    </FieldLabel>
+                    <Input
+                      id={`${id}-premises-name`}
                       name={field.name}
+                      required
                       disabled={isExiting}
+                      value={field.state.value}
+                      onChange={(event) => {
+                        clearStepError("premisesName")
+                        field.handleChange(event.target.value)
+                      }}
+                      onBlur={field.handleBlur}
                       aria-invalid={!!error}
                       aria-describedby={
-                        error ? `${id}-business-type-error` : undefined
+                        error ? `${id}-premises-name-error` : undefined
                       }
-                      className="min-h-11 w-full"
-                    >
-                      <SelectValue placeholder="Choose a business type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        <SelectLabel>Business types</SelectLabel>
-                        {businessTypes.map((businessType) => (
-                          <SelectItem key={businessType} value={businessType}>
-                            {businessType}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                  {error && (
-                    <FieldError id={`${id}-business-type-error`}>
-                      {error}
-                    </FieldError>
-                  )}
-                </Field>
-              )
-            }}
-          </form.Field>
-          <form.Field name="registrationNumber">
-            {(field) => (
-              <Field>
-                <FieldLabel htmlFor={`${id}-registration-number`}>
-                  Registration number{" "}
-                  <span className="font-normal text-muted-foreground">
-                    (optional)
-                  </span>
-                </FieldLabel>
-                <Input
-                  id={`${id}-registration-number`}
-                  name={field.name}
-                  disabled={isExiting}
-                  value={field.state.value}
-                  onChange={(event) => field.handleChange(event.target.value)}
-                  onBlur={field.handleBlur}
-                  className="min-h-11"
-                />
-              </Field>
-            )}
-          </form.Field>
-        </FieldGroup>
-      </FieldSet>
-
-      <FieldSet className="border-t border-border/60 pt-10">
-        <FieldLegend>Premises location</FieldLegend>
-        <FieldGroup>
-          <form.Field name="address">
-            {(field) => {
-              const error = fieldError(field)
-              return (
-                <Field data-invalid={!!error}>
-                  <FieldLabel htmlFor={`${id}-address`}>
-                    Premises address
-                  </FieldLabel>
-                  <Input
-                    id={`${id}-address`}
-                    name={field.name}
-                    required
-                    disabled={isExiting}
-                    value={field.state.value}
-                    onChange={(event) => field.handleChange(event.target.value)}
-                    onBlur={field.handleBlur}
-                    aria-invalid={!!error}
-                    aria-describedby={error ? `${id}-address-error` : undefined}
-                    className="min-h-11"
-                  />
-                  {error && (
-                    <FieldError id={`${id}-address-error`}>{error}</FieldError>
-                  )}
-                </Field>
-              )
-            }}
-          </form.Field>
-          <form.Field name="ward">
-            {(field) => {
-              const error = fieldError(field)
-              return (
-                <Field data-invalid={!!error}>
-                  <FieldLabel htmlFor={`${id}-ward`}>Ward</FieldLabel>
-                  <Input
-                    id={`${id}-ward`}
-                    name={field.name}
-                    required
-                    disabled={isExiting}
-                    value={field.state.value}
-                    onChange={(event) => field.handleChange(event.target.value)}
-                    onBlur={field.handleBlur}
-                    aria-invalid={!!error}
-                    aria-describedby={error ? `${id}-ward-error` : undefined}
-                    className="min-h-11"
-                  />
-                  {error && (
-                    <FieldError id={`${id}-ward-error`}>{error}</FieldError>
-                  )}
-                </Field>
-              )
-            }}
-          </form.Field>
-          <form.Field name="councilId">
-            {(field) => {
-              const error = fieldError(field)
-              return (
-                <Field data-invalid={!!error}>
-                  <FieldLabel htmlFor={`${id}-council`}>Council</FieldLabel>
-                  <Select
-                    disabled={isExiting}
-                    value={field.state.value}
-                    onValueChange={(value) => field.handleChange(value ?? "")}
-                  >
-                    <SelectTrigger
-                      id={`${id}-council`}
-                      name={field.name}
+                      className="min-h-11"
+                    />
+                    {error && (
+                      <FieldError id={`${id}-premises-name-error`}>
+                        {error}
+                      </FieldError>
+                    )}
+                  </Field>
+                )
+              }}
+            </form.Field>
+            <form.Field name="businessType">
+              {(field) => {
+                const error = fieldError(field, stepErrors.businessType)
+                return (
+                  <Field data-invalid={!!error}>
+                    <FieldLabel htmlFor={`${id}-business-type`}>
+                      Business type
+                    </FieldLabel>
+                    <Select
                       disabled={isExiting}
-                      aria-invalid={!!error}
-                      aria-describedby={
-                        error ? `${id}-council-error` : undefined
-                      }
-                      className="min-h-11 w-full"
+                      value={field.state.value}
+                      onValueChange={(value) => {
+                        clearStepError("businessType")
+                        field.handleChange(value ?? "")
+                      }}
                     >
-                      <SelectValue placeholder="Choose a council" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        <SelectLabel>Councils</SelectLabel>
-                        {seedDatabase.councils.map((council) => (
-                          <SelectItem key={council.id} value={council.id}>
-                            {council.name}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                  {error && (
-                    <FieldError id={`${id}-council-error`}>{error}</FieldError>
-                  )}
-                </Field>
-              )
-            }}
-          </form.Field>
-        </FieldGroup>
-      </FieldSet>
-
-      <FieldSet className="border-t border-border/60 pt-10">
-        <FieldLegend>Contact and documents</FieldLegend>
-        <FieldGroup>
-          <div
-            aria-label="Account contact details"
-            className="flex flex-col gap-2 rounded-md border bg-muted/30 p-4 text-sm"
-          >
-            <p className="font-medium">Account contact details</p>
-            <dl className="grid gap-2 sm:grid-cols-2">
-              <div>
-                <dt className="text-muted-foreground">Email</dt>
-                <dd>{contactEmail}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Phone</dt>
-                <dd>{contactPhone}</dd>
-              </div>
-            </dl>
-            <p className="text-muted-foreground">
-              These details come from your verified account contact.
-            </p>
-          </div>
-          <Field>
-            <FieldLabel htmlFor={`${id}-supporting-document`}>
-              Supporting document{" "}
-              <span className="font-normal text-muted-foreground">
-                (optional)
-              </span>
-            </FieldLabel>
-            <Input
-              id={`${id}-supporting-document`}
-              type="file"
-              disabled={isExiting}
-              accept={acceptedDocumentExtensions}
-              multiple
-              onChange={handleDocuments}
-              className="min-h-11 cursor-pointer"
-            />
-            <FieldDescription>
-              PDF, JPG, or PNG. Document names and file details are saved in
-              this browser; file contents are not uploaded.
-            </FieldDescription>
-            {documents.length > 0 && (
-              <ul
-                className="flex flex-col gap-2 text-sm"
-                aria-label="Selected documents"
-              >
-                {documents.map((document) => (
-                  <li
-                    key={document.id}
-                    className="flex items-center justify-between gap-3 rounded-md border px-3 py-2"
-                  >
-                    <span className="truncate">{document.name}</span>
-                    <span className="shrink-0 text-muted-foreground">
-                      {document.size} bytes
+                      <SelectTrigger
+                        id={`${id}-business-type`}
+                        name={field.name}
+                        disabled={isExiting}
+                        aria-invalid={!!error}
+                        aria-describedby={
+                          error ? `${id}-business-type-error` : undefined
+                        }
+                        className="min-h-11 w-full"
+                      >
+                        <SelectValue placeholder="Choose a business type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectLabel>Business types</SelectLabel>
+                          {businessTypes.map((businessType) => (
+                            <SelectItem key={businessType} value={businessType}>
+                              {businessType}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                    {error && (
+                      <FieldError id={`${id}-business-type-error`}>
+                        {error}
+                      </FieldError>
+                    )}
+                  </Field>
+                )
+              }}
+            </form.Field>
+            <form.Field name="registrationNumber">
+              {(field) => (
+                <Field>
+                  <FieldLabel htmlFor={`${id}-registration-number`}>
+                    Registration number{" "}
+                    <span className="font-normal text-muted-foreground">
+                      (optional)
                     </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Field>
-        </FieldGroup>
-      </FieldSet>
+                  </FieldLabel>
+                  <Input
+                    id={`${id}-registration-number`}
+                    name={field.name}
+                    disabled={isExiting}
+                    value={field.state.value}
+                    onChange={(event) => field.handleChange(event.target.value)}
+                    onBlur={field.handleBlur}
+                    className="min-h-11"
+                  />
+                </Field>
+              )}
+            </form.Field>
+          </FieldGroup>
+        </FieldSet>
+      )}
+
+      {step === 2 && (
+        <FieldSet>
+          <FieldLegend>Premises location</FieldLegend>
+          <FieldGroup>
+            <form.Field name="address">
+              {(field) => {
+                const error = fieldError(field, stepErrors.address)
+                return (
+                  <Field data-invalid={!!error}>
+                    <FieldLabel htmlFor={`${id}-address`}>
+                      Premises address
+                    </FieldLabel>
+                    <Input
+                      id={`${id}-address`}
+                      name={field.name}
+                      required
+                      disabled={isExiting}
+                      value={field.state.value}
+                      onChange={(event) => {
+                        clearStepError("address")
+                        field.handleChange(event.target.value)
+                      }}
+                      onBlur={field.handleBlur}
+                      aria-invalid={!!error}
+                      aria-describedby={
+                        error ? `${id}-address-error` : undefined
+                      }
+                      className="min-h-11"
+                    />
+                    {error && (
+                      <FieldError id={`${id}-address-error`}>
+                        {error}
+                      </FieldError>
+                    )}
+                  </Field>
+                )
+              }}
+            </form.Field>
+            <form.Field name="ward">
+              {(field) => {
+                const error = fieldError(field, stepErrors.ward)
+                return (
+                  <Field data-invalid={!!error}>
+                    <FieldLabel htmlFor={`${id}-ward`}>Ward</FieldLabel>
+                    <Input
+                      id={`${id}-ward`}
+                      name={field.name}
+                      required
+                      disabled={isExiting}
+                      value={field.state.value}
+                      onChange={(event) => {
+                        clearStepError("ward")
+                        field.handleChange(event.target.value)
+                      }}
+                      onBlur={field.handleBlur}
+                      aria-invalid={!!error}
+                      aria-describedby={error ? `${id}-ward-error` : undefined}
+                      className="min-h-11"
+                    />
+                    {error && (
+                      <FieldError id={`${id}-ward-error`}>{error}</FieldError>
+                    )}
+                  </Field>
+                )
+              }}
+            </form.Field>
+            <form.Field name="councilId">
+              {(field) => {
+                const error = fieldError(field, stepErrors.councilId)
+                return (
+                  <Field data-invalid={!!error}>
+                    <FieldLabel htmlFor={`${id}-council`}>Council</FieldLabel>
+                    <Select
+                      disabled={isExiting}
+                      value={field.state.value}
+                      onValueChange={(value) => {
+                        clearStepError("councilId")
+                        field.handleChange(value ?? "")
+                      }}
+                    >
+                      <SelectTrigger
+                        id={`${id}-council`}
+                        name={field.name}
+                        aria-invalid={!!error}
+                        aria-describedby={
+                          error ? `${id}-council-error` : undefined
+                        }
+                        className="min-h-11 w-full"
+                      >
+                        <SelectValue placeholder="Choose a council" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectLabel>Councils</SelectLabel>
+                          {seedDatabase.councils.map((council) => (
+                            <SelectItem key={council.id} value={council.id}>
+                              {council.name}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                    {error && (
+                      <FieldError id={`${id}-council-error`}>
+                        {error}
+                      </FieldError>
+                    )}
+                  </Field>
+                )
+              }}
+            </form.Field>
+          </FieldGroup>
+        </FieldSet>
+      )}
+
+      {step === 3 && (
+        <FieldSet>
+          <FieldLegend>Documents and review</FieldLegend>
+          <FieldGroup>
+            <div
+              aria-label="Account email"
+              className="flex flex-col gap-2 rounded-md border bg-muted/30 p-4 text-sm"
+            >
+              <p className="font-medium">Account email</p>
+              <dl>
+                <div>
+                  <dt className="text-muted-foreground">Email</dt>
+                  <dd>{contactEmail}</dd>
+                </div>
+              </dl>
+              <p className="text-muted-foreground">
+                This email comes from your verified account.
+              </p>
+            </div>
+            <Field>
+              <FieldLabel htmlFor={`${id}-supporting-document`}>
+                Supporting document{" "}
+                <span className="font-normal text-muted-foreground">
+                  (optional)
+                </span>
+              </FieldLabel>
+              <Input
+                id={`${id}-supporting-document`}
+                type="file"
+                disabled={isExiting}
+                accept={acceptedDocumentExtensions}
+                multiple
+                onChange={handleDocuments}
+                className="min-h-11 cursor-pointer"
+              />
+              <FieldDescription>
+                PDF, JPG, or PNG. Document names and file details are saved in
+                this browser; file contents are not uploaded.
+              </FieldDescription>
+              {documents.length > 0 && (
+                <ul
+                  className="flex flex-col gap-2 text-sm"
+                  aria-label="Selected documents"
+                >
+                  {documents.map((document) => (
+                    <li
+                      key={document.id}
+                      className="flex items-center justify-between gap-3 rounded-md border px-3 py-2"
+                    >
+                      <span className="truncate">{document.name}</span>
+                      <span className="shrink-0 text-muted-foreground">
+                        {document.size} bytes
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Field>
+          </FieldGroup>
+        </FieldSet>
+      )}
 
       <div className="flex flex-col gap-3 border-t pt-6 sm:flex-row sm:justify-between">
         <Button
@@ -621,19 +699,46 @@ export function BusinessSetupForm({
           className="min-h-11"
           onClick={() => void handleSaveAndExit()}
         >
-          {isExiting ? "Saving draft…" : "Save draft and exit"}
+          {isExiting ? "Saving draft…" : "Save draft"}
         </Button>
-        <form.Subscribe selector={(state) => state.isSubmitting}>
-          {(isSubmitting) => (
+        <div className="flex flex-col-reverse gap-3 sm:flex-row">
+          {step > 1 && (
             <Button
-              type="submit"
-              disabled={isSubmitting || isExiting}
+              type="button"
+              variant="outline"
+              disabled={isExiting}
               className="min-h-11"
+              onClick={() => {
+                setStepErrors({})
+                setStep((current) => (current === 3 ? 2 : 1))
+              }}
             >
-              {isSubmitting ? "Completing setup…" : "Save and continue"}
+              Back
             </Button>
           )}
-        </form.Subscribe>
+          {step < 3 ? (
+            <Button
+              type="button"
+              disabled={isExiting}
+              className="min-h-11"
+              onClick={continueToNextStep}
+            >
+              Continue
+            </Button>
+          ) : (
+            <form.Subscribe selector={(state) => state.isSubmitting}>
+              {(isSubmitting) => (
+                <Button
+                  type="submit"
+                  disabled={isSubmitting || isExiting}
+                  className="min-h-11"
+                >
+                  {isSubmitting ? "Completing KYB…" : "Complete KYB"}
+                </Button>
+              )}
+            </form.Subscribe>
+          )}
+        </div>
       </div>
     </form>
   )
