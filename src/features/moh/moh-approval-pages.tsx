@@ -13,8 +13,10 @@ import {
   UserRoundCheck,
 } from "lucide-react"
 import { PageHeader } from "@/components/shared/page-header"
+import { PremisesAvatar } from "@/components/shared/premises-avatar"
 import { ScrollableTabsList } from "@/components/shared/scrollable-tabs-list"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { VerifiedBusinessName } from "@/components/shared/verified-business-name"
+import { isKybVerifiedBusiness } from "@/data/seeds"
 import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
 import {
@@ -91,7 +93,7 @@ function formatDate(value: string) {
 function ReviewLink({ submission }: { submission: MohSubmission }) {
   return (
     <Link
-      to="/moh/businesses/$businessId"
+      to="/moh/health-approvals/$businessId"
       params={{ businessId: submission.id }}
       className="inline-flex min-h-11 items-center font-medium text-primary underline-offset-4 outline-none hover:underline focus-visible:rounded-sm focus-visible:ring-3 focus-visible:ring-ring/50"
     >
@@ -101,16 +103,6 @@ function ReviewLink({ submission }: { submission: MohSubmission }) {
 }
 
 type SubmissionTab = "pending" | "completed" | "rejected"
-
-function businessInitials(name: string) {
-  return name
-    .split(/\s+/)
-    .filter((word) => word !== "&")
-    .slice(0, 2)
-    .map((word) => word[0])
-    .join("")
-    .toUpperCase()
-}
 
 export function MohDashboard({
   submissions,
@@ -143,7 +135,7 @@ export function MohDashboard({
   return (
     <div className="flex flex-col gap-7">
       <PageHeader
-        title="Health Approval decisions"
+        title="Health Approvals"
         description="Review businesses submitted after a completed Environmental Health Officer inspection."
         actions={
           <Badge variant="secondary">{pending.length} awaiting decision</Badge>
@@ -234,16 +226,17 @@ export function MohDashboard({
                       <TableRow key={submission.id}>
                         <TableCell className="px-4 py-3 whitespace-normal">
                           <div className="flex items-center gap-3">
-                            <Avatar
-                              size="lg"
-                              aria-label={`${submission.businessName} business logo`}
-                            >
-                              <AvatarFallback className="bg-primary/10 font-semibold text-primary">
-                                {businessInitials(submission.businessName)}
-                              </AvatarFallback>
-                            </Avatar>
+                            <PremisesAvatar
+                              name={submission.businessName}
+                              ariaLabel={`${submission.businessName} business logo`}
+                            />
                             <p className="font-semibold">
-                              {submission.businessName}
+                              <VerifiedBusinessName
+                                name={submission.businessName}
+                                verified={isKybVerifiedBusiness(
+                                  submission.businessName
+                                )}
+                              />
                             </p>
                           </div>
                         </TableCell>
@@ -369,18 +362,23 @@ export function MohBusinessReview({
   return (
     <div className="flex flex-col gap-7">
       <Link
-        to="/moh/home"
+        to="/moh/health-approvals"
         className={buttonVariants({
           variant: "link",
           className: "min-h-11 w-fit px-0",
         })}
       >
         <ArrowLeft data-icon="inline-start" aria-hidden="true" />
-        Dashboard
+        Health Approvals
       </Link>
 
       <PageHeader
-        title={submission.businessName}
+        title={
+          <VerifiedBusinessName
+            name={submission.businessName}
+            verified={isKybVerifiedBusiness(submission.businessName)}
+          />
+        }
         description={`${submission.businessType} · ${submission.premisesId}`}
         actions={
           <Badge

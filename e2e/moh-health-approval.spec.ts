@@ -15,17 +15,19 @@ test("MOH reviews an inspected business and records a denial reason", async ({
   await expect(page.getByText("246810", { exact: true })).toBeVisible()
   await page.getByRole("button", { name: "Use assigned account" }).click()
 
-  await expect(page).toHaveURL(/\/moh\/home$/)
+  await expect(page).toHaveURL(/\/moh\/health-approvals$/)
   await expect(
     page.getByRole("heading", {
       level: 1,
-      name: "Health Approval decisions",
+      name: "Health Approvals",
     })
   ).toBeVisible()
   await expect(
     page.getByRole("navigation", { name: "MOH navigation" })
   ).toBeVisible()
-  await expect(page.locator("header").getByText("Dashboard")).toBeVisible()
+  await expect(
+    page.locator("header").getByText("Health approvals")
+  ).toBeVisible()
   await expect(page.getByRole("tab", { name: "Pending 12" })).toBeVisible()
   await expect(
     page.getByRole("heading", { name: "Submitted businesses" })
@@ -62,7 +64,7 @@ test("MOH reviews an inspected business and records a denial reason", async ({
   )
   await page.getByRole("link", { name: "Review" }).click()
 
-  await expect(page).toHaveURL(/\/moh\/businesses\/HA-REV-001$/)
+  await expect(page).toHaveURL(/\/moh\/health-approvals\/HA-REV-001$/)
   await expect(
     page.getByRole("heading", { level: 1, name: "Riverside Kitchen & Foods" })
   ).toBeVisible()
@@ -95,7 +97,9 @@ test("MOH reviews an inspected business and records a denial reason", async ({
   await expect(
     page.getByText("Cold storage controls require correction before approval.")
   ).toBeVisible()
-  await page.getByRole("link", { name: "Dashboard" }).click()
+  await page
+    .getByRole("link", { name: "Health Approvals", exact: true })
+    .click()
   await page.getByRole("tab", { name: "Rejected 1" }).click()
   await expect(page.getByText("Riverside Kitchen & Foods")).toBeVisible()
   expect(
@@ -117,7 +121,7 @@ test("MOH opens an approved Health Approval Certificate in a new tab", async ({
 
   await page.goto("/moh/sign-in")
   await page.getByRole("button", { name: "Use assigned account" }).click()
-  await expect(page).toHaveURL(/\/moh\/home$/)
+  await expect(page).toHaveURL(/\/moh\/health-approvals$/)
   const riversideRow = page
     .getByRole("row")
     .filter({ hasText: "Riverside Kitchen & Foods" })

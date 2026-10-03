@@ -3,13 +3,13 @@ import { createRepository } from "./repository"
 import { createStorage } from "./storage"
 
 describe("mock repository", () => {
-  it("distinguishes Not Found from Non-compliant", async () => {
+  it("filters premises by one of the canonical business statuses", async () => {
     const result = await createRepository(createStorage()).listPremises({
-      status: "Not Found",
+      status: "Pending",
     })
     expect(result.length).toBeGreaterThan(0)
     expect(
-      result.every((record) => record.complianceStatus === "Not Found")
+      result.every((record) => record.complianceStatus === "Pending")
     ).toBe(true)
   })
 

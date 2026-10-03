@@ -30,18 +30,13 @@ test("certificates page is a focused three-card overview", async ({ page }) => {
   const fitnessCard = overview.getByRole("region", {
     name: "Fitness Certificate",
   })
-  await expect(fitnessCard.getByText("Not applied")).toHaveAttribute(
-    "data-variant",
-    "destructive"
-  )
-  await expect(fitnessCard).toContainText("Kitchen staff: 0")
+  await expect(fitnessCard.getByText("Not issued")).toBeVisible()
+  await expect(fitnessCard.getByRole("link")).toHaveCount(0)
   const fumigationCard = overview.getByRole("region", {
     name: "Fumigation Certificate",
   })
-  await expect(fumigationCard.getByText("Not applied")).toHaveAttribute(
-    "data-variant",
-    "destructive"
-  )
+  await expect(fumigationCard.getByText("Not issued")).toBeVisible()
+  await expect(fumigationCard.getByRole("link")).toHaveCount(0)
   await page.getByRole("button", { name: "View checklist" }).click()
   const checklist = page.getByRole("dialog", {
     name: "Health Approval checklist",

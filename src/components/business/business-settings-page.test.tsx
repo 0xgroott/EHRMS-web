@@ -39,6 +39,112 @@ function renderSettings() {
 }
 
 describe("business settings page", () => {
+  it("shows a business overview beside the settings workspace", async () => {
+    renderSettings()
+
+    const overview = await screen.findByRole("complementary", {
+      name: "Business overview",
+    })
+    expect(
+      within(overview).getByRole("heading", {
+        name: "Riverside Kitchen & Foods",
+      })
+    ).toBeVisible()
+    expect(within(overview).getByText("Restaurant")).toBeVisible()
+    expect(within(overview).getByText("Diobu")).toBeVisible()
+    expect(
+      within(overview).getByRole("link", { name: "Website" })
+    ).toHaveAttribute("href", "https://riverside.example.com")
+    expect(
+      within(overview).getByRole("link", { name: "Instagram" })
+    ).toHaveAttribute("target", "_blank")
+    expect(
+      within(overview).getByRole("button", { name: "Edit business logo" })
+    ).toBeVisible()
+    expect(
+      within(
+        screen.getByRole("tabpanel", { name: "Business profile" })
+      ).queryByRole("button", { name: "Edit business logo" })
+    ).not.toBeInTheDocument()
+    expect(
+      within(overview).queryByRole("button", { name: "Upload avatar or logo" })
+    ).not.toBeInTheDocument()
+    expect(
+      within(overview).queryByRole("button", { name: /remove/i })
+    ).not.toBeInTheDocument()
+    expect(
+      within(overview).queryByText("Riverside Kitchen", { exact: true })
+    ).not.toBeInTheDocument()
+    expect(within(overview).queryByText(/PNG, JPG/)).not.toBeInTheDocument()
+    for (const redundantCopy of [
+      "Manage your business, owner account, security, and notifications.",
+      "Update the details shown across your business account.",
+      "Add optional links customers and council staff can use to learn more about your business.",
+      "Reference details assigned to this business and premises.",
+      "Add views of your premises, kitchen, and working areas.",
+    ]) {
+      expect(screen.queryByText(redundantCopy)).not.toBeInTheDocument()
+    }
+
+    expect(
+      document.querySelector('[data-slot="business-settings-layout"]')
+    ).toHaveClass("gap-10")
+    expect(overview.querySelector('[data-slot="avatar-badge"]')).toHaveClass(
+      "size-6",
+      "bg-background",
+      "text-primary",
+      "[&>svg]:size-3"
+    )
+    expect(
+      document.querySelector('[data-slot="business-settings-profile-sidebar"]')
+    ).toHaveClass("lg:sticky", "lg:top-24")
+    expect(
+      document.querySelector('[data-slot="business-settings-panel"]')
+    ).toHaveClass("min-h-80", "lg:min-h-[31.5rem]", "border", "rounded-xl")
+    const settingsPanel = document.querySelector(
+      '[data-slot="business-settings-panel"]'
+    )
+    const tabList = screen.getByRole("tablist")
+    expect(settingsPanel).not.toContainElement(tabList)
+    expect(tabList).toHaveAttribute("data-variant", "default")
+    expect(tabList).toHaveClass("h-11!")
+    for (const tab of screen.getAllByRole("tab")) {
+      expect(tab).not.toHaveClass("min-h-11")
+    }
+  })
+
+  it("omits the public links section when no links are recorded", async () => {
+    const state = structuredClone(returningBusinessState)
+    if (state.profile) state.profile.links = undefined
+    createBusinessStorage(localStorage).write(state)
+
+    renderSettings()
+
+    const overview = await screen.findByRole("complementary", {
+      name: "Business overview",
+    })
+    expect(
+      within(overview).queryByRole("heading", { name: "Online" })
+    ).not.toBeInTheDocument()
+  })
+
+  it("does not render unsafe stored public links", async () => {
+    const state = structuredClone(returningBusinessState)
+    if (state.profile) {
+      state.profile.links = { website: "javascript:alert('unsafe')" }
+    }
+    createBusinessStorage(localStorage).write(state)
+
+    renderSettings()
+
+    const overview = await screen.findByRole("complementary", {
+      name: "Business overview",
+    })
+    expect(
+      within(overview).queryByRole("link", { name: "Website" })
+    ).not.toBeInTheDocument()
+  })
+
   it("keeps the settings information visible while KYB is incomplete", async () => {
     const state = structuredClone(returningBusinessState)
     state.stage = "setup"
@@ -66,7 +172,7 @@ describe("business settings page", () => {
       })
     ).not.toBeInTheDocument()
     expect(
-      screen.getByRole("button", { name: "Upload avatar or logo" })
+      screen.getByRole("button", { name: "Edit business logo" })
     ).toBeVisible()
     expect(
       screen.getByRole("heading", { name: "Premises and kitchen photos" })
@@ -299,6 +405,45 @@ describe("business settings page", () => {
       ).toBe("Riverside Market Kitchen")
     )
     expect(await screen.findByText("Business profile saved")).toBeVisible()
+  })
+
+  it("edits and saves optional website and social links", async () => {
+    renderSettings()
+    const user = userEvent.setup()
+
+    await screen.findByRole("heading", { name: "Settings" })
+    await user.clear(screen.getByRole("textbox", { name: "Website" }))
+    await user.type(
+      screen.getByRole("textbox", { name: "Website" }),
+      "https://riverside.example.com"
+    )
+    await user.clear(screen.getByRole("textbox", { name: "Instagram" }))
+    await user.type(
+      screen.getByRole("textbox", { name: "Instagram" }),
+      "https://instagram.com/riversidekitchen"
+    )
+    await user.clear(screen.getByRole("textbox", { name: "Facebook" }))
+    await user.type(
+      screen.getByRole("textbox", { name: "Facebook" }),
+      "https://facebook.com/riversidekitchen"
+    )
+    await user.clear(screen.getByRole("textbox", { name: "X" }))
+    await user.type(
+      screen.getByRole("textbox", { name: "X" }),
+      "https://x.com/riversidefoods"
+    )
+    await user.click(screen.getByRole("button", { name: "Save changes" }))
+
+    await waitFor(() =>
+      expect(createBusinessStorage(localStorage).read().profile?.links).toEqual(
+        {
+          website: "https://riverside.example.com",
+          instagram: "https://instagram.com/riversidekitchen",
+          facebook: "https://facebook.com/riversidekitchen",
+          x: "https://x.com/riversidefoods",
+        }
+      )
+    )
   })
 
   it("resets application progress while preserving the business and kitchen staff", async () => {

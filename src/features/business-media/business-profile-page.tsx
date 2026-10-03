@@ -3,7 +3,6 @@ import { ImagePlus, Trash2, Upload } from "lucide-react"
 import { useBusinessSession } from "@/app/business-session"
 import { seedDatabase } from "@/data/seeds"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { notifySuccess } from "@/components/ui/app-toast"
@@ -112,14 +111,10 @@ export function BusinessProfilePage({
   const {
     media,
     isHydrated: mediaReady,
-    uploadAvatar,
-    removeAvatar,
     uploadPhoto,
     removePhoto,
   } = useBusinessMedia()
-  const avatarInputRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
-  const [avatarError, setAvatarError] = useState("")
   const [photoError, setPhotoError] = useState("")
 
   if (!businessReady || !mediaReady) {
@@ -135,25 +130,10 @@ export function BusinessProfilePage({
   const profile = business.profile
   if (!profile) return null
   const premises = profile.premises
-  const initials = profile.businessName
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((word) => word[0])
-    .join("")
   const photoCount = media.photos.filter(Boolean).length
   const council = seedDatabase.councils.find(
     (item) => item.id === premises?.councilId
   )
-
-  async function selectAvatar(file: File) {
-    setBusy(true)
-    setAvatarError("")
-    const result = await uploadAvatar(file)
-    if (!result.ok) setAvatarError(result.error)
-    else notifySuccess("Business logo updated")
-    setBusy(false)
-  }
 
   async function selectPhoto(index: number, file: File) {
     setBusy(true)
@@ -166,86 +146,6 @@ export function BusinessProfilePage({
 
   return (
     <div className="flex min-w-0 flex-col gap-8 pb-12">
-      <section
-        aria-labelledby="business-identity"
-        className="grid min-w-0 gap-6 pb-2 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center sm:gap-8"
-      >
-        <Avatar className="size-24 sm:size-28">
-          {media.avatar && (
-            <AvatarImage
-              src={media.avatar.dataUrl}
-              alt={`${profile.businessName} logo`}
-            />
-          )}
-          <AvatarFallback className="text-2xl font-semibold">
-            {initials}
-          </AvatarFallback>
-        </Avatar>
-        <div className="min-w-0">
-          <h2
-            id="business-identity"
-            className="text-xl font-semibold tracking-tight"
-          >
-            {profile.businessName}
-          </h2>
-          {showPremisesDetails && (
-            <p className="mt-1 text-sm text-muted-foreground">
-              {premises?.premisesName ?? "Premises details not recorded"}
-            </p>
-          )}
-          <FieldGroup className="mt-5 max-w-md">
-            <Field>
-              <Input
-                ref={avatarInputRef}
-                id="business-avatar"
-                type="file"
-                aria-label="Upload business avatar or logo"
-                accept={acceptedImages}
-                className="sr-only max-w-px"
-                disabled={busy}
-                onChange={(event) => {
-                  const file = event.target.files?.[0]
-                  if (file) void selectAvatar(file)
-                  event.currentTarget.value = ""
-                }}
-              />
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  variant="outline"
-                  disabled={busy}
-                  onClick={() => avatarInputRef.current?.click()}
-                >
-                  <Upload data-icon="inline-start" aria-hidden="true" />
-                  {media.avatar ? "Replace image" : "Upload avatar or logo"}
-                </Button>
-                {media.avatar && (
-                  <Button
-                    variant="ghost"
-                    disabled={busy}
-                    onClick={() => {
-                      const result = removeAvatar()
-                      setAvatarError(result.ok ? "" : result.error)
-                      if (result.ok) notifySuccess("Business logo removed")
-                    }}
-                  >
-                    <Trash2 data-icon="inline-start" aria-hidden="true" />
-                    Remove image
-                  </Button>
-                )}
-              </div>
-            </Field>
-          </FieldGroup>
-          <p className="mt-3 text-xs text-muted-foreground">
-            PNG, JPG, or WebP · up to 8 MB
-          </p>
-          {avatarError && (
-            <Alert variant="destructive" role="alert" className="mt-4 max-w-lg">
-              <AlertDescription>{avatarError}</AlertDescription>
-            </Alert>
-          )}
-        </div>
-      </section>
-
       <BusinessProfileForm
         profile={profile}
         showPremisesDetails={showPremisesDetails}
@@ -255,10 +155,7 @@ export function BusinessProfilePage({
         <h2 id="business-record" className="text-lg font-semibold">
           Business record
         </h2>
-        <p className="mt-1 mb-6 text-sm text-muted-foreground">
-          Reference details assigned to this business and premises.
-        </p>
-        <div className="grid gap-5 sm:grid-cols-2">
+        <div className="mt-6 grid gap-5 sm:grid-cols-2">
           <Field>
             <label htmlFor="business-council" className="text-sm font-medium">
               Council
@@ -286,14 +183,9 @@ export function BusinessProfilePage({
 
       <section aria-labelledby="premises-images" className="min-w-0 pt-2">
         <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 id="premises-images" className="text-lg font-semibold">
-              Premises and kitchen photos
-            </h2>
-            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-              Add views of your premises, kitchen, and working areas.
-            </p>
-          </div>
+          <h2 id="premises-images" className="text-lg font-semibold">
+            Premises and kitchen photos
+          </h2>
           <Badge variant="secondary">{photoCount} of 3 photos</Badge>
         </div>
         {photoError && (

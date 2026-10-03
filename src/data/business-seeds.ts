@@ -29,6 +29,12 @@ export const returningBusinessState: BusinessPortalState = {
     email: "ada@riverside.ng",
     acceptedTerms: true,
     verified: true,
+    links: {
+      website: "https://riverside.example.com",
+      instagram: "https://instagram.com/riversidekitchen",
+      facebook: "https://facebook.com/riversidekitchen",
+      x: "https://x.com/riversidefoods",
+    },
     premises: {
       premisesName: "Riverside Kitchen",
       businessType: "Restaurant",

@@ -6,6 +6,7 @@ import {
   LogOut,
   Menu,
   Search,
+  UserRound,
   X,
 } from "lucide-react"
 import { cn } from "cn"
@@ -22,6 +23,16 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { ThemeMenuGroup } from "@/components/shared/theme-menu-group"
 import { useEho } from "./eho-session"
 
 const navigation = [
@@ -153,32 +164,51 @@ export function EhoPortal() {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-            <Link
-              to="/eho/profile"
-              aria-label={`Profile — ${officer.name}, EHO`}
-              aria-current={pathname === "/eho/profile" ? "page" : undefined}
-              onClick={() => setOpen(false)}
-              className={cn(
-                "flex min-h-16 items-center gap-3 rounded-xl border p-3 transition-colors",
-                pathname === "/eho/profile"
-                  ? "border-primary/30 bg-primary/10"
-                  : "bg-muted/40 hover:bg-muted"
-              )}
-            >
-              <Avatar size="lg">
-                <AvatarFallback className="bg-primary/10 font-semibold text-primary">
-                  {officerInitials}
-                </AvatarFallback>
-              </Avatar>
-              <span className="min-w-0">
-                <strong className="block truncate text-sm font-semibold">
-                  {officer.name}
-                </strong>
-                <span className="mt-0.5 block text-xs leading-4 text-muted-foreground">
-                  EHO
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <button
+                    type="button"
+                    className={cn(
+                      "flex min-h-16 w-full items-center gap-3 rounded-xl border p-3 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                      pathname === "/eho/profile"
+                        ? "border-primary/30 bg-primary/10"
+                        : "bg-muted/40 hover:bg-muted"
+                    )}
+                  />
+                }
+                aria-label={`EHO account — ${officer.name}`}
+              >
+                <Avatar size="lg">
+                  <AvatarFallback className="bg-primary/10 font-semibold text-primary">
+                    {officerInitials}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="min-w-0">
+                  <strong className="block truncate text-sm font-semibold">
+                    {officer.name}
+                  </strong>
+                  <span className="mt-0.5 block text-xs leading-4 text-muted-foreground">
+                    EHO
+                  </span>
                 </span>
-              </span>
-            </Link>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="top" align="start" className="w-60">
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel>{officer.name}</DropdownMenuLabel>
+                  <DropdownMenuItem
+                    render={<Link to="/eho/profile" />}
+                    onClick={() => setOpen(false)}
+                    className="min-h-11"
+                  >
+                    <UserRound aria-hidden="true" />
+                    View profile
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <ThemeMenuGroup />
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </aside>
       )}

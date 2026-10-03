@@ -114,7 +114,13 @@ function PremisesDirectory() {
             onChange={(e) => setStatus(e.target.value)}
           >
             <option value="">All compliance states</option>
-            {["Compliant", "At Risk", "Non-compliant", "Not Found"].map((s) => (
+            {[
+              "Compliant",
+              "Pending",
+              "Non-compliant",
+              "Expiring soon",
+              "Suspended",
+            ].map((s) => (
               <option key={s}>{s}</option>
             ))}
           </select>

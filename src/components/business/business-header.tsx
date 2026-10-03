@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar"
 import { useBusinessMedia } from "@/features/business-media/business-media-context"
+import { ThemeMenuGroup } from "@/components/shared/theme-menu-group"
 
 export function BusinessHeader() {
   const { state, signOut, error } = useBusinessSession()
@@ -127,6 +128,8 @@ export function BusinessHeader() {
                 Settings
               </DropdownMenuItem>
             </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <ThemeMenuGroup />
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem

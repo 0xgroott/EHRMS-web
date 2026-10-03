@@ -118,7 +118,7 @@ export function FumigationApplicationPage({ onPaid }: { onPaid?: () => void }) {
   }
 
   return (
-    <div className="fitness-flow min-h-screen bg-[#f7f9f8] text-foreground lg:grid lg:h-dvh lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_22rem] lg:overflow-hidden xl:grid-cols-[minmax(0,1fr)_26rem]">
+    <div className="fitness-flow min-h-screen bg-background text-foreground lg:grid lg:h-dvh lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_22rem] lg:overflow-hidden xl:grid-cols-[minmax(0,1fr)_26rem]">
       <div className="fitness-form-scroll min-w-0 px-4 pt-5 pb-12 sm:px-8 lg:min-h-0 lg:overflow-y-auto lg:px-12 lg:pt-8">
         <FumigationLink href="/business/applications" variant="outline">
           <ArrowLeft aria-hidden="true" /> Back to applications
@@ -261,7 +261,7 @@ export function FumigationApplicationPage({ onPaid }: { onPaid?: () => void }) {
                           </span>
                         </span>
                       </span>
-                      <strong className="shrink-0 text-[#D35E24] tabular-nums">
+                      <strong className="shrink-0 text-[var(--text-warning)] tabular-nums">
                         {formatNgn(option.priceNgn)}
                       </strong>
                     </label>
@@ -310,7 +310,7 @@ export function FumigationApplicationPage({ onPaid }: { onPaid?: () => void }) {
                   </dl>
                   <div className="flex items-center justify-between gap-3 border-t border-border/70 pt-5">
                     <span className="font-medium">Total</span>
-                    <strong className="text-2xl font-semibold tracking-tight text-[#D35E24] tabular-nums">
+                    <strong className="text-2xl font-semibold tracking-tight text-[var(--text-warning)] tabular-nums">
                       {formatNgn(
                         application?.totalNgn ?? provider?.priceNgn ?? 0
                       )}
@@ -415,7 +415,7 @@ export function FumigationApplicationPage({ onPaid }: { onPaid?: () => void }) {
             </li>
           ))}
         </ol>
-        <div className="mt-10 rounded-xl border border-border/80 bg-[#f7f9f8] p-4 lg:mt-auto">
+        <div className="mt-10 rounded-xl border border-border/80 bg-background p-4 lg:mt-auto">
           <p className="flex items-center gap-2 font-semibold">
             <CircleHelp className="size-4 text-primary" aria-hidden="true" />
             What happens next?
@@ -433,7 +433,7 @@ export function FumigationApplicationPage({ onPaid }: { onPaid?: () => void }) {
 function ExistingApplication({ stage }: { stage: string }) {
   const issued = stage === "issued"
   return (
-    <div className="min-h-screen bg-[#f7f9f8] p-4 sm:p-8 lg:p-12">
+    <div className="min-h-screen bg-background p-4 sm:p-8 lg:p-12">
       <FumigationLink href="/business/applications" variant="outline">
         <ArrowLeft aria-hidden="true" /> Back to applications
       </FumigationLink>

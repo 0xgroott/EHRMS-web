@@ -83,6 +83,7 @@ test("EHO searches, filters and opens the council premises directory", async ({
   await expect(
     page.getByRole("heading", { name: "Officer actions" })
   ).toHaveCount(0)
+  await page.getByRole("tab", { name: /Inspection history ·/ }).click()
   const assignmentCard = page
     .getByRole("heading", { name: "Assign this job" })
     .locator("../..")

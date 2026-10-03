@@ -14,6 +14,7 @@ import type {
   BusinessIdentityInput,
   BusinessProfile,
   BusinessProfileDetailsInput,
+  BusinessProfileLinks,
   ValidationErrors,
 } from "@/domain/business-types"
 import {
@@ -29,7 +30,10 @@ const identityFields: {
 }[] = [{ name: "businessName", label: "Registered business name" }]
 
 const premisesFields: {
-  name: Exclude<keyof BusinessProfileDetailsInput, keyof BusinessIdentityInput>
+  name: keyof Pick<
+    BusinessProfileDetailsInput,
+    "premisesName" | "businessType" | "registrationNumber" | "address" | "ward"
+  >
   label: string
 }[] = [
   { name: "premisesName", label: "Premises name" },
@@ -37,6 +41,33 @@ const premisesFields: {
   { name: "registrationNumber", label: "Registration number (optional)" },
   { name: "address", label: "Address" },
   { name: "ward", label: "Ward" },
+]
+
+const linkFields: {
+  name: keyof BusinessProfileLinks
+  label: string
+  placeholder: string
+}[] = [
+  {
+    name: "website",
+    label: "Website",
+    placeholder: "https://example.com",
+  },
+  {
+    name: "instagram",
+    label: "Instagram",
+    placeholder: "https://instagram.com/yourbusiness",
+  },
+  {
+    name: "facebook",
+    label: "Facebook",
+    placeholder: "https://facebook.com/yourbusiness",
+  },
+  {
+    name: "x",
+    label: "X",
+    placeholder: "https://x.com/yourbusiness",
+  },
 ]
 
 function detailsFromProfile(
@@ -51,6 +82,10 @@ function detailsFromProfile(
     registrationNumber: premises?.registrationNumber ?? "",
     address: premises?.address ?? "",
     ward: premises?.ward ?? "",
+    website: profile.links?.website ?? "",
+    instagram: profile.links?.instagram ?? "",
+    facebook: profile.links?.facebook ?? "",
+    x: profile.links?.x ?? "",
   }
 }
 
@@ -73,8 +108,9 @@ export function BusinessProfileForm({
   const fields = hasPremises
     ? [...identityFields, ...premisesFields]
     : identityFields
+  const editableFields = hasPremises ? [...fields, ...linkFields] : fields
   const original = detailsFromProfile(profile)
-  const dirty = fields.some(
+  const dirty = editableFields.some(
     ({ name }) => (values[name] ?? "").trim() !== (original[name] ?? "").trim()
   )
   const errors: ValidationErrors<BusinessProfileDetailsInput> = hasPremises
@@ -119,14 +155,9 @@ export function BusinessProfileForm({
       <h2 id="business-profile-fields" className="text-lg font-semibold">
         {hasPremises ? "Business and premises details" : "Business details"}
       </h2>
-      <p className="mt-1 mb-6 text-sm text-muted-foreground">
-        {hasPremises
-          ? "Update the details shown across your business account."
-          : "Update the business identity shown across your account."}
-      </p>
       <form
         onSubmit={(event) => void save(event)}
-        className="flex max-w-4xl flex-col gap-6"
+        className="mt-6 flex max-w-4xl flex-col gap-6"
       >
         <FieldGroup className="gap-5 sm:grid sm:grid-cols-2">
           {fields.map(({ name, label }) => {
@@ -164,6 +195,46 @@ export function BusinessProfileForm({
             )
           })}
         </FieldGroup>
+        {hasPremises && (
+          <div className="flex flex-col gap-5 pt-2">
+            <h3 className="font-semibold">Public links</h3>
+            <FieldGroup className="gap-5 sm:grid sm:grid-cols-2">
+              {linkFields.map(({ name, label, placeholder }) => {
+                const error = touched[name] ? errors[name] : undefined
+                const fieldId = `${id}-${name}`
+                return (
+                  <Field key={name} data-invalid={!!error}>
+                    <FieldLabel htmlFor={fieldId}>{label}</FieldLabel>
+                    <Input
+                      id={fieldId}
+                      name={name}
+                      type="url"
+                      autoComplete="url"
+                      placeholder={placeholder}
+                      value={values[name] ?? ""}
+                      onChange={(event) =>
+                        setValues((current) => ({
+                          ...current,
+                          [name]: event.target.value,
+                        }))
+                      }
+                      onBlur={() =>
+                        setTouched((current) => ({ ...current, [name]: true }))
+                      }
+                      aria-invalid={!!error}
+                      aria-describedby={error ? `${fieldId}-error` : undefined}
+                      disabled={saving}
+                      className="min-h-11"
+                    />
+                    {error && (
+                      <FieldError id={`${fieldId}-error`}>{error}</FieldError>
+                    )}
+                  </Field>
+                )
+              })}
+            </FieldGroup>
+          </div>
+        )}
         {saveError && (
           <Alert variant="destructive" role="alert">
             <AlertDescription>{saveError}</AlertDescription>

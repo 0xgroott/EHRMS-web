@@ -83,6 +83,17 @@ function withProfile(
   return { ...state, stage, profile }
 }
 
+function profileLinksFromDetails(input: BusinessProfileDetailsInput) {
+  const links = Object.fromEntries(
+    (["website", "instagram", "facebook", "x"] as const)
+      .map((name) => [name, input[name]?.trim()] as const)
+      .filter((entry): entry is [(typeof entry)[0], string] =>
+        Boolean(entry[1])
+      )
+  )
+  return Object.keys(links).length ? links : undefined
+}
+
 export function createBusinessRepository(
   storage: BusinessStorageAdapter,
   now: () => number = Date.now
@@ -129,6 +140,7 @@ export function createBusinessRepository(
       if (details && seeded.profile?.premises) {
         seeded.profile.businessName = details.businessName
         seeded.profile.contactName = details.contactName
+        seeded.profile.links = profileLinksFromDetails(details)
         Object.assign(seeded.profile.premises, {
           premisesName: details.premisesName,
           businessType: details.businessType,
@@ -293,16 +305,35 @@ export function createBusinessRepository(
         registrationNumber: input.registrationNumber?.trim() || undefined,
         address: input.address.trim(),
         ward: input.ward.trim(),
+        website: input.website?.trim() || undefined,
+        instagram: input.instagram?.trim() || undefined,
+        facebook: input.facebook?.trim() || undefined,
+        x: input.x?.trim() || undefined,
       }
       const errors = validateProfileDetails(details)
       if (hasErrors(errors)) return failure(errors)
 
-      const { businessName, contactName, ...premisesDetails } = details
+      const {
+        businessName,
+        contactName,
+        website,
+        instagram,
+        facebook,
+        x,
+        ...premisesDetails
+      } = details
 
       const next = withProfile(state, {
         ...state.profile,
         businessName,
         contactName,
+        links: profileLinksFromDetails({
+          ...details,
+          website,
+          instagram,
+          facebook,
+          x,
+        }),
         premises: { ...state.profile.premises, ...premisesDetails },
       })
       const result = write(next)

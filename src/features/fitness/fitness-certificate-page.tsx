@@ -1,13 +1,5 @@
 import { useState } from "react"
-import {
-  ArrowRight,
-  CheckCircle2,
-  Circle,
-  HeartPulse,
-  ShieldCheck,
-  SprayCan,
-  Users,
-} from "lucide-react"
+import { CheckCircle2, Circle } from "lucide-react"
 import { useBusinessSession } from "@/app/business-session"
 import { DocumentDownloadButton } from "@/components/business/document-download-button"
 import {
@@ -19,6 +11,7 @@ import { notifySuccessAfterNavigation } from "@/components/ui/app-toast"
 import { seedDatabase } from "@/data/seeds"
 import { fitnessCertificateDocument } from "@/domain/business-document-downloads"
 import { PageHeader } from "@/components/shared/page-header"
+import { CertificateCard } from "@/components/shared/certificate-card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -26,7 +19,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -40,7 +32,6 @@ import {
 } from "@/components/ui/dialog"
 import { useFitness } from "./fitness-context"
 import { useFumigation } from "@/features/fumigation/fumigation-context"
-import { FumigationLink } from "@/features/fumigation/fumigation-shared"
 import { useInspection } from "@/features/inspection/inspection-context"
 import {
   FitnessEmptyState,
@@ -261,46 +252,12 @@ export function BusinessCertificatesPage() {
   const healthValid = Boolean(
     healthCertificate && certificateIsValid(healthCertificate.expiresAt)
   )
-  const healthEligible = fitnessValid && fumigationValid
-  const fitnessSubmitted =
-    application && !["draft", "review"].includes(application.stage)
-  const fumigationSubmitted =
-    fumigationApplication &&
-    !["draft", "review"].includes(fumigationApplication.stage)
   const inspectionInProgress = Boolean(inspection.inspection)
   const inspectionComplete = Boolean(
     healthCertificate ||
     inspection.inspection?.stage === "resolved" ||
     inspection.inspection?.stage === "approval-issued"
   )
-  const healthNeedsAction = ["findings-issued", "further-action"].includes(
-    inspection.inspection?.stage ?? ""
-  )
-  const fitnessStatus = fitnessCertificate
-    ? fitnessValid
-      ? "Issued"
-      : "Expired"
-    : application
-      ? "Pending"
-      : "Not applied"
-  const fitnessStatusVariant = fitnessValid
-    ? "success"
-    : application && !fitnessCertificate
-      ? "warning"
-      : "destructive"
-  const fumigationStatus = fumigationCertificate
-    ? fumigationValid
-      ? "Issued"
-      : "Expired"
-    : fumigationSubmitted
-      ? "Pending"
-      : "Not applied"
-  const fumigationStatusVariant = fumigationValid
-    ? "success"
-    : fumigationSubmitted
-      ? "warning"
-      : "destructive"
-  const kitchenStaffCovered = fitnessCertificate?.handlerIds.length ?? 0
 
   return (
     <div className="flex max-w-5xl min-w-0 flex-col gap-6 break-words">
@@ -310,256 +267,107 @@ export function BusinessCertificatesPage() {
         aria-label="Certificate overview"
         className="grid min-w-0 gap-4 md:grid-cols-2"
       >
-        <Card
-          role="region"
-          aria-label="Fitness Certificate"
-          className="relative min-h-64 min-w-0 overflow-hidden"
-        >
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute -top-16 -right-12 size-48 rounded-full bg-primary/6"
-          />
-          <CardHeader className="relative">
-            <div className="flex items-start justify-between gap-4">
-              <div className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
-                <HeartPulse aria-hidden="true" />
-              </div>
-              <Badge variant={fitnessStatusVariant}>{fitnessStatus}</Badge>
-            </div>
-            <CardTitle className="mt-4">
-              <h2>Fitness Certificate</h2>
-            </CardTitle>
-            <CardDescription>
-              Health clearance for your registered kitchen staff.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="relative flex-1">
-            <p className="text-sm font-medium break-all">
-              {fitnessCertificate
-                ? formatFitnessReference(fitnessCertificate.id)
-                : (application?.id ?? "No certificate reference yet")}
-            </p>
-            <p className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
-              <Users className="size-4" aria-hidden="true" />
-              <span>
-                Kitchen staff:{" "}
-                <strong className="font-semibold text-foreground">
-                  {kitchenStaffCovered}
-                </strong>
-              </span>
-            </p>
-          </CardContent>
-          <CardFooter className="relative">
-            <FitnessLink
-              href={
-                fitnessCertificate
-                  ? "/business/fitness/certificate"
-                  : fitnessSubmitted
-                    ? "/business/fitness/tracker"
-                    : "/business/fitness/apply"
-              }
-            >
-              {fitnessCertificate
-                ? "View Fitness Certificate"
-                : fitnessSubmitted
-                  ? "View Fitness status"
-                  : application
-                    ? "Continue Fitness application"
-                    : "Start Fitness application"}
-              <ArrowRight data-icon="inline-end" aria-hidden="true" />
-            </FitnessLink>
-          </CardFooter>
-        </Card>
+        <CertificateCard
+          type="Fitness"
+          reference={
+            fitnessCertificate
+              ? formatFitnessReference(fitnessCertificate.id)
+              : "Not issued"
+          }
+          expiresAt={fitnessCertificate?.expiresAt}
+          issued={Boolean(fitnessCertificate)}
+          href={
+            fitnessCertificate ? "/business/fitness/certificate" : undefined
+          }
+        />
+        <CertificateCard
+          type="Fumigation"
+          reference={fumigationCertificate?.id ?? "Not issued"}
+          expiresAt={fumigationCertificate?.expiresAt}
+          issued={Boolean(fumigationCertificate)}
+          href={
+            fumigationCertificate
+              ? "/business/fumigation/certificate"
+              : undefined
+          }
+        />
+        <CertificateCard
+          type="Health Approval"
+          reference={healthCertificate?.id ?? "Not issued"}
+          expiresAt={healthCertificate?.expiresAt}
+          issued={Boolean(healthCertificate)}
+          href={healthCertificate ? "/business/health-approval" : undefined}
+          className="md:col-span-2"
+        />
+      </section>
 
-        <Card
-          role="region"
-          aria-label="Fumigation Certificate"
-          className="relative min-h-64 min-w-0 overflow-hidden"
-        >
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute -right-8 -bottom-20 size-48 rounded-full border-[24px] border-primary/6"
-          />
-          <CardHeader className="relative">
-            <div className="flex items-start justify-between gap-4">
-              <div className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
-                <SprayCan aria-hidden="true" />
-              </div>
-              <Badge variant={fumigationStatusVariant}>
-                {fumigationStatus}
-              </Badge>
-            </div>
-            <CardTitle className="mt-4">
-              <h2>Fumigation Certificate</h2>
-            </CardTitle>
-            <CardDescription>
-              Treatment certification for your registered premises.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="relative flex-1">
-            <p className="text-sm font-medium break-all">
-              {fumigationCertificate?.id ??
-                fumigationApplication?.id ??
-                "No certificate reference yet"}
-            </p>
-          </CardContent>
-          <CardFooter className="relative">
-            <FumigationLink
-              href={
-                fumigationCertificate
-                  ? "/business/fumigation/certificate"
-                  : fumigationSubmitted
-                    ? "/business/fumigation/tracker"
-                    : "/business/fumigation/apply"
-              }
-            >
-              {fumigationCertificate
-                ? "View Fumigation Certificate"
-                : fumigationSubmitted
-                  ? "View Fumigation status"
-                  : fumigationApplication
-                    ? "Continue Fumigation application"
-                    : "Start Fumigation application"}
-              <ArrowRight data-icon="inline-end" aria-hidden="true" />
-            </FumigationLink>
-          </CardFooter>
-        </Card>
-
-        <Card
-          role="region"
-          aria-label="Health Approval"
-          className="relative min-h-72 min-w-0 overflow-hidden bg-primary text-primary-foreground ring-primary/20 md:col-span-2"
-        >
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute -top-24 -right-10 size-72 rounded-full border border-primary-foreground/15"
-          />
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute -right-24 -bottom-40 size-80 rounded-full border border-primary-foreground/10"
-          />
-          <CardHeader className="relative">
-            <div className="flex items-start justify-between gap-4">
-              <div className="grid size-12 shrink-0 place-items-center rounded-xl bg-primary-foreground text-primary">
-                <ShieldCheck aria-hidden="true" />
-              </div>
-              <Badge variant="secondary">
-                {healthCertificate
-                  ? healthValid
-                    ? "Issued"
-                    : "Expired"
-                  : healthNeedsAction
-                    ? "Action required"
+      <div className="flex justify-end">
+        <Dialog>
+          <DialogTrigger render={<Button variant="outline" />}>
+            View checklist
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Health Approval checklist</DialogTitle>
+              <DialogDescription>
+                Complete these steps before your premises can receive final
+                approval.
+              </DialogDescription>
+            </DialogHeader>
+            <ul className="divide-y" aria-label="Health Approval steps">
+              {[
+                {
+                  label: "Fitness Certificate",
+                  complete: fitnessValid,
+                  status: fitnessValid ? "Complete" : "Required",
+                },
+                {
+                  label: "Fumigation Certificate",
+                  complete: fumigationValid,
+                  status: fumigationValid ? "Complete" : "Required",
+                },
+                {
+                  label: "Council inspection",
+                  complete: inspectionComplete,
+                  status: inspectionComplete
+                    ? "Complete"
                     : inspectionInProgress
                       ? "In progress"
-                      : healthEligible
-                        ? "Inspection pending"
-                        : "Requirements incomplete"}
-              </Badge>
-            </div>
-            <CardTitle className="mt-5 text-primary-foreground">
-              <h2 className="text-2xl">Health Approval</h2>
-            </CardTitle>
-            <CardDescription className="max-w-xl text-primary-foreground/75">
-              Final premises approval after your certificate requirements and
-              council inspection.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="relative flex-1">
-            <p className="font-medium">
-              {healthCertificate?.id ??
-                inspection.inspection?.notice.reference ??
-                (healthEligible
-                  ? "Ready for council inspection"
-                  : "Complete Fitness and Fumigation first")}
-            </p>
-          </CardContent>
-          <CardFooter className="relative flex-wrap gap-3">
-            <Button
-              variant="secondary"
-              nativeButton={false}
-              role="link"
-              render={<a href="/business/health-approval" />}
-              className="min-h-11"
-            >
-              View Health Approval
-              <ArrowRight data-icon="inline-end" aria-hidden="true" />
-            </Button>
-            <Dialog>
-              <DialogTrigger
-                render={
-                  <Button
-                    variant="outline"
-                    className="min-h-11 border-primary-foreground/35 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
-                  />
-                }
-              >
-                View checklist
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Health Approval checklist</DialogTitle>
-                  <DialogDescription>
-                    Complete these steps before your premises can receive final
-                    approval.
-                  </DialogDescription>
-                </DialogHeader>
-                <ul className="divide-y" aria-label="Health Approval steps">
-                  {[
-                    {
-                      label: "Fitness Certificate",
-                      complete: fitnessValid,
-                      status: fitnessValid ? "Complete" : "Required",
-                    },
-                    {
-                      label: "Fumigation Certificate",
-                      complete: fumigationValid,
-                      status: fumigationValid ? "Complete" : "Required",
-                    },
-                    {
-                      label: "Council inspection",
-                      complete: inspectionComplete,
-                      status: inspectionComplete
-                        ? "Complete"
-                        : inspectionInProgress
-                          ? "In progress"
-                          : "Pending",
-                    },
-                    {
-                      label: "Health Approval decision",
-                      complete: healthValid,
-                      status: healthValid ? "Approved" : "Pending",
-                    },
-                  ].map((step) => (
-                    <li
-                      key={step.label}
-                      className="flex items-center justify-between gap-4 py-3"
-                    >
-                      <span className="flex min-w-0 items-center gap-3 font-medium">
-                        {step.complete ? (
-                          <CheckCircle2
-                            className="size-5 shrink-0 text-primary"
-                            aria-hidden="true"
-                          />
-                        ) : (
-                          <Circle
-                            className="size-5 shrink-0 text-muted-foreground"
-                            aria-hidden="true"
-                          />
-                        )}
-                        {step.label}
-                      </span>
-                      <Badge variant={step.complete ? "success" : "outline"}>
-                        {step.status}
-                      </Badge>
-                    </li>
-                  ))}
-                </ul>
-              </DialogContent>
-            </Dialog>
-          </CardFooter>
-        </Card>
-      </section>
+                      : "Pending",
+                },
+                {
+                  label: "Health Approval decision",
+                  complete: healthValid,
+                  status: healthValid ? "Approved" : "Pending",
+                },
+              ].map((step) => (
+                <li
+                  key={step.label}
+                  className="flex items-center justify-between gap-4 py-3"
+                >
+                  <span className="flex min-w-0 items-center gap-3 font-medium">
+                    {step.complete ? (
+                      <CheckCircle2
+                        className="size-5 shrink-0 text-primary"
+                        aria-hidden="true"
+                      />
+                    ) : (
+                      <Circle
+                        className="size-5 shrink-0 text-muted-foreground"
+                        aria-hidden="true"
+                      />
+                    )}
+                    {step.label}
+                  </span>
+                  <Badge variant={step.complete ? "success" : "outline"}>
+                    {step.status}
+                  </Badge>
+                </li>
+              ))}
+            </ul>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   )
 }

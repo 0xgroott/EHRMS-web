@@ -129,7 +129,7 @@ describe("Business shell", () => {
     expect(banner).not.toHaveTextContent(
       "Add your business and premises details in Settings."
     )
-    expect(banner).toHaveClass("rounded-xl", "bg-rose-50")
+    expect(banner).toHaveClass("rounded-xl", "bg-[var(--background-error)]")
     expect(banner.parentElement).toHaveAttribute("id", "business-content")
     expect(banner.querySelector("svg")).toHaveClass("size-8")
     expect(

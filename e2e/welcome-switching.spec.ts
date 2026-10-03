@@ -83,11 +83,11 @@ test("welcome selection supports MOH verification and sign-out", async ({
   await expect(page.getByRole("alert")).toContainText("correct six-digit")
   await page.getByRole("textbox", { name: "Verification code" }).fill("246810")
   await page.getByRole("button", { name: "Verify and sign in" }).click()
-  await expect(page).toHaveURL(/\/moh\/home$/)
+  await expect(page).toHaveURL(/\/moh\/health-approvals$/)
   await expect(
     page.getByRole("heading", {
       level: 1,
-      name: "Health Approval decisions",
+      name: "Health Approvals",
     })
   ).toBeVisible()
   expect(
@@ -95,7 +95,8 @@ test("welcome selection supports MOH verification and sign-out", async ({
       () => document.documentElement.scrollWidth <= window.innerWidth
     )
   ).toBe(true)
-  await page.getByRole("button", { name: "Sign out" }).click()
+  await page.getByRole("button", { name: "MOH account" }).click()
+  await page.getByRole("menuitem", { name: "Sign out" }).click()
   await expect(page).toHaveURL(/\/$/)
   await page.goto("/moh/home")
   await expect(page).toHaveURL(/\/moh\/sign-in$/)

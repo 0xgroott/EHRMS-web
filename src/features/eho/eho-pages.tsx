@@ -24,8 +24,14 @@ import type { LucideIcon } from "lucide-react"
 import { seedDatabase } from "@/data/seeds"
 import { EmptyState } from "@/components/shared/empty-state"
 import { PageHeader } from "@/components/shared/page-header"
+import { PremisesBusinessInfoPanel } from "@/components/shared/premises-business-info-panel"
+import { PremisesCertificateCards } from "@/components/shared/premises-certificate-cards"
+import { PremisesDocumentsPanel } from "@/components/shared/premises-documents-panel"
+import { PremisesOverviewCard } from "@/components/shared/premises-overview-card"
+import { resolvePremisesProfile } from "@/components/shared/premises-profile-data"
 import { ScrollableTabsList } from "@/components/shared/scrollable-tabs-list"
 import { StatusBadge } from "@/components/shared/status-badge"
+import { VerifiedBusinessName } from "@/components/shared/verified-business-name"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { notifySuccess } from "@/components/ui/app-toast"
 import {
@@ -385,7 +391,14 @@ function JobTable({
                         />
                         <div className="min-w-0">
                           <span className="block font-medium">
-                            {premises?.businessName ?? "Premises unavailable"}
+                            {premises ? (
+                              <VerifiedBusinessName
+                                name={premises.businessName}
+                                verified={premises.kybVerified}
+                              />
+                            ) : (
+                              "Premises unavailable"
+                            )}
                           </span>
                           <span className="mt-1 block text-xs text-muted-foreground">
                             {premises?.address ?? "Address unavailable"}
@@ -1021,7 +1034,14 @@ export function InspectionOverviewCard({
         </CardHeader>
         <CardContent className="text-sm">
           <p className="font-medium">
-            {premises?.businessName ?? "Premises record unavailable"}
+            {premises ? (
+              <VerifiedBusinessName
+                name={premises.businessName}
+                verified={premises.kybVerified}
+              />
+            ) : (
+              "Premises record unavailable"
+            )}
           </p>
           <p className="flex items-start gap-2 text-muted-foreground">
             <MapPin className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
@@ -1261,7 +1281,14 @@ export function EhoOverviewPage({ inspectionId }: { inspectionId: string }) {
                 Inspection {assignment.id}
               </p>
               <h2 className="mt-1 text-2xl font-semibold tracking-tight text-balance md:text-3xl">
-                {premises?.businessName ?? "Premises unavailable"}
+                {premises ? (
+                  <VerifiedBusinessName
+                    name={premises.businessName}
+                    verified={premises.kybVerified}
+                  />
+                ) : (
+                  "Premises unavailable"
+                )}
               </h2>
               <div className="mt-3 flex flex-col gap-2 text-sm text-muted-foreground sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4">
                 <span>{assignment.type}</span>
@@ -1421,16 +1448,16 @@ export function EhoOverviewPage({ inspectionId }: { inspectionId: string }) {
 export function EhoCompliancePage({ premisesId }: { premisesId: string }) {
   const { officer, fieldwork, claimAssignment } = useEho()
   const [certificateId, setCertificateId] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState("certificates")
+  const [activeTab, setActiveTab] = useState("business-info")
   const premises = seedDatabase.premises.find((item) => item.id === premisesId)
   useEffect(() => {
     const search = new URLSearchParams(window.location.search)
     setCertificateId(search.get("certificate"))
     const tab = search.get("tab")
     setActiveTab(
-      tab === "history" || tab === "documents" || tab === "findings"
+      tab === "history" || tab === "certificates" || tab === "documents"
         ? tab
-        : "certificates"
+        : "business-info"
     )
   }, [premisesId])
   useEffect(() => {
@@ -1464,6 +1491,8 @@ export function EhoCompliancePage({ premisesId }: { premisesId: string }) {
         ? "?source=search"
         : ""
   }`
+  const profile = resolvePremisesProfile(premises)
+  const documentCount = premises.documents.length + profile.photos.length
   const historyEntries = inspectionHistory(
     premises,
     fieldwork,
@@ -1480,7 +1509,7 @@ export function EhoCompliancePage({ premisesId }: { premisesId: string }) {
   function selectTab(value: string) {
     setActiveTab(value)
     const url = new URL(window.location.href)
-    if (value === "certificates") url.searchParams.delete("tab")
+    if (value === "business-info") url.searchParams.delete("tab")
     else url.searchParams.set("tab", value)
     window.history.replaceState(window.history.state, "", url)
   }
@@ -1538,171 +1567,137 @@ export function EhoCompliancePage({ premisesId }: { premisesId: string }) {
             ? "Back to search"
             : "Dashboard"}
       </Button>
-      <PageHeader
-        eyebrow={premises.id}
-        title={premises.businessName}
-        description={`${premises.address} · ${premises.ward}`}
-        actions={<StatusBadge status={premises.complianceStatus} />}
-      />
-      <Alert>
-        <AlertDescription>
-          Certificate and document details may be stale when offline. “Not
-          Found” means no digital record; it does not mean non-compliance.
-        </AlertDescription>
-      </Alert>
-      <Card size="sm">
-        <CardHeader>
-          <CardTitle role="heading" aria-level={2}>
-            {isAssigned ? "Assigned to you" : "Assign this job"}
-          </CardTitle>
-          <CardDescription>
-            {isAssigned
-              ? "This premises inspection is in My Jobs and ready for you to continue."
-              : "Claim this premises inspection to add it to My Jobs and create a saved draft."}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex-row flex-wrap gap-2">
-          {isAssigned && premisesAssignment ? (
-            <Button
-              nativeButton={false}
-              render={
-                <a
-                  href={`/eho/inspections/${encodeURIComponent(premisesAssignment.id)}`}
-                />
-              }
-            >
-              Open job
-              <ArrowRight data-icon="inline-end" aria-hidden="true" />
-            </Button>
-          ) : premisesAssignment ? (
-            <Button
-              onClick={() => {
-                if (claimAssignment(premisesAssignment.id))
-                  notifySuccess("Inspection assigned to you.")
-              }}
-            >
-              <UserRoundCheck data-icon="inline-start" aria-hidden="true" />
-              Assign to me
-            </Button>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              No open inspection is available for this premises.
-            </p>
-          )}
-          {isAssigned && (
-            <Button
-              variant="outline"
-              nativeButton={false}
-              render={<Link to="/eho/my-work" />}
-            >
-              View My Jobs
-            </Button>
-          )}
-        </CardContent>
-      </Card>
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-        <WorkMetric
-          label="Open findings"
-          value={premises.outstandingContraventions}
-          icon={ClipboardCheck}
-        />
-        <WorkMetric
-          label="Certificates"
-          value={premises.certificates.length}
-          icon={FileBadge2}
-        />
-        <WorkMetric
-          label="Documents"
-          value={premises.documents.length}
-          icon={FileText}
-        />
-      </div>
-      <Tabs value={activeTab} onValueChange={selectTab} className="gap-4">
-        <div className="overflow-x-auto overflow-y-hidden border-b pb-1.5">
-          <TabsList
-            variant="line"
-            className="min-h-11 w-max min-w-full justify-start gap-5 px-0 sm:gap-7"
+      <div
+        data-slot="premises-workspace"
+        className="grid min-w-0 gap-10 lg:grid-cols-[minmax(15rem,18rem)_minmax(0,1fr)] lg:items-start"
+      >
+        <PremisesOverviewCard premises={premises} />
+        <div className="min-w-0">
+          <Tabs
+            value={activeTab}
+            onValueChange={selectTab}
+            className="min-w-0 gap-4"
           >
-            <TabsTrigger
-              value="certificates"
-              className="min-h-11 flex-none px-0"
+            <div
+              data-slot="premises-tabs"
+              className="w-full overflow-x-auto pb-1"
             >
-              Certificates
-            </TabsTrigger>
-            <TabsTrigger value="history" className="min-h-11 flex-none px-0">
-              Inspection history
-            </TabsTrigger>
-            <TabsTrigger value="findings" className="min-h-11 flex-none px-0">
-              Findings
-            </TabsTrigger>
-            <TabsTrigger value="documents" className="min-h-11 flex-none px-0">
-              Documents
-            </TabsTrigger>
-          </TabsList>
+              <TabsList className="h-11! min-w-max justify-start">
+                <TabsTrigger value="business-info" className="flex-none px-4">
+                  Business info
+                </TabsTrigger>
+                <TabsTrigger value="history" className="flex-none px-4">
+                  Inspection history · {historyEntries.length}
+                </TabsTrigger>
+                <TabsTrigger value="certificates" className="flex-none px-4">
+                  Certificates · {premises.certificates.length}
+                </TabsTrigger>
+                <TabsTrigger value="documents" className="flex-none px-4">
+                  Documents · {documentCount}
+                </TabsTrigger>
+              </TabsList>
+            </div>
+            <div
+              data-slot="premises-tab-panel"
+              className="min-h-80 min-w-0 rounded-xl border bg-card p-4 sm:p-6 lg:min-h-[31.5rem] lg:p-8"
+            >
+              <TabsContent value="business-info">
+                <PremisesBusinessInfoPanel premises={premises} />
+              </TabsContent>
+              <TabsContent value="history">
+                <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(15rem,20rem)]">
+                  <EhoInspectionHistoryPanel entries={historyEntries} />
+                  <div className="flex min-w-0 flex-col gap-5">
+                    <Card size="sm">
+                      <CardHeader>
+                        <CardTitle role="heading" aria-level={2}>
+                          {isAssigned ? "Assigned to you" : "Assign this job"}
+                        </CardTitle>
+                        <CardDescription>
+                          {isAssigned
+                            ? "This premises inspection is in My Jobs and ready for you to continue."
+                            : "Claim this premises inspection to add it to My Jobs and create a saved draft."}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="flex-row flex-wrap gap-2">
+                        {isAssigned && premisesAssignment ? (
+                          <Button
+                            nativeButton={false}
+                            render={
+                              <a
+                                href={`/eho/inspections/${encodeURIComponent(premisesAssignment.id)}`}
+                              />
+                            }
+                          >
+                            Open job
+                            <ArrowRight
+                              data-icon="inline-end"
+                              aria-hidden="true"
+                            />
+                          </Button>
+                        ) : premisesAssignment ? (
+                          <Button
+                            onClick={() => {
+                              if (claimAssignment(premisesAssignment.id))
+                                notifySuccess("Inspection assigned to you.")
+                            }}
+                          >
+                            <UserRoundCheck
+                              data-icon="inline-start"
+                              aria-hidden="true"
+                            />
+                            Assign to me
+                          </Button>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">
+                            No open inspection is available for this premises.
+                          </p>
+                        )}
+                        {isAssigned && (
+                          <Button
+                            variant="outline"
+                            nativeButton={false}
+                            render={<Link to="/eho/my-work" />}
+                          >
+                            View My Jobs
+                          </Button>
+                        )}
+                      </CardContent>
+                    </Card>
+                    <EhoPremisesFindingsPanel
+                      councilOutstanding={premises.outstandingContraventions}
+                      findings={findings}
+                    />
+                  </div>
+                </div>
+              </TabsContent>
+              <TabsContent value="certificates">
+                <div className="flex flex-col gap-6">
+                  <PremisesCertificateCards
+                    certificates={premises.certificates}
+                    getCertificateHref={(certificate) =>
+                      certificate.id
+                        ? `${backHref}${backHref.includes("?") ? "&" : "?"}certificate=${encodeURIComponent(certificate.id)}`
+                        : undefined
+                    }
+                  />
+                  <EhoPaperCertificatePanel
+                    officerId={officer.id}
+                    premisesId={premises.id}
+                  />
+                </div>
+              </TabsContent>
+              <TabsContent value="documents">
+                <PremisesDocumentsPanel
+                  businessName={profile.businessName}
+                  documents={premises.documents}
+                  photos={profile.photos}
+                />
+              </TabsContent>
+            </div>
+          </Tabs>
         </div>
-        <TabsContent value="certificates">
-          <Card>
-            <CardContent className="divide-y p-4 sm:p-5">
-              {premises.certificates.map((certificate) => (
-                <div
-                  key={certificate.id}
-                  className="flex flex-wrap items-center justify-between gap-3 py-3"
-                >
-                  <div>
-                    <p className="font-medium">{certificate.type}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {certificate.id} · Expires {certificate.expiresAt}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <StatusBadge status={certificate.status} />
-                    {certificate.id && (
-                      <a
-                        href={`${backHref}${backHref.includes("?") ? "&" : "?"}certificate=${encodeURIComponent(certificate.id)}`}
-                        aria-label={`View ${certificate.type} certificate ${certificate.id}`}
-                        className={buttonVariants({
-                          variant: "outline",
-                          size: "sm",
-                          className: "min-h-11",
-                        })}
-                      >
-                        View certificate
-                      </a>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-          <EhoPaperCertificatePanel
-            officerId={officer.id}
-            premisesId={premises.id}
-          />
-        </TabsContent>
-        <TabsContent value="history">
-          <EhoInspectionHistoryPanel entries={historyEntries} />
-        </TabsContent>
-        <TabsContent value="findings">
-          <EhoPremisesFindingsPanel
-            councilOutstanding={premises.outstandingContraventions}
-            findings={findings}
-          />
-        </TabsContent>
-        <TabsContent value="documents">
-          <Card>
-            <CardContent className="divide-y p-4 sm:p-5">
-              {premises.documents.map((document) => (
-                <div key={document.id} className="py-3">
-                  <p className="font-medium">{document.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {document.category} · {document.addedAt}
-                  </p>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      </div>
     </div>
   )
 }

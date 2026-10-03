@@ -5,6 +5,16 @@ import type { DemoRole } from "@/domain/types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { SidebarTrigger } from "@/components/ui/sidebar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { ThemeMenuGroup } from "@/components/shared/theme-menu-group"
 
 export function businessRoleHandoffPath(role: DemoRole) {
   if (role === "business-user") return "/business/dashboard"
@@ -30,7 +40,7 @@ export function handleDemoRoleSelection(
 }
 
 export function AppHeader() {
-  const { role, setRole, councilId, setCouncilId } = useDemoSession()
+  const { role, roleLabel, setRole, councilId, setCouncilId } = useDemoSession()
   return (
     <header className="sticky top-0 z-20 flex min-h-16 items-center gap-3 border-b bg-background/95 px-4 backdrop-blur md:px-6">
       <SidebarTrigger />
@@ -79,6 +89,28 @@ export function AppHeader() {
         <Button variant="ghost" size="icon" aria-label="Notifications">
           <Bell />
         </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={<Button variant="ghost" size="icon" className="size-11" />}
+            aria-label="Admin account"
+          >
+            <Avatar size="sm">
+              <AvatarFallback>AO</AvatarFallback>
+            </Avatar>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-60">
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>
+                Ada Okafor
+                <span className="mt-0.5 block font-normal text-muted-foreground">
+                  {roleLabel}
+                </span>
+              </DropdownMenuLabel>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <ThemeMenuGroup />
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   )

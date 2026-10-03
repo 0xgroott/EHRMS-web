@@ -312,6 +312,73 @@ describe("business repository", () => {
     )
   })
 
+  it("persists optional business website and social links", () => {
+    const repository = createBusinessRepository(
+      createBusinessStorage(localStorage)
+    )
+    repository.signInDemo("ada@riverside.ng", "riverside-demo")
+
+    const result = repository.updateProfileDetails({
+      businessName: "Riverside Kitchen & Foods",
+      contactName: "Ada Okafor",
+      premisesName: "Riverside Kitchen",
+      businessType: "Restaurant",
+      address: "12 Abonnema Wharf Road",
+      ward: "Diobu",
+      website: " https://riverside.example.com ",
+      instagram: " https://instagram.com/riversidekitchen ",
+      facebook: " https://facebook.com/riversidekitchen ",
+      x: " https://x.com/riversidefoods ",
+    })
+
+    expect(result).toMatchObject({
+      ok: true,
+      state: {
+        profile: {
+          links: {
+            website: "https://riverside.example.com",
+            instagram: "https://instagram.com/riversidekitchen",
+            facebook: "https://facebook.com/riversidekitchen",
+            x: "https://x.com/riversidefoods",
+          },
+        },
+      },
+    })
+
+    repository.reset()
+    repository.signInDemo("ada@riverside.ng", "riverside-demo")
+    expect(repository.getState().profile?.links).toEqual({
+      website: "https://riverside.example.com",
+      instagram: "https://instagram.com/riversidekitchen",
+      facebook: "https://facebook.com/riversidekitchen",
+      x: "https://x.com/riversidefoods",
+    })
+  })
+
+  it("rejects invalid public links without modifying the profile", () => {
+    const repository = createBusinessRepository(
+      createBusinessStorage(localStorage)
+    )
+    repository.signInDemo("ada@riverside.ng", "riverside-demo")
+    const before = repository.getState()
+
+    const result = repository.updateProfileDetails({
+      businessName: "Riverside Kitchen & Foods",
+      contactName: "Ada Okafor",
+      premisesName: "Riverside Kitchen",
+      businessType: "Restaurant",
+      address: "12 Abonnema Wharf Road",
+      ward: "Diobu",
+      website: "riverside.example.com",
+    })
+
+    expect(result).toMatchObject({
+      ok: false,
+      errors: { website: "Enter a full http:// or https:// URL" },
+    })
+    expect(repository.getState()).toEqual(before)
+  })
+
   it("updates business identity before KYB without changing the setup stage", () => {
     const repository = createBusinessRepository(
       createBusinessStorage(localStorage)

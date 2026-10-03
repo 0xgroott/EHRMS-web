@@ -69,7 +69,7 @@ test("business dashboard presents certificate actions and metrics on desktop and
   ).toBe(true)
 
   await page.goto("/business/settings")
-  await page.getByRole("tab", { name: "Account" }).click()
+  await page.getByRole("tab", { name: "Advanced" }).click()
   await page.getByRole("button", { name: "Reset application progress" }).click()
   const resetDialog = page.getByRole("alertdialog", {
     name: "Reset application progress?",

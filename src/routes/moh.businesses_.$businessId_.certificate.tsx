@@ -7,5 +7,5 @@ function MohCertificateRoute() {
 }
 
 export const Route = createFileRoute(
-  "/moh/businesses/$businessId_/certificate"
+  "/moh/businesses_/$businessId_/certificate"
 )({ component: MohCertificateRoute })

@@ -235,7 +235,7 @@ export function EhoFollowUpPage({ inspectionId }: { inspectionId: string }) {
         <Card>
           <CardContent className="space-y-4 p-6">
             <CheckCircle2
-              className="size-8 text-emerald-700"
+              className="size-8 text-[var(--icon-success)]"
               aria-hidden="true"
             />
             <h2 className="text-xl font-semibold">Follow-up captured</h2>

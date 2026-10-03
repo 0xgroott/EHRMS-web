@@ -7,7 +7,7 @@ export type DemoRole =
   | "business-user"
 
 export type ComplianceStatus =
-  "Compliant" | "At Risk" | "Non-compliant" | "Not Found"
+  "Compliant" | "Pending" | "Non-compliant" | "Expiring soon" | "Suspended"
 
 export type CertificateStatus =
   | "Active"
@@ -18,6 +18,7 @@ export type CertificateStatus =
   | "Revoked"
   | "Withdrawn"
   | "Replaced"
+  | "Pending"
   | "Not Found"
 
 export type NavigationId =
@@ -55,6 +56,25 @@ export interface PremisesDocument {
   addedAt: string
 }
 
+export interface PremisesPhotoSummary {
+  id: string
+  name: string
+  dataUrl?: string
+}
+
+export interface PremisesProfileSummary {
+  contactName: string
+  premisesName: string
+  registrationNumber: string
+  links: {
+    website?: string
+    instagram?: string
+    facebook?: string
+    x?: string
+  }
+  photos: PremisesPhotoSummary[]
+}
+
 export interface InspectionSummary {
   id: string
   type: string
@@ -67,6 +87,11 @@ export interface Premises {
   id: string
   businessName: string
   tradingName: string
+  email?: string
+  phone?: string
+  kybVerified: boolean
+  businessProfileId?: string
+  profile: PremisesProfileSummary
   address: string
   ward: string
   councilId: string
@@ -117,7 +142,7 @@ export interface DashboardFilters {
 }
 
 export interface MockDatabase {
-  schemaVersion: 1
+  schemaVersion: 4
   councils: Council[]
   premises: Premises[]
   workItems: WorkItem[]

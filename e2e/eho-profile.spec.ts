@@ -28,7 +28,7 @@ test("EHO can review sync data and profile separately without losing saved work"
           localStorage.getItem("ehrcms:eho:fieldwork:v1:EHO-001") ?? "{}"
         )["EIN-103"]?.status
     )
-  ).toBe("draft")
+  ).toBeUndefined()
 
   await page.evaluate(() => {
     const key = "ehrcms:eho:fieldwork:v1:EHO-001"
@@ -100,7 +100,10 @@ test("EHO can review sync data and profile separately without losing saved work"
   await expect(sidebar.getByText("Ebi Briggs", { exact: true })).toBeVisible()
   await expect(sidebar.getByText("EHO", { exact: true })).toBeVisible()
   await expect(sidebar.getByRole("button", { name: "Logout" })).toBeVisible()
-  await sidebar.getByRole("link", { name: /Profile — Ebi Briggs, EHO/ }).click()
+  await sidebar
+    .getByRole("button", { name: "EHO account — Ebi Briggs" })
+    .click()
+  await page.getByRole("menuitem", { name: "View profile" }).click()
   await expect(
     page.getByRole("heading", { level: 1, name: "Profile" })
   ).toBeVisible()

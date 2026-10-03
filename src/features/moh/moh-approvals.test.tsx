@@ -28,7 +28,7 @@ describe("MOH Health Approval workflow", () => {
     await renderWithRouter(<MohDashboard submissions={mohSubmissions} />)
 
     expect(
-      screen.getByRole("heading", { name: "Health Approval decisions" })
+      screen.getByRole("heading", { name: "Health Approvals" })
     ).toBeInTheDocument()
     expect(
       screen.queryByRole("heading", { name: "Submitted businesses" })
@@ -48,6 +48,13 @@ describe("MOH Health Approval workflow", () => {
     expect(screen.getAllByRole("link", { name: "Review" })).toHaveLength(12)
     expect(screen.getAllByLabelText(/business logo$/i)).toHaveLength(12)
     const table = screen.getByRole("table", { name: "Submitted businesses" })
+    expect(
+      within(
+        within(table).getByRole("row", {
+          name: /Riverside Kitchen & Foods/,
+        })
+      ).getByLabelText("KYB verified")
+    ).toBeVisible()
     expect(
       within(table)
         .getAllByRole("columnheader")

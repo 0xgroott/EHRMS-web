@@ -4,6 +4,7 @@ import type { ComplianceStatus, Premises } from "@/domain/types"
 import { EmptyState } from "@/components/shared/empty-state"
 import { PageHeader } from "@/components/shared/page-header"
 import { StatusBadge } from "@/components/shared/status-badge"
+import { VerifiedBusinessName } from "@/components/shared/verified-business-name"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -44,9 +45,10 @@ type BarcodeDetectorConstructor = new (options: {
 
 const complianceStatuses: ComplianceStatus[] = [
   "Compliant",
-  "At Risk",
+  "Pending",
   "Non-compliant",
-  "Not Found",
+  "Expiring soon",
+  "Suspended",
 ]
 
 const sortOptions: Array<{ value: PremisesSort; label: string }> = [
@@ -83,7 +85,12 @@ function MobilePremisesCard({ premises }: { premises: Premises }) {
           <span className="text-xs text-muted-foreground">{premises.id}</span>
         </div>
         <div className="min-w-0">
-          <h2 className="font-semibold">{premises.businessName}</h2>
+          <h2 className="font-semibold">
+            <VerifiedBusinessName
+              name={premises.businessName}
+              verified={premises.kybVerified}
+            />
+          </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {premises.premisesType} · {premises.ward}
           </p>
@@ -497,7 +504,10 @@ export function EhoPremisesSearchPage() {
                           <EhoPremisesAvatar name={premises.businessName} />
                           <div className="min-w-0">
                             <span className="block font-medium">
-                              {premises.businessName}
+                              <VerifiedBusinessName
+                                name={premises.businessName}
+                                verified={premises.kybVerified}
+                              />
                             </span>
                             <span className="mt-1 block text-xs text-muted-foreground">
                               {premises.id} · {premises.address}

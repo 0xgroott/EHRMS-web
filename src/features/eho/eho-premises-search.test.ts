@@ -45,10 +45,10 @@ describe("EHO premises lookup", () => {
       }).map((item) => item.id)
     ).toEqual(["PR-001"])
     expect(
-      searchPremises("", "phc", { complianceStatus: "At Risk" }).map(
+      searchPremises("", "phc", { complianceStatus: "Expiring soon" }).map(
         (item) => item.id
       )
-    ).toEqual(["PR-017", "PR-014", "PR-002"])
+    ).toEqual(["PR-014"])
   })
 
   it("sorts the directory by ward, business type or status", () => {
@@ -85,16 +85,16 @@ describe("EHO premises lookup", () => {
     expect(
       searchPremises("", "phc", { sort: "status" }).map((item) => item.id)
     ).toEqual([
-      "PR-017",
-      "PR-014",
-      "PR-002",
       "PR-015",
       "PR-013",
       "PR-001",
+      "PR-014",
       "PR-003",
-      "PR-016",
+      "PR-017",
+      "PR-002",
       "PR-018",
       "PR-004",
+      "PR-016",
     ])
   })
 

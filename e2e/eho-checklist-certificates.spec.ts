@@ -20,26 +20,42 @@ test("EHO checks certificate records from an inspection checklist", async ({
   await expect(page).toHaveURL(/\/eho\/my-work$/)
 
   await page.goto("/eho/inspections/EIN-101/checklist")
-  const certificates = page.getByRole("region", {
-    name: "Certificate checks",
-  })
-  await expect(certificates.getByText("Health Approval")).toBeVisible()
-  await expect(certificates.getByText("At Risk")).toBeVisible()
-  await expect(certificates.getByText("Fumigation")).toBeVisible()
+  await expect(
+    page.getByRole("group", { name: "Assessment for Food storage" })
+  ).toBeVisible()
   await page.getByRole("radio", { name: "Satisfactory" }).first().check()
+  await page.getByRole("button", { name: "Back", exact: true }).click()
+  const certificates = page.getByRole("region", { name: "Certificates" })
+  await expect(
+    certificates.getByText("Health Approval Certificate")
+  ).toBeVisible()
+  await expect(certificates.getByText("Fumigation Certificate")).toBeVisible()
+  const popupPromise = page.waitForEvent("popup")
   await certificates
-    .getByRole("link", { name: "View Health Approval certificate" })
+    .getByRole("link", {
+      name: "View Health Approval Certificate in a new tab",
+    })
     .click()
-  await expect(page).toHaveURL(
+  const certificatePage = await popupPromise
+  certificatePage.on("pageerror", (error) => browserErrors.push(error.message))
+  certificatePage.on("console", (message) => {
+    if (message.type() === "error") browserErrors.push(message.text())
+  })
+  await expect(certificatePage).toHaveURL(
     /\/eho\/premises\/PR-002\?inspection=EIN-101&certificate=HC-1002$/
   )
   await expect(
-    page.getByRole("heading", { name: "Health Approval certificate" })
+    certificatePage.getByRole("heading", {
+      name: "Health Approval certificate",
+    })
   ).toBeVisible()
-  await page
+  await certificatePage
     .getByRole("link", { name: "Back to premises certificates" })
     .click()
-  await page.getByRole("button", { name: "Return to inspection" }).click()
+  await certificatePage
+    .getByRole("button", { name: "Return to inspection" })
+    .click()
+  await certificatePage.close()
   await page.getByRole("button", { name: "Continue inspection" }).click()
   await expect(page).toHaveURL(/\/eho\/inspections\/EIN-101\/checklist$/)
   await expect(
@@ -47,7 +63,9 @@ test("EHO checks certificate records from an inspection checklist", async ({
   ).toBeChecked()
 
   await page.setViewportSize({ width: 390, height: 844 })
-  await expect(certificates.getByText("Health Approval")).toBeVisible()
+  await expect(
+    page.getByRole("group", { name: "Assessment for Food storage" })
+  ).toBeVisible()
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth

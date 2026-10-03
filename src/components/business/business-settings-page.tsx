@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { useBusinessSession } from "@/app/business-session"
 import { BusinessSetupForm } from "@/components/business/business-setup-form"
+import { BusinessSettingsProfileCard } from "@/components/business/business-settings-profile-card"
 import { PageHeader } from "@/components/shared/page-header"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import {
@@ -504,184 +505,185 @@ function SettingsContent({
   }
 
   return (
-    <div className="flex w-full max-w-5xl min-w-0 flex-col pb-12">
-      <PageHeader
-        eyebrow="Business account"
-        title="Settings"
-        description="Manage your business, owner account, security, and notifications."
-        divided={false}
-      />
+    <div className="flex w-full max-w-7xl min-w-0 flex-col pb-12">
+      <PageHeader eyebrow="Business account" title="Settings" divided={false} />
 
       {kybAvailable && <KybSettings profile={profile} onExit={clearKybRoute} />}
 
-      <Tabs
-        value={activeTab}
-        onValueChange={(value) => {
-          setActiveTab(value)
-          clearKybRoute()
-        }}
-        className="mt-4 min-w-0"
+      <div
+        data-slot="business-settings-layout"
+        className="mt-8 grid min-w-0 gap-10 lg:grid-cols-[minmax(15rem,18rem)_minmax(0,1fr)] lg:items-start"
       >
-        <div className="mb-8 w-full overflow-x-auto">
-          <TabsList
-            variant="line"
-            className="h-11! w-full! min-w-max! justify-start gap-1 rounded-none p-0"
+        <BusinessSettingsProfileCard profile={profile} />
+        <Tabs
+          value={activeTab}
+          onValueChange={(value) => {
+            setActiveTab(value)
+            clearKybRoute()
+          }}
+          className="min-w-0 gap-4"
+        >
+          <div className="w-full overflow-x-auto pb-1">
+            <TabsList className="h-11! min-w-max justify-start">
+              <TabsTrigger value="profile" className="flex-none px-4">
+                Business profile
+              </TabsTrigger>
+              <TabsTrigger value="account" className="flex-none px-4">
+                Account
+              </TabsTrigger>
+              <TabsTrigger value="security" className="flex-none px-4">
+                Security
+              </TabsTrigger>
+              <TabsTrigger value="notifications" className="flex-none px-4">
+                Notifications
+              </TabsTrigger>
+              <TabsTrigger value="advanced" className="flex-none px-4">
+                Advanced
+              </TabsTrigger>
+            </TabsList>
+          </div>
+          <div
+            data-slot="business-settings-panel"
+            className="min-h-80 min-w-0 rounded-xl border bg-card p-4 sm:p-6 lg:min-h-[31.5rem] lg:p-8"
           >
-            <TabsTrigger
-              value="profile"
-              className="min-h-11 flex-none rounded-none border-b-2 border-b-transparent px-4 transition-none after:hidden data-active:border-b-primary"
-            >
-              Business profile
-            </TabsTrigger>
-            <TabsTrigger
-              value="account"
-              className="min-h-11 flex-none rounded-none border-b-2 border-b-transparent px-4 transition-none after:hidden data-active:border-b-primary"
-            >
-              Account
-            </TabsTrigger>
-            <TabsTrigger
-              value="security"
-              className="min-h-11 flex-none rounded-none border-b-2 border-b-transparent px-4 transition-none after:hidden data-active:border-b-primary"
-            >
-              Security
-            </TabsTrigger>
-            <TabsTrigger
-              value="notifications"
-              className="min-h-11 flex-none rounded-none border-b-2 border-b-transparent px-4 transition-none after:hidden data-active:border-b-primary"
-            >
-              Notifications
-            </TabsTrigger>
-            <TabsTrigger
-              value="advanced"
-              className="min-h-11 flex-none rounded-none border-b-2 border-b-transparent px-4 transition-none after:hidden data-active:border-b-primary"
-            >
-              Advanced
-            </TabsTrigger>
-          </TabsList>
-        </div>
-        <TabsContent value="profile" keepMounted>
-          <BusinessProfilePage showPremisesDetails={kybComplete} />
-        </TabsContent>
-        <TabsContent value="account">
-          <OwnerAccountSettings profile={profile} />
-        </TabsContent>
-        <TabsContent value="security">
-          <SecuritySettings />
-        </TabsContent>
-        <TabsContent value="notifications">
-          <section aria-labelledby="settings-notifications">
-            <h2 id="settings-notifications" className="text-lg font-semibold">
-              Notification preferences
-            </h2>
-            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-              Choose your email preferences. Notices and application status
-              remain available in the portal.
-            </p>
-            <form onSubmit={save} className="mt-7 max-w-3xl">
-              <div className="flex min-h-20 items-center gap-4 py-4">
-                <input
-                  type="checkbox"
-                  id="application-emails"
-                  checked={settings.applicationEmails}
-                  onChange={(event) => {
-                    setSettings((current) => ({
-                      ...current,
-                      applicationEmails: event.target.checked,
-                    }))
-                  }}
-                  className="size-5 shrink-0 accent-primary"
-                />
-                <label htmlFor="application-emails" className="cursor-pointer">
-                  <span className="block text-sm font-medium">
-                    Application updates
-                  </span>
-                  <span className="block text-sm text-muted-foreground">
-                    Fitness and Fumigation progress and decisions.
-                  </span>
-                </label>
-              </div>
-              <div className="flex min-h-20 items-center gap-4 py-4">
-                <input
-                  type="checkbox"
-                  id="inspection-emails"
-                  checked={settings.inspectionEmails}
-                  onChange={(event) => {
-                    setSettings((current) => ({
-                      ...current,
-                      inspectionEmails: event.target.checked,
-                    }))
-                  }}
-                  className="size-5 shrink-0 accent-primary"
-                />
-                <label htmlFor="inspection-emails" className="cursor-pointer">
-                  <span className="block text-sm font-medium">
-                    Inspection updates
-                  </span>
-                  <span className="block text-sm text-muted-foreground">
-                    Inspection notices, findings, and follow-up actions.
-                  </span>
-                </label>
-              </div>
-              {error && (
-                <Alert variant="destructive" role="alert">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-              <div className="flex justify-end pt-5">
-                <Button type="submit" disabled={!dirty}>
-                  Save preferences
-                </Button>
-              </div>
-            </form>
-          </section>
-        </TabsContent>
-        <TabsContent value="advanced">
-          <section aria-labelledby="settings-advanced" className="max-w-3xl">
-            <h2 id="settings-advanced" className="text-lg font-semibold">
-              Advanced settings
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Manage actions that affect application and inspection progress.
-            </p>
-            <div className="mt-7 rounded-xl bg-muted/40 p-5">
-              <h3 className="font-medium">Application progress</h3>
-              <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-                Return certificate applications and Health Approval inspection
-                progress to the beginning. Your business profile and staff will
-                stay.
-              </p>
-              <AlertDialog open={resetOpen} onOpenChange={setResetOpen}>
-                <AlertDialogTrigger
-                  render={<Button variant="outline" className="mt-5" />}
+            <TabsContent value="profile" keepMounted>
+              <BusinessProfilePage showPremisesDetails={kybComplete} />
+            </TabsContent>
+            <TabsContent value="account">
+              <OwnerAccountSettings profile={profile} />
+            </TabsContent>
+            <TabsContent value="security">
+              <SecuritySettings />
+            </TabsContent>
+            <TabsContent value="notifications">
+              <section aria-labelledby="settings-notifications">
+                <h2
+                  id="settings-notifications"
+                  className="text-lg font-semibold"
                 >
-                  Reset application progress
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>
-                      Reset application progress?
-                    </AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This clears Fitness and Fumigation applications,
-                      certificates, and Health Approval inspection progress.
-                      Your business profile and kitchen staff will stay.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      variant="destructive"
-                      onClick={resetApplicationProgress}
+                  Notification preferences
+                </h2>
+                <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+                  Choose your email preferences. Notices and application status
+                  remain available in the portal.
+                </p>
+                <form onSubmit={save} className="mt-7 max-w-3xl">
+                  <div className="flex min-h-20 items-center gap-4 py-4">
+                    <input
+                      type="checkbox"
+                      id="application-emails"
+                      checked={settings.applicationEmails}
+                      onChange={(event) => {
+                        setSettings((current) => ({
+                          ...current,
+                          applicationEmails: event.target.checked,
+                        }))
+                      }}
+                      className="size-5 shrink-0 accent-primary"
+                    />
+                    <label
+                      htmlFor="application-emails"
+                      className="cursor-pointer"
                     >
-                      Reset progress
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
-          </section>
-        </TabsContent>
-      </Tabs>
+                      <span className="block text-sm font-medium">
+                        Application updates
+                      </span>
+                      <span className="block text-sm text-muted-foreground">
+                        Fitness and Fumigation progress and decisions.
+                      </span>
+                    </label>
+                  </div>
+                  <div className="flex min-h-20 items-center gap-4 py-4">
+                    <input
+                      type="checkbox"
+                      id="inspection-emails"
+                      checked={settings.inspectionEmails}
+                      onChange={(event) => {
+                        setSettings((current) => ({
+                          ...current,
+                          inspectionEmails: event.target.checked,
+                        }))
+                      }}
+                      className="size-5 shrink-0 accent-primary"
+                    />
+                    <label
+                      htmlFor="inspection-emails"
+                      className="cursor-pointer"
+                    >
+                      <span className="block text-sm font-medium">
+                        Inspection updates
+                      </span>
+                      <span className="block text-sm text-muted-foreground">
+                        Inspection notices, findings, and follow-up actions.
+                      </span>
+                    </label>
+                  </div>
+                  {error && (
+                    <Alert variant="destructive" role="alert">
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
+                  <div className="flex justify-end pt-5">
+                    <Button type="submit" disabled={!dirty}>
+                      Save preferences
+                    </Button>
+                  </div>
+                </form>
+              </section>
+            </TabsContent>
+            <TabsContent value="advanced">
+              <section
+                aria-labelledby="settings-advanced"
+                className="max-w-3xl"
+              >
+                <h2 id="settings-advanced" className="text-lg font-semibold">
+                  Advanced settings
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Manage actions that affect application and inspection
+                  progress.
+                </p>
+                <div className="mt-7 rounded-xl bg-muted/40 p-5">
+                  <h3 className="font-medium">Application progress</h3>
+                  <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+                    Return certificate applications and Health Approval
+                    inspection progress to the beginning. Your business profile
+                    and staff will stay.
+                  </p>
+                  <AlertDialog open={resetOpen} onOpenChange={setResetOpen}>
+                    <AlertDialogTrigger
+                      render={<Button variant="outline" className="mt-5" />}
+                    >
+                      Reset application progress
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>
+                          Reset application progress?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This clears Fitness and Fumigation applications,
+                          certificates, and Health Approval inspection progress.
+                          Your business profile and kitchen staff will stay.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          variant="destructive"
+                          onClick={resetApplicationProgress}
+                        >
+                          Reset progress
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </section>
+            </TabsContent>
+          </div>
+        </Tabs>
+      </div>
     </div>
   )
 }

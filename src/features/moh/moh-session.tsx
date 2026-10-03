@@ -3,9 +3,15 @@ import type { ReactNode } from "react"
 import { assignedMohAccount } from "./moh-account"
 import type { MohAccount } from "./moh-account"
 import type { HealthApprovalDecision } from "./moh-approvals"
+import {
+  mohHealthApprovalCases,
+  scheduleHealthApprovalInspection,
+} from "./moh-health-approval-worklist"
+import type { HealthApprovalWorkCase } from "./moh-health-approval-worklist"
 
 const sessionKey = "ehrcms:moh:session:v1"
 const decisionsKey = `ehrcms:moh:${assignedMohAccount.id}:decisions:v1`
+const scheduledInspectionsKey = `ehrcms:moh:${assignedMohAccount.id}:health-approval-inspections:v1`
 
 interface MohSessionValue {
   account: MohAccount | null
@@ -13,10 +19,15 @@ interface MohSessionValue {
   signedOut: boolean
   error: string | null
   decisions: Partial<Record<string, HealthApprovalDecision>>
+  scheduledInspections: Partial<Record<string, HealthApprovalWorkCase>>
   signIn: (account: MohAccount) => boolean
   signOut: () => boolean
   approveHealthApproval: (submissionId: string) => void
   denyHealthApproval: (submissionId: string, reason: string) => void
+  scheduleInspection: (
+    caseId: string,
+    input: { officer: string; scheduledAt: string }
+  ) => boolean
 }
 
 const MohSession = createContext<MohSessionValue | null>(null)
@@ -28,6 +39,9 @@ export function MohProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null)
   const [decisions, setDecisions] = useState<
     Partial<Record<string, HealthApprovalDecision>>
+  >({})
+  const [scheduledInspections, setScheduledInspections] = useState<
+    Partial<Record<string, HealthApprovalWorkCase>>
   >({})
 
   useEffect(() => {
@@ -46,6 +60,27 @@ export function MohProvider({ children }: { children: ReactNode }) {
       }
     } catch {
       setError("Unable to read your account on this device.")
+    }
+    try {
+      const savedInspections = localStorage.getItem(scheduledInspectionsKey)
+      if (savedInspections) {
+        const parsed = JSON.parse(savedInspections) as unknown
+        if (parsed && typeof parsed === "object") {
+          setScheduledInspections(
+            Object.fromEntries(
+              Object.entries(parsed).filter(
+                ([, value]) =>
+                  value !== null &&
+                  typeof value === "object" &&
+                  (value as HealthApprovalWorkCase).stage === "inspection" &&
+                  typeof (value as HealthApprovalWorkCase).id === "string"
+              )
+            )
+          )
+        }
+      }
+    } catch {
+      setScheduledInspections({})
     }
     setHydrated(true)
   }, [])
@@ -117,6 +152,34 @@ export function MohProvider({ children }: { children: ReactNode }) {
     })
   }
 
+  function scheduleInspection(
+    caseId: string,
+    input: { officer: string; scheduledAt: string }
+  ) {
+    const workCase = mohHealthApprovalCases.find((item) => item.id === caseId)
+    if (!workCase) {
+      setError("This Health Approval case could not be found.")
+      return false
+    }
+    try {
+      const scheduled = scheduleHealthApprovalInspection(workCase, input)
+      setScheduledInspections((current) => {
+        const next = { ...current, [caseId]: scheduled }
+        localStorage.setItem(scheduledInspectionsKey, JSON.stringify(next))
+        return next
+      })
+      setError(null)
+      return true
+    } catch (scheduleError) {
+      setError(
+        scheduleError instanceof Error
+          ? scheduleError.message
+          : "Unable to schedule this inspection."
+      )
+      return false
+    }
+  }
+
   return (
     <MohSession.Provider
       value={{
@@ -125,10 +188,12 @@ export function MohProvider({ children }: { children: ReactNode }) {
         signedOut,
         error,
         decisions,
+        scheduledInspections,
         signIn,
         signOut,
         approveHealthApproval,
         denyHealthApproval,
+        scheduleInspection,
       }}
     >
       {children}

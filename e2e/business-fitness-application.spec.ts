@@ -123,7 +123,15 @@ test("fitness application uses a dedicated guided screen and confirms submission
   ).toBeVisible()
   await expect(page.getByText("Food-handler fitness assessment")).toHaveCount(0)
   const facilityPrice = page.getByText("₦12,500", { exact: true })
-  await expect(facilityPrice).toHaveCSS("color", "rgb(211, 94, 36)")
+  const warningColor = await facilityPrice.evaluate((element) => {
+    const probe = document.createElement("span")
+    probe.style.color = "var(--text-warning)"
+    element.append(probe)
+    const color = getComputedStyle(probe).color
+    probe.remove()
+    return color
+  })
+  await expect(facilityPrice).toHaveCSS("color", warningColor)
   await page.context().grantPermissions(["clipboard-read", "clipboard-write"])
   const phoneCopy = page.getByRole("button", {
     name: "Copy Port Harcourt City Health Centre phone number",
@@ -159,10 +167,7 @@ test("fitness application uses a dedicated guided screen and confirms submission
   ])
   await expect(summary.locator("ol > li")).toHaveText(["Ada Okafor · Cook"])
   await expect(summary.getByText("Total", { exact: true })).toBeVisible()
-  await expect(summary.getByText("₦12,500")).toHaveCSS(
-    "color",
-    "rgb(211, 94, 36)"
-  )
+  await expect(summary.getByText("₦12,500")).toHaveCSS("color", warningColor)
   await expect(
     page.getByRole("button", { name: "Change food handlers" })
   ).toHaveCount(0)
@@ -171,9 +176,8 @@ test("fitness application uses a dedicated guided screen and confirms submission
     page.getByRole("heading", { name: "Payment options" })
   ).toBeVisible()
   await expect(page.getByText("Civic Health Bank")).toBeVisible()
-  await expect(page.getByTestId("bank-transfer-details")).toHaveCSS(
-    "background-color",
-    "rgb(238, 247, 252)"
+  await expect(page.getByTestId("bank-transfer-details")).toHaveClass(
+    /bg-\[var\(--background-information\)\]/
   )
   await page.getByRole("button", { name: "Copy bank name" }).click()
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(

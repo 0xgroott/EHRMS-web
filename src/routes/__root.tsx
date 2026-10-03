@@ -5,6 +5,7 @@ import { Agentation } from "agentation"
 
 import appCss from "../styles.css?url"
 import { Providers } from "@/app/providers"
+import { themeBootstrapScript } from "@/app/theme"
 
 export const Route = createRootRoute({
   head: () => ({
@@ -38,9 +39,10 @@ export const Route = createRootRoute({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
+        <script dangerouslySetInnerHTML={{ __html: themeBootstrapScript }} />
       </head>
       <body>
         <Providers>{children}</Providers>

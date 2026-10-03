@@ -21,7 +21,7 @@ export function MohSidebar({ pathname }: { pathname: string }) {
     <Sidebar collapsible="icon">
       <SidebarHeader className="p-3">
         <Link
-          to="/moh/home"
+          to="/moh/health-approvals"
           aria-label="EHRCMS MOH home"
           className="flex min-h-11 items-center gap-3 rounded-md focus-visible:outline-2 focus-visible:outline-ring"
         >

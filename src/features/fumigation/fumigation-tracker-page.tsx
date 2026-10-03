@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/dialog"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
-import { CopyValueButton } from "../fitness/copy-value-button"
+import { CopyValueButton } from "@/components/shared/copy-value-button"
 import { useFumigation } from "./fumigation-context"
 import { findLicensedProvider } from "./fumigation-seeds"
 import {

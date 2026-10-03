@@ -130,7 +130,7 @@ test("reusable business credentials start fresh verified onboarding every time",
   ).toBeVisible()
   await page.getByRole("tab", { name: "Business profile" }).click()
   await expect(
-    page.getByRole("button", { name: "Upload avatar or logo" })
+    page.getByRole("button", { name: "Upload business avatar or logo" })
   ).toBeVisible()
   await expect(
     page.getByRole("heading", { name: "Premises and kitchen photos" })
@@ -364,7 +364,14 @@ test("EHO dashboard separates jobs, follow-ups and completed work into searchabl
   )
   await expect(
     page.getByRole("cell", { name: "Riverside Kitchen & Foods" })
-  ).toBeVisible()
+  ).toHaveCount(0)
+  await expect(myJobsPanel.getByText("No assigned jobs")).toBeVisible()
+  await page.getByRole("button", { name: "Browse open jobs" }).click()
+  const riversideJob = page.getByRole("row", {
+    name: /Riverside Kitchen & Foods/,
+  })
+  await riversideJob.getByRole("link", { name: "Assign to me" }).click()
+  await page.goto("/eho/my-work")
   await expect(
     myJobsPanel
       .getByRole("row", { name: /Riverside Kitchen & Foods/ })

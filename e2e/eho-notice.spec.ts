@@ -115,13 +115,13 @@ test("EHO can review a notice before starting an assigned inspection", async ({
   ).toHaveCount(0)
   await expect(page.getByText("Environmental Health Officer")).toHaveCount(0)
   await expect(
-    page.getByRole("link", { name: "Back to inspection overview" })
+    page.getByRole("button", { name: "Back", exact: true })
   ).toBeVisible()
   await expect(
     journeyGuide.getByText(/Current step: Food storage/)
   ).toBeVisible()
   const foodStorage = page
-    .getByRole("heading", { name: "Food storage" })
+    .getByText("Food storage", { exact: true })
     .locator("xpath=ancestor::div[@data-slot='card']")
   await foodStorage.getByRole("radio", { name: "Contravention" }).check()
   await foodStorage
@@ -159,19 +159,21 @@ test("EHO can review a notice before starting an assigned inspection", async ({
     .click()
   await expect(contraventionDialog).toBeHidden()
   await expect(foodStorage.getByText("1 issue recorded.")).toBeVisible()
-  await page.getByRole("link", { name: "Next" }).click()
+  await page.getByRole("button", { name: "Next", exact: true }).click()
   await expect(page).toHaveURL(
     /\/eho\/inspections\/EIN-101\/checklist\/waste-control$/
   )
   await expect(
-    page.getByRole("heading", { name: "Waste control" })
+    page.getByRole("group", { name: "Assessment for Waste control" })
   ).toBeVisible()
-  await expect(page.getByRole("heading", { name: "Food storage" })).toHaveCount(
-    0
+  await expect(
+    page.getByRole("group", { name: "Assessment for Food storage" })
+  ).toHaveCount(0)
+  await page.getByRole("button", { name: "Back", exact: true }).click()
+  await expect(page).toHaveURL(
+    /\/eho\/inspections\/EIN-101\/checklist\/food-storage$/
   )
-  await page.getByRole("link", { name: "Back" }).click()
-  await expect(page).toHaveURL(/\/eho\/inspections\/EIN-101\/checklist$/)
-  await foodStorage.getByRole("link", { name: "Review and edit" }).click()
+  await foodStorage.getByRole("button", { name: "Review and edit" }).click()
   await expect(page).toHaveURL(
     /\/eho\/inspections\/EIN-101\/issues\/food-storage$/
   )

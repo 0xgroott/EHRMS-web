@@ -50,14 +50,14 @@ export function CopyValueButton({
           <Copy
             aria-hidden="true"
             className={cn(
-              "fitness-copy-icon absolute inset-0 transition-[opacity,transform] duration-200",
+              "absolute inset-0 transition-[opacity,transform] duration-200",
               copied ? "scale-75 opacity-0" : "scale-100 opacity-100"
             )}
           />
           <Check
             aria-hidden="true"
             className={cn(
-              "fitness-copy-icon absolute inset-0 transition-[opacity,transform] duration-200",
+              "absolute inset-0 transition-[opacity,transform] duration-200",
               copied ? "scale-100 opacity-100" : "scale-75 opacity-0"
             )}
           />

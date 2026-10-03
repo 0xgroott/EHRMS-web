@@ -20,10 +20,10 @@ test("EHO reviews captured findings without changing the council count", async (
 
   await page.goto("/eho/premises/PR-004?source=search")
   await page
-    .getByRole("link", { name: "Review findings" })
+    .getByRole("tab", { name: /Inspection history ·/ })
     .click({ timeout: 3_000 })
   await expect(page).toHaveURL(
-    /\/eho\/premises\/PR-004\?source=search&tab=findings$/
+    /\/eho\/premises\/PR-004\?source=search&tab=history$/
   )
   const findings = page.getByRole("region", { name: "Premises findings" })
   await expect(findings.getByText("1 captured finding")).toBeVisible()
@@ -46,7 +46,7 @@ test("EHO reviews captured findings without changing the council count", async (
   await expect(page).toHaveURL(/\/eho\/inspections\/EIN-104\/findings$/)
 
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.goto("/eho/premises/PR-003?tab=findings")
+  await page.goto("/eho/premises/PR-003?tab=history")
   await expect(
     findings.getByText("Council outstanding findings: 4")
   ).toBeVisible()

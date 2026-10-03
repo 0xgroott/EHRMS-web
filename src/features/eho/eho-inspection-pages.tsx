@@ -481,8 +481,8 @@ export function EhoChecklistPage({
               </div>
             )}
           {draft.answers[activeItem.id] === "Contravention" && (
-            <div className="space-y-2 rounded-md border border-amber-200 bg-amber-50 p-3">
-              <p className="text-sm text-amber-950">
+            <div className="space-y-2 rounded-md border border-[var(--border-warning)] bg-[var(--background-warning)] p-3">
+              <p className="text-sm text-[var(--text-warning)]">
                 {draft.issues.filter((issue) => issue.itemId === activeItem.id)
                   .length === 1
                   ? "1 issue recorded."
@@ -974,7 +974,7 @@ export function EhoResultPage({ inspectionId }: { inspectionId: string }) {
     )
   return (
     <div className="mx-auto max-w-2xl space-y-6 py-6">
-      <div className="flex size-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+      <div className="flex size-14 items-center justify-center rounded-full bg-[var(--background-success)] text-[var(--icon-success)]">
         <CheckCircle2 className="size-7" />
       </div>
       <PageHeader

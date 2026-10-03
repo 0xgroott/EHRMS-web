@@ -8,6 +8,7 @@ import {
 import type { ReactNode } from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import { ThemeProvider } from "@/app/theme"
 import { MohHeader } from "./moh-header"
 import { MohSidebar } from "./moh-sidebar"
 
@@ -40,31 +41,43 @@ describe("MOH shell", () => {
     )
     const signOut = vi.fn()
     await renderWithRouter(
-      <SidebarProvider>
-        <MohSidebar pathname="/moh/home" />
-        <SidebarInset>
-          <MohHeader
-            title="Dashboard"
-            accountName="Dr. Ibiwari Briggs"
-            councilName="Port Harcourt City"
-            onSignOut={signOut}
-          />
-        </SidebarInset>
-      </SidebarProvider>
+      <ThemeProvider>
+        <SidebarProvider>
+          <MohSidebar pathname="/moh/health-approvals" />
+          <SidebarInset>
+            <MohHeader
+              title="Health approvals"
+              accountName="Dr. Ibiwari Briggs"
+              councilName="Port Harcourt City"
+              onSignOut={signOut}
+            />
+          </SidebarInset>
+        </SidebarProvider>
+      </ThemeProvider>
     )
 
     const nav = screen.getByRole("navigation", { name: "MOH navigation" })
     expect(
-      within(nav).getByRole("link", { name: "Dashboard" })
-    ).toHaveAttribute("href", "/moh/home")
+      within(nav).getByRole("link", { name: "Health approvals" })
+    ).toHaveAttribute("href", "/moh/health-approvals")
     expect(
-      within(nav).getByRole("link", { name: "Dashboard" })
+      within(nav).getByRole("link", { name: "Health approvals" })
     ).toHaveAttribute("aria-current", "page")
+    expect(
+      within(nav).getByRole("link", { name: "Inspections" })
+    ).toHaveAttribute("href", "/moh/inspections")
+    expect(within(nav).getByRole("link", { name: "Premises" })).toHaveAttribute(
+      "href",
+      "/moh/businesses"
+    )
+    expect(
+      within(nav).queryByRole("link", { name: "Dashboard" })
+    ).not.toBeInTheDocument()
     expect(
       screen.getByRole("button", { name: "Toggle MOH navigation" })
     ).toBeVisible()
     expect(
-      within(screen.getByRole("banner")).getByText("Dashboard")
+      within(screen.getByRole("banner")).getByText("Health approvals")
     ).toBeVisible()
     expect(screen.queryByText("Dr. Ibiwari Briggs")).not.toBeInTheDocument()
     expect(

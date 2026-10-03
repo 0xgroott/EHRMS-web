@@ -5,11 +5,100 @@ import { createDraft } from "./eho-state"
 import { createTaskProgress } from "./eho-task-progress"
 import {
   EhoSignInForm,
+  EhoCompliancePage,
   InspectionCertificateGrid,
   InspectionOverviewCard,
 } from "./eho-pages"
 
+vi.mock("./eho-session", () => ({
+  useEho: () => ({
+    officer: { id: "EHO-001", councilId: "phc" },
+    fieldwork: {},
+    claimAssignment: vi.fn(),
+  }),
+}))
+
 describe("EHO entry and inspection readiness", () => {
+  it("shows the shared premises profile without the redundant offline strip", () => {
+    window.history.replaceState(
+      window.history.state,
+      "",
+      "/eho/premises/PR-015?source=search"
+    )
+    render(<EhoCompliancePage premisesId="PR-015" />)
+
+    expect(
+      screen.getByRole("complementary", { name: "Business overview" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("link", { name: "contact@borokiriclinic.ng" })
+    ).toBeVisible()
+    expect(screen.getByRole("link", { name: "0803 555 0115" })).toBeVisible()
+    expect(screen.getByLabelText("KYB verified")).toBeVisible()
+    expect(
+      screen.getByRole("button", { name: "Copy email address" })
+    ).toBeVisible()
+    expect(
+      screen.queryByText(/certificate and document details may be stale/i)
+    ).not.toBeInTheDocument()
+    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
+      "Business info",
+      "Inspection history · 1",
+      "Certificates · 2",
+      "Documents · 4",
+    ])
+    expect(screen.getByRole("tablist")).toHaveAttribute(
+      "data-variant",
+      "default"
+    )
+    expect(screen.getByRole("tablist")).toHaveClass("h-11!")
+    expect(
+      screen.getByRole("region", { name: "Business information" })
+    ).toBeVisible()
+    expect(
+      document
+        .querySelector('[data-slot="premises-tab-panel"]')
+        ?.contains(document.querySelector('[data-slot="premises-tabs"]'))
+    ).toBe(false)
+    expect(
+      document.querySelector('[data-slot="premises-tab-panel"]')
+    ).toHaveClass("min-h-80", "lg:min-h-[31.5rem]")
+    expect(
+      screen.queryByRole("tab", { name: "Findings" })
+    ).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole("tab", { name: "Inspection history · 1" }))
+    expect(screen.getByText("Council findings")).toBeVisible()
+    expect(screen.getByText("Assign this job")).toBeVisible()
+    fireEvent.click(screen.getByRole("tab", { name: "Certificates · 2" }))
+    expect(
+      screen.getByRole("region", { name: "Health Approval" })
+    ).toBeVisible()
+    expect(
+      screen.getByRole("region", { name: "Fumigation Certificate" })
+    ).toBeVisible()
+    expect(
+      screen.getByRole("link", {
+        name: "Open Health Approval HC-1015",
+      })
+    ).toHaveAttribute(
+      "href",
+      "/eho/premises/PR-015?source=search&certificate=HC-1015"
+    )
+    expect(
+      screen.getByRole("link", { name: "Open Health Approval HC-1015" })
+    ).toHaveAttribute("target", "_blank")
+    expect(
+      screen.getByRole("button", { name: "Record paper certificate seen" })
+    ).toBeVisible()
+    fireEvent.click(screen.getByRole("tab", { name: "Documents · 4" }))
+    expect(
+      screen.getByRole("heading", { name: "Premises and kitchen photos" })
+    ).toBeVisible()
+    expect(
+      screen.queryByRole("button", { name: /edit|upload|remove/i })
+    ).not.toBeInTheDocument()
+  })
+
   it("signs in an assigned officer without an account creation action", () => {
     const onSuccess = vi.fn()
     render(<EhoSignInForm onSuccess={onSuccess} />)

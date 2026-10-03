@@ -46,6 +46,18 @@ export function validateProfileDetails(
     errors.businessType = "Enter the business type"
   if (!value.address.trim()) errors.address = "Enter the premises address"
   if (!value.ward.trim()) errors.ward = "Enter the ward"
+  for (const field of ["website", "instagram", "facebook", "x"] as const) {
+    const link = value[field]?.trim()
+    if (!link) continue
+    try {
+      const url = new URL(link)
+      if (url.protocol !== "http:" && url.protocol !== "https:") {
+        errors[field] = "Enter a full http:// or https:// URL"
+      }
+    } catch {
+      errors[field] = "Enter a full http:// or https:// URL"
+    }
+  }
   return errors
 }
 

@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar"
+import { ThemeMenuGroup } from "@/components/shared/theme-menu-group"
 
 function accountInitials(name: string) {
   return name
@@ -70,6 +71,8 @@ export function MohHeader({
               </span>
             </DropdownMenuLabel>
           </DropdownMenuGroup>
+          <DropdownMenuSeparator />
+          <ThemeMenuGroup />
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
             <DropdownMenuItem onClick={onSignOut} className="min-h-11">

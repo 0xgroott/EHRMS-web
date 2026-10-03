@@ -10,7 +10,7 @@ export function createStorage(storage: Storage = window.localStorage) {
         const raw = storage.getItem(STORAGE_KEY)
         if (!raw) return structuredClone(seedDatabase)
         const parsed = JSON.parse(raw) as Partial<MockDatabase>
-        return parsed.schemaVersion === 1 &&
+        return parsed.schemaVersion === 4 &&
           Array.isArray(parsed.premises) &&
           Array.isArray(parsed.workItems)
           ? (parsed as MockDatabase)

@@ -20,13 +20,13 @@ test("EHO opens prior inspection history from a visit and sees saved outcomes", 
 
   await page.goto("/eho/inspections/EIN-104")
   await page
-    .getByRole("link", { name: "View inspection history" })
+    .getByRole("button", { name: /Inspection history ·/ })
     .click({ timeout: 3_000 })
   await expect(page).toHaveURL(
     /\/eho\/premises\/PR-004\?inspection=EIN-104&tab=history$/
   )
   await expect(
-    page.getByRole("tab", { name: "Inspection history" })
+    page.getByRole("tab", { name: /Inspection history ·/ })
   ).toHaveAttribute("aria-selected", "true")
   const history = page.getByRole("region", { name: "Inspection history" })
   await expect(history.getByText("EIN-104")).toBeVisible()
@@ -36,13 +36,11 @@ test("EHO opens prior inspection history from a visit and sees saved outcomes", 
 
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto("/eho/premises/PR-001?source=search&tab=history")
-  await expect(
-    history.getByText("No previous inspection history")
-  ).toBeVisible()
-  await page.getByRole("tab", { name: "Documents" }).click()
+  await expect(history.getByText("INS-1", { exact: false })).toBeVisible()
+  await page.getByRole("tab", { name: /Documents ·/ }).click()
   await expect(page).toHaveURL(/tab=documents$/)
   await page.reload()
-  await expect(page.getByRole("tab", { name: "Documents" })).toHaveAttribute(
+  await expect(page.getByRole("tab", { name: /Documents ·/ })).toHaveAttribute(
     "aria-selected",
     "true"
   )

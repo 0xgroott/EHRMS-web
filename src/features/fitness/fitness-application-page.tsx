@@ -49,7 +49,7 @@ import {
   FieldSet,
 } from "@/components/ui/field"
 import { useFitness } from "./fitness-context"
-import { CopyValueButton } from "./copy-value-button"
+import { CopyValueButton } from "@/components/shared/copy-value-button"
 import { useFumigation } from "@/features/fumigation/fumigation-context"
 import {
   FumigationLink,
@@ -216,7 +216,7 @@ function ApplicationSteps({ onPaid }: { onPaid?: () => void }) {
     }, 6000)
   }
   return (
-    <div className="fitness-flow min-h-screen bg-[#f7f9f8] text-foreground lg:grid lg:h-dvh lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_22rem] lg:overflow-hidden xl:grid-cols-[minmax(0,1fr)_26rem]">
+    <div className="fitness-flow min-h-screen bg-background text-foreground lg:grid lg:h-dvh lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_22rem] lg:overflow-hidden xl:grid-cols-[minmax(0,1fr)_26rem]">
       <div className="fitness-form-scroll min-w-0 px-4 pt-5 pb-12 sm:px-8 lg:min-h-0 lg:overflow-y-auto lg:px-12 lg:pt-8">
         <FitnessLink href="/business/applications" variant="outline">
           <ArrowLeft aria-hidden="true" /> Back to applications
@@ -333,7 +333,7 @@ function ApplicationSteps({ onPaid }: { onPaid?: () => void }) {
                                   className="px-3 py-3.5"
                                 >
                                   <span
-                                    className={`inline-flex items-center gap-1.5 font-medium ${readiness.ready ? "text-primary" : "text-amber-800"}`}
+                                    className={`inline-flex items-center gap-1.5 font-medium ${readiness.ready ? "text-primary" : "text-[var(--text-warning)]"}`}
                                   >
                                     {readiness.ready ? (
                                       <CheckCircle2
@@ -426,7 +426,7 @@ function ApplicationSteps({ onPaid }: { onPaid?: () => void }) {
                               {option.name}
                             </FieldLabel>
                             <div className="text-left sm:text-right">
-                              <p className="text-xl font-semibold tracking-tight text-[#D35E24]">
+                              <p className="text-xl font-semibold tracking-tight text-[var(--text-warning)]">
                                 {formatFitnessPrice(
                                   option.priceNgn * selectedHandlers.length
                                 )}
@@ -552,7 +552,7 @@ function ApplicationSteps({ onPaid }: { onPaid?: () => void }) {
                   </dl>
                   <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/70 pt-5">
                     <span className="font-medium">Total</span>
-                    <span className="text-2xl font-semibold tracking-tight text-[#D35E24]">
+                    <span className="text-2xl font-semibold tracking-tight text-[var(--text-warning)]">
                       {formatFitnessPrice(totalNgn)}
                     </span>
                   </div>
@@ -609,7 +609,7 @@ function ApplicationSteps({ onPaid }: { onPaid?: () => void }) {
                       {paymentMethod === "bank" && (
                         <div
                           data-testid="bank-transfer-details"
-                          className="mx-3 mb-3 rounded-lg bg-[#EEF7FC] p-4 sm:mx-4 sm:p-5"
+                          className="mx-3 mb-3 rounded-lg bg-[var(--background-information)] p-4 sm:mx-4 sm:p-5"
                         >
                           <dl className="grid gap-4 sm:grid-cols-2">
                             <PaymentDetail
@@ -750,7 +750,7 @@ function ApplicationSteps({ onPaid }: { onPaid?: () => void }) {
             </li>
           ))}
         </ol>
-        <div className="mt-10 rounded-xl border border-border/80 bg-[#f7f9f8] p-4 lg:mt-auto">
+        <div className="mt-10 rounded-xl border border-border/80 bg-background p-4 lg:mt-auto">
           <p className="flex items-center gap-2 font-semibold">
             <CircleHelp className="size-4 text-primary" aria-hidden="true" />
             What happens next?
@@ -779,9 +779,9 @@ function PaymentDetail({
 }) {
   return (
     <div className="min-w-0">
-      <dt className="text-xs font-medium text-slate-600">{label}</dt>
+      <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
       <dd
-        className={`mt-1 flex flex-wrap items-center gap-1 font-semibold break-all ${highlight ? "text-lg text-[#D35E24]" : "text-foreground"}`}
+        className={`mt-1 flex flex-wrap items-center gap-1 font-semibold break-all ${highlight ? "text-lg text-[var(--text-warning)]" : "text-foreground"}`}
       >
         {value}
         {copy && <CopyValueButton value={value} label={label.toLowerCase()} />}
@@ -795,7 +795,7 @@ function FitnessSubmissionSuccess() {
   const successMessage =
     "Payment confirmed. Application submitted. Track it on the Applications page."
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f7f9f8] px-4 py-12">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
       <div className="max-w-md text-center">
         <CheckCircle2
           aria-hidden="true"
@@ -811,7 +811,7 @@ function FitnessSubmissionSuccess() {
       </div>
       <Dialog.Root open={open} onOpenChange={setOpen}>
         <Dialog.Portal>
-          <Dialog.Backdrop className="fitness-success-backdrop fixed inset-0 z-50 bg-[#112724]/35" />
+          <Dialog.Backdrop className="fitness-success-backdrop fixed inset-0 z-50 bg-foreground/35" />
           <Dialog.Popup className="fitness-success-dialog fixed top-1/2 left-1/2 z-50 w-[min(27rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-2xl border bg-background p-7 text-center shadow-2xl sm:p-9">
             <div className="relative mx-auto flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
               <div

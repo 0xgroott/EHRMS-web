@@ -2,9 +2,11 @@ import { createFileRoute, Link } from "@tanstack/react-router"
 import { ArrowLeft, FileText, MapPin, ShieldAlert } from "lucide-react"
 import { seedDatabase } from "@/data/seeds"
 import { PageHeader } from "@/components/shared/page-header"
+import { PremisesCertificateCards } from "@/components/shared/premises-certificate-cards"
+import { PremisesCertificateDetail } from "@/components/shared/premises-certificate-detail"
 import { StatusBadge } from "@/components/shared/status-badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export const Route = createFileRoute("/_app/premises/$premisesId")({
@@ -25,6 +27,25 @@ function PremisesDetail() {
         </Button>
       </div>
     )
+
+  const certificateId =
+    typeof window === "undefined"
+      ? null
+      : new URLSearchParams(window.location.search).get("certificate")
+  const selectedCertificate = record.certificates.find(
+    (certificate) => certificate.id === certificateId
+  )
+
+  if (selectedCertificate) {
+    return (
+      <PremisesCertificateDetail
+        premises={record}
+        certificate={selectedCertificate}
+        backHref={`/premises/${encodeURIComponent(record.id)}`}
+      />
+    )
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <Link
@@ -88,27 +109,14 @@ function PremisesDetail() {
           <TabsTrigger value="documents">Documents</TabsTrigger>
         </TabsList>
         <TabsContent value="certificates">
-          <Card>
-            <CardHeader>
-              <CardTitle>Certificate standing</CardTitle>
-            </CardHeader>
-            <CardContent className="divide-y">
-              {record.certificates.map((c) => (
-                <div
-                  key={c.id}
-                  className="flex items-center justify-between py-4"
-                >
-                  <div>
-                    <p className="font-medium">{c.type}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {c.id} · Expires {c.expiresAt}
-                    </p>
-                  </div>
-                  <StatusBadge status={c.status} />
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+          <PremisesCertificateCards
+            certificates={record.certificates}
+            getCertificateHref={(certificate) =>
+              certificate.id
+                ? `/premises/${encodeURIComponent(record.id)}?certificate=${encodeURIComponent(certificate.id)}`
+                : undefined
+            }
+          />
         </TabsContent>
         <TabsContent value="inspections">
           <Card>

@@ -44,7 +44,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
-import { CopyValueButton } from "./copy-value-button"
+import { CopyValueButton } from "@/components/shared/copy-value-button"
 import { useFitness } from "./fitness-context"
 import { findApprovedFitnessFacility } from "./fitness-seeds"
 import type { FitnessStage } from "./fitness-types"

@@ -1,5 +1,14 @@
 import type { MockDatabase, Premises } from "@/domain/types"
 
+const kybVerifiedPremisesIds = new Set([
+  "PR-001",
+  "PR-003",
+  "PR-004",
+  "PR-014",
+  "PR-015",
+  "PR-016",
+])
+
 const premises = [
   [
     "PR-001",
@@ -20,7 +29,7 @@ const premises = [
     "Oginigba",
     "phc",
     "Food Court",
-    "At Risk",
+    "Non-compliant",
     2,
   ],
   [
@@ -42,7 +51,7 @@ const premises = [
     "Town",
     "phc",
     "Bakery",
-    "Not Found",
+    "Pending",
     0,
   ],
   [
@@ -64,7 +73,7 @@ const premises = [
     "Eliozu",
     "obio",
     "Event Centre",
-    "At Risk",
+    "Expiring soon",
     1,
   ],
   [
@@ -108,7 +117,7 @@ const premises = [
     "Finima",
     "bonny",
     "Food Depot",
-    "At Risk",
+    "Expiring soon",
     2,
   ],
   [
@@ -130,7 +139,7 @@ const premises = [
     "Bonny Town",
     "bonny",
     "Restaurant",
-    "Not Found",
+    "Pending",
     0,
   ],
   [
@@ -152,7 +161,7 @@ const premises = [
     "Diobu",
     "phc",
     "Market",
-    "At Risk",
+    "Expiring soon",
     2,
   ],
   [
@@ -174,7 +183,7 @@ const premises = [
     "Town",
     "phc",
     "Event Centre",
-    "Non-compliant",
+    "Suspended",
     3,
   ],
   [
@@ -185,7 +194,7 @@ const premises = [
     "Port Harcourt Township",
     "phc",
     "Restaurant",
-    "At Risk",
+    "Non-compliant",
     1,
   ],
   [
@@ -196,7 +205,7 @@ const premises = [
     "Bundu",
     "phc",
     "Cold Store",
-    "Not Found",
+    "Pending",
     0,
   ],
 ] satisfies Array<
@@ -214,7 +223,7 @@ const premises = [
 >
 
 export const seedDatabase: MockDatabase = {
-  schemaVersion: 1,
+  schemaVersion: 4,
   councils: [
     { id: "phc", name: "Port Harcourt City", code: "PHALGA" },
     { id: "obio", name: "Obio/Akpor", code: "OBALGA" },
@@ -238,6 +247,47 @@ export const seedDatabase: MockDatabase = {
       id,
       businessName,
       tradingName,
+      email:
+        id === "PR-015"
+          ? "contact@borokiriclinic.ng"
+          : `contact@${businessName.toLowerCase().replace(/[^a-z0-9]/g, "")}.example`,
+      phone:
+        id === "PR-015"
+          ? "0803 555 0115"
+          : `0800 100 ${String(index + 1).padStart(4, "0")}`,
+      kybVerified: kybVerifiedPremisesIds.has(id),
+      businessProfileId: id === "PR-001" ? "BUS-001" : undefined,
+      profile: {
+        contactName: [
+          "Ada Okafor",
+          "Tamuno Briggs",
+          "Ibiwari George",
+          "Nengi Peters",
+          "Tonye Jack",
+          "Preye Douglas",
+        ][index % 6],
+        premisesName: tradingName,
+        registrationNumber: `RC-${String(710001 + index)}`,
+        links: {
+          website: `https://${businessName
+            .toLowerCase()
+            .replace(/[^a-z0-9]/g, "")}.example.com`,
+        },
+        photos: [
+          {
+            id: `${id}-PHOTO-1`,
+            name: `${tradingName} front entrance.jpg`,
+          },
+          {
+            id: `${id}-PHOTO-2`,
+            name: `${tradingName} service area.jpg`,
+          },
+          {
+            id: `${id}-PHOTO-3`,
+            name: `${tradingName} kitchen.jpg`,
+          },
+        ],
+      },
       address,
       ward,
       councilId,
@@ -249,17 +299,21 @@ export const seedDatabase: MockDatabase = {
           id: `HC-${1001 + index}`,
           type: "Health Approval",
           status:
-            complianceStatus === "Compliant"
+            complianceStatus === "Compliant" ||
+            complianceStatus === "Expiring soon"
               ? "Active"
-              : complianceStatus === "Not Found"
-                ? "Not Found"
-                : "At Risk",
+              : complianceStatus === "Pending"
+                ? "Pending"
+                : complianceStatus === "Suspended"
+                  ? "Suspended"
+                  : "At Risk",
           expiresAt: "2026-12-31",
         },
         {
           id: `FC-${1001 + index}`,
           type: "Fumigation",
-          status: index % 3 === 0 ? "Expiring Soon" : "Active",
+          status:
+            complianceStatus === "Expiring soon" ? "Expiring Soon" : "Active",
           expiresAt: "2026-10-30",
         },
       ],
@@ -443,4 +497,11 @@ export const seedDatabase: MockDatabase = {
     ][index % 4],
     councilId: ["phc", "obio", "bonny"][index % 3],
   })),
+}
+
+export function isKybVerifiedBusiness(businessName: string) {
+  return Boolean(
+    seedDatabase.premises.find((record) => record.businessName === businessName)
+      ?.kybVerified
+  )
 }

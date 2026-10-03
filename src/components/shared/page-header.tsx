@@ -7,7 +7,7 @@ export function PageHeader({
   divided = true,
 }: {
   eyebrow?: string
-  title: string
+  title: React.ReactNode
   description?: string
   actions?: React.ReactNode
   divided?: boolean

@@ -230,24 +230,32 @@ it("shows exactly three visual certificate cards", async () => {
   const fitnessCertificateCard = screen.getByRole("region", {
     name: "Fitness Certificate",
   })
-  expect(within(fitnessCertificateCard).getByText("Issued")).toHaveAttribute(
-    "data-variant",
-    "success"
+  expect(fitnessCertificateCard).toHaveAttribute(
+    "data-certificate-kind",
+    "fitness"
   )
-  expect(fitnessCertificateCard).toHaveTextContent("Kitchen staff: 1")
   expect(
-    fitnessCertificateCard.querySelector(".lucide-users")
-  ).toBeInTheDocument()
+    within(fitnessCertificateCard).queryByText(/Health clearance/i)
+  ).not.toBeInTheDocument()
   expect(
-    screen.getByRole("link", { name: "View Fitness Certificate" })
+    screen.getByRole("link", { name: "Open Fitness Certificate FIT-CERT" })
+  ).toMatchObject({
+    target: "_blank",
+  })
+  expect(
+    screen.getByRole("link", { name: "Open Fitness Certificate FIT-CERT" })
   ).toHaveAttribute("href", "/business/fitness/certificate")
   expect(screen.getByText("FUM-CERT-1")).toBeVisible()
   expect(
-    screen.getByRole("link", { name: "View Fumigation Certificate" })
+    screen.getByRole("link", {
+      name: "Open Fumigation Certificate FUM-CERT-1",
+    })
   ).toHaveAttribute("href", "/business/fumigation/certificate")
   expect(
-    screen.getByRole("link", { name: "View Health Approval" })
-  ).toHaveAttribute("href", "/business/health-approval")
+    within(screen.getByRole("region", { name: "Health Approval" })).queryByRole(
+      "link"
+    )
+  ).not.toBeInTheDocument()
   expect(view.container.querySelectorAll('[data-slot="card"]')).toHaveLength(3)
   expect(screen.getByRole("region", { name: "Health Approval" })).toHaveClass(
     "md:col-span-2"
@@ -268,18 +276,28 @@ it("uses pending and not-applied Fitness states and opens the Health Approval ch
   const emptyFitnessCard = await screen.findByRole("region", {
     name: "Fitness Certificate",
   })
-  expect(within(emptyFitnessCard).getByText("Not applied")).toHaveAttribute(
-    "data-variant",
-    "destructive"
-  )
-  expect(emptyFitnessCard).toHaveTextContent("Kitchen staff: 0")
+  expect(within(emptyFitnessCard).queryByRole("link")).not.toBeInTheDocument()
+  expect(emptyFitnessCard).toHaveTextContent("Not issued")
+  expect(emptyFitnessCard).not.toHaveTextContent("Not started")
   const emptyFumigationCard = screen.getByRole("region", {
     name: "Fumigation Certificate",
   })
-  expect(within(emptyFumigationCard).getByText("Not applied")).toHaveAttribute(
-    "data-variant",
-    "destructive"
-  )
+  expect(
+    within(emptyFumigationCard).queryByRole("link")
+  ).not.toBeInTheDocument()
+  expect(emptyFumigationCard).toHaveTextContent("Not issued")
+  expect(emptyFumigationCard).not.toHaveTextContent("Not started")
+  expect(
+    within(screen.getByRole("region", { name: "Health Approval" })).queryByRole(
+      "link"
+    )
+  ).not.toBeInTheDocument()
+  expect(
+    screen.getByRole("region", { name: "Health Approval" })
+  ).toHaveTextContent("Not issued")
+  expect(
+    screen.getByRole("region", { name: "Health Approval" })
+  ).not.toHaveTextContent("Awaiting eligibility")
 
   await user.click(screen.getByRole("button", { name: "View checklist" }))
   const checklist = screen.getByRole("dialog", {
@@ -320,17 +338,19 @@ it("uses pending and not-applied Fitness states and opens the Health Approval ch
   const pendingFitnessCard = await screen.findByRole("region", {
     name: "Fitness Certificate",
   })
-  expect(within(pendingFitnessCard).getByText("Pending")).toHaveAttribute(
-    "data-variant",
-    "warning"
-  )
+  expect(within(pendingFitnessCard).queryByRole("link")).not.toBeInTheDocument()
+  expect(pendingFitnessCard).toHaveTextContent("Not issued")
+  expect(pendingFitnessCard).not.toHaveTextContent("fitness-application-1")
+  expect(pendingFitnessCard).not.toHaveTextContent("Awaiting facility result")
   const draftFumigationCard = screen.getByRole("region", {
     name: "Fumigation Certificate",
   })
-  expect(within(draftFumigationCard).getByText("Not applied")).toHaveAttribute(
-    "data-variant",
-    "destructive"
-  )
+  expect(
+    within(draftFumigationCard).queryByRole("link")
+  ).not.toBeInTheDocument()
+  expect(draftFumigationCard).toHaveTextContent("Not issued")
+  expect(draftFumigationCard).not.toHaveTextContent("Ready for payment")
+  expect(draftFumigationCard).not.toHaveTextContent("fumigation-application-1")
   pendingView.unmount()
 
   createFumigationStore().write("BUS-001", {
@@ -353,9 +373,15 @@ it("uses pending and not-applied Fitness states and opens the Health Approval ch
   const submittedFumigationCard = await screen.findByRole("region", {
     name: "Fumigation Certificate",
   })
-  expect(within(submittedFumigationCard).getByText("Pending")).toHaveAttribute(
-    "data-variant",
-    "warning"
+  expect(
+    within(submittedFumigationCard).queryByRole("link")
+  ).not.toBeInTheDocument()
+  expect(submittedFumigationCard).toHaveTextContent("Not issued")
+  expect(submittedFumigationCard).not.toHaveTextContent(
+    "fumigation-application-1"
+  )
+  expect(submittedFumigationCard).not.toHaveTextContent(
+    "Awaiting provider report"
   )
 })
 

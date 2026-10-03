@@ -301,7 +301,7 @@ export function FoodHandlerForm({
         </Field>
       </FieldGroup>
 
-      <Alert className="border-amber-200 bg-amber-50/70 text-amber-950 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
+      <Alert className="border-[var(--border-warning)] bg-[var(--background-warning)] text-[var(--text-warning)]">
         <TriangleAlert aria-hidden="true" />
         <AlertTitle>Consent confirmation</AlertTitle>
         <AlertDescription>

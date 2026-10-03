@@ -56,14 +56,14 @@ export function BusinessShell() {
           {showKybBanner && (
             <section
               aria-label="Business verification required"
-              className="flex w-full flex-col gap-4 rounded-xl border border-rose-200 bg-rose-50 p-4 sm:flex-row sm:items-center sm:justify-between sm:px-5"
+              className="flex w-full flex-col gap-4 rounded-xl border border-[var(--border-error)] bg-[var(--background-error)] p-4 sm:flex-row sm:items-center sm:justify-between sm:px-5"
             >
               <div className="flex min-w-0 items-start gap-3">
                 <ClipboardCheck
                   aria-hidden="true"
-                  className="size-8 shrink-0 text-rose-700"
+                  className="size-8 shrink-0 text-[var(--icon-error)]"
                 />
-                <p className="min-w-0 self-center font-medium text-rose-950">
+                <p className="min-w-0 self-center font-medium text-[var(--text-error)]">
                   Complete KYB to use the app
                 </p>
               </div>

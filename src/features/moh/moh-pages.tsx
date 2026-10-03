@@ -3,6 +3,8 @@ import { Link, useLocation } from "@tanstack/react-router"
 import { ArrowLeft, ArrowRight, ShieldCheck } from "lucide-react"
 import { seedDatabase } from "@/data/seeds"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { EmptyState } from "@/components/shared/empty-state"
+import { notifySuccess } from "@/components/ui/app-toast"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -22,8 +24,21 @@ import {
 } from "./moh-account"
 import type { MohAccount } from "./moh-account"
 import { MohBusinessReview, MohDashboard } from "./moh-approval-pages"
+import {
+  buildMohBusinessDirectory,
+  MohBusinessesDirectory,
+  MohPremisesOverview,
+} from "./moh-businesses"
 import { MohCertificateView } from "./moh-certificate-page"
 import { findMohSubmission, mohSubmissions } from "./moh-approvals"
+import {
+  findHealthApprovalCase,
+  mohHealthApprovalCases,
+} from "./moh-health-approval-worklist"
+import {
+  MohHealthApprovalCaseDetail,
+  MohHealthApprovalWorklist,
+} from "./moh-health-approval-pages"
 import { MohHeader } from "./moh-header"
 import { useMoh } from "./moh-session"
 import { MohSidebar } from "./moh-sidebar"
@@ -114,7 +129,8 @@ export function MohSignInPage() {
       setError("Enter the correct six-digit verification code.")
       return
     }
-    if (session.signIn(pendingAccount)) window.location.assign("/moh/home")
+    if (session.signIn(pendingAccount))
+      window.location.assign("/moh/health-approvals")
   }
 
   return (
@@ -170,7 +186,8 @@ export function MohSignInPage() {
             <MohAssignedAccountAccess
               disabled={!session.hydrated}
               onUse={(account) => {
-                if (session.signIn(account)) window.location.assign("/moh/home")
+                if (session.signIn(account))
+                  window.location.assign("/moh/health-approvals")
               }}
             />
           )}
@@ -324,11 +341,95 @@ function MohWorkspace({
   )
 }
 
-export function MohHomePage() {
+export function MohHealthApprovalsPage() {
   const { decisions } = useMoh()
   return (
-    <MohWorkspace title="Dashboard">
+    <MohWorkspace title="Health approvals">
       <MohDashboard submissions={mohSubmissions} decisions={decisions} />
+    </MohWorkspace>
+  )
+}
+
+export function MohInspectionsPage() {
+  const { scheduledInspections } = useMoh()
+  const preDecisionCases = mohHealthApprovalCases.map(
+    (workCase) => scheduledInspections[workCase.id] ?? workCase
+  )
+
+  return (
+    <MohWorkspace title="Inspections">
+      <MohHealthApprovalWorklist cases={preDecisionCases} />
+    </MohWorkspace>
+  )
+}
+
+export function MohInspectionCasePage({ caseId }: { caseId: string }) {
+  const { scheduledInspections, scheduleInspection } = useMoh()
+  const workCase =
+    scheduledInspections[caseId] ??
+    findHealthApprovalCase(mohHealthApprovalCases, caseId)
+
+  return (
+    <MohWorkspace title="Inspection">
+      {workCase ? (
+        <MohHealthApprovalCaseDetail
+          workCase={workCase}
+          onSchedule={(input) => {
+            const scheduled = scheduleInspection(workCase.id, input)
+            if (scheduled) notifySuccess("Approval inspection scheduled.")
+            return scheduled
+          }}
+        />
+      ) : (
+        <div className="flex max-w-xl flex-col gap-4 py-12">
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Inspection case not found
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            This case may have been removed or the link may be incorrect.
+          </p>
+          <Button
+            variant="outline"
+            className="min-h-11 w-fit"
+            nativeButton={false}
+            render={<Link to="/moh/inspections" />}
+          >
+            Return to inspections
+          </Button>
+        </div>
+      )}
+    </MohWorkspace>
+  )
+}
+
+export function MohBusinessesPage() {
+  const { account } = useMoh()
+  const councilId = account?.councilId ?? assignedMohAccount.councilId
+  const businesses = buildMohBusinessDirectory(seedDatabase.premises, councilId)
+
+  return (
+    <MohWorkspace title="Premises">
+      <MohBusinessesDirectory businesses={businesses} />
+    </MohWorkspace>
+  )
+}
+
+export function MohPremisesPage({ premisesId }: { premisesId: string }) {
+  const { account } = useMoh()
+  const premises = seedDatabase.premises.find(
+    (item) => item.id === premisesId && item.councilId === account?.councilId
+  )
+
+  return (
+    <MohWorkspace title="Premises overview">
+      {premises ? (
+        <MohPremisesOverview premises={premises} />
+      ) : (
+        <EmptyState
+          title="Premises record not found"
+          description="This record may no longer be available or may belong to another council."
+        />
+      )}
     </MohWorkspace>
   )
 }
@@ -363,9 +464,9 @@ export function MohBusinessReviewPage({
             variant="outline"
             className="min-h-11 w-fit"
             nativeButton={false}
-            render={<Link to="/moh/home" />}
+            render={<Link to="/moh/health-approvals" />}
           >
-            Return to dashboard
+            Return to Health Approvals
           </Button>
         </div>
       )}

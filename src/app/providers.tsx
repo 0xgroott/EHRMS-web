@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 import { AppToastProvider } from "@/components/ui/app-toast"
 import { BusinessSessionProvider } from "./business-session"
 import { DemoSessionProvider } from "./demo-session"
+import { ThemeProvider } from "./theme"
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -11,14 +12,16 @@ export function Providers({ children }: { children: React.ReactNode }) {
       new QueryClient({ defaultOptions: { queries: { staleTime: 30_000 } } })
   )
   return (
-    <QueryClientProvider client={queryClient}>
-      <BusinessSessionProvider>
-        <DemoSessionProvider>
-          <AppToastProvider>
-            <TooltipProvider>{children}</TooltipProvider>
-          </AppToastProvider>
-        </DemoSessionProvider>
-      </BusinessSessionProvider>
-    </QueryClientProvider>
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <BusinessSessionProvider>
+          <DemoSessionProvider>
+            <AppToastProvider>
+              <TooltipProvider>{children}</TooltipProvider>
+            </AppToastProvider>
+          </DemoSessionProvider>
+        </BusinessSessionProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   )
 }

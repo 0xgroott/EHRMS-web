@@ -1,4 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router"
-import { MohHomePage } from "@/features/moh/moh-pages"
+import { createFileRoute, redirect } from "@tanstack/react-router"
 
-export const Route = createFileRoute("/moh/home")({ component: MohHomePage })
+export const Route = createFileRoute("/moh/home")({
+  beforeLoad: () => {
+    throw redirect({ to: "/moh/health-approvals" })
+  },
+})

@@ -7,6 +7,7 @@ import type {
   BusinessPremisesInput,
   BusinessProfile,
   BusinessProfileDetailsInput,
+  BusinessProfileLinks,
 } from "@/domain/business-types"
 
 export const STORAGE_KEY = "ehrcms:business:v1"
@@ -24,7 +25,21 @@ function isProfileDetails(
     (value.registrationNumber === undefined ||
       typeof value.registrationNumber === "string") &&
     typeof value.address === "string" &&
-    typeof value.ward === "string"
+    typeof value.ward === "string" &&
+    (value.website === undefined || typeof value.website === "string") &&
+    (value.instagram === undefined || typeof value.instagram === "string") &&
+    (value.facebook === undefined || typeof value.facebook === "string") &&
+    (value.x === undefined || typeof value.x === "string")
+  )
+}
+
+function isProfileLinks(value: unknown): value is BusinessProfileLinks {
+  if (!isRecord(value)) return false
+  return (
+    (value.website === undefined || typeof value.website === "string") &&
+    (value.instagram === undefined || typeof value.instagram === "string") &&
+    (value.facebook === undefined || typeof value.facebook === "string") &&
+    (value.x === undefined || typeof value.x === "string")
   )
 }
 
@@ -97,6 +112,7 @@ function isProfile(value: unknown): value is BusinessProfile {
     typeof value.verified === "boolean" &&
     Array.isArray(value.documents) &&
     value.documents.every(isDocument) &&
+    (value.links === undefined || isProfileLinks(value.links)) &&
     (value.premises === undefined || isPremises(value.premises)) &&
     (value.branches === undefined ||
       (Array.isArray(value.branches) && value.branches.every(isPremises)))

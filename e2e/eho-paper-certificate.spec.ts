@@ -21,11 +21,13 @@ test("EHO records a paper certificate without changing the digital certificate r
   await expect(
     page.getByRole("heading", { name: "Creek View Bakery" })
   ).toBeVisible()
-  const certificates = page.getByRole("tabpanel", { name: "Certificates" })
-  const healthApproval = certificates
-    .getByText("HC-1004", { exact: false })
-    .locator("../..")
-  await expect(healthApproval.getByText("Not Found")).toBeVisible()
+  await page.getByRole("tab", { name: /Certificates ·/ }).click()
+  const certificates = page.getByRole("tabpanel", { name: /Certificates ·/ })
+  const healthApproval = certificates.getByRole("region", {
+    name: "Health Approval",
+  })
+  await expect(healthApproval.getByText("Not issued")).toBeVisible()
+  await expect(healthApproval.getByRole("link")).toHaveCount(0)
   await certificates
     .getByRole("button", { name: "Record paper certificate seen" })
     .click()
@@ -46,7 +48,7 @@ test("EHO records a paper certificate without changing the digital certificate r
   ).toBeVisible()
   await page.reload()
   await expect(certificates.getByText("Fitness · FIT-908")).toBeVisible()
-  await expect(healthApproval.getByText("Not Found")).toBeVisible()
+  await expect(healthApproval.getByText("Not issued")).toBeVisible()
   await page.setViewportSize({ width: 390, height: 844 })
   await certificates
     .getByRole("button", { name: "Record paper certificate seen" })

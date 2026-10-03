@@ -21,7 +21,7 @@ test("EHO reviews a fumigation report and keeps the decision after reload", asyn
     await expect(page).toHaveURL(/\/eho\/my-work$/, { timeout: 1_000 })
   }).toPass({ timeout: 15_000 })
 
-  await page.getByRole("button", { name: "View jobs" }).click()
+  await page.goto("/eho/fumigation")
   await expect(page).toHaveURL(/\/eho\/fumigation$/)
   await expect(
     page.getByRole("heading", { level: 1, name: "Fumigation supervision" })

@@ -21,6 +21,13 @@ export interface BusinessPremisesInput {
   councilId: string
 }
 
+export interface BusinessProfileLinks {
+  website?: string
+  instagram?: string
+  facebook?: string
+  x?: string
+}
+
 export type BusinessProfileDetailsInput = Pick<
   BusinessProfile,
   "businessName" | "contactName"
@@ -28,7 +35,8 @@ export type BusinessProfileDetailsInput = Pick<
   Pick<
     BusinessPremisesInput,
     "premisesName" | "businessType" | "registrationNumber" | "address" | "ward"
-  >
+  > &
+  BusinessProfileLinks
 
 export interface BusinessDocument {
   id: string
@@ -53,6 +61,7 @@ export interface BusinessProfile {
   verified: boolean
   premises?: BusinessPremisesInput
   branches?: BusinessPremisesInput[]
+  links?: BusinessProfileLinks
   documents: BusinessDocument[]
 }
 
