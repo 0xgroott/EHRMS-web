@@ -1588,7 +1588,7 @@ export function EhoCompliancePage({ premisesId }: { premisesId: string }) {
                 <PremisesBusinessInfoPanel premises={premises} />
               </TabsContent>
               <TabsContent value="history">
-                <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(15rem,20rem)]">
+                <div className="grid min-w-0 gap-5">
                   <EhoInspectionHistoryPanel entries={historyEntries} />
                   <div className="flex min-w-0 flex-col gap-5">
                     <Card size="sm">

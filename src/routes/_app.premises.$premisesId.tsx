@@ -1,3 +1,4 @@
+import { PremisesInspectionTable } from "@/components/shared/premises-inspection-table"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { ArrowLeft, FileText, MapPin, ShieldAlert } from "lucide-react"
 import { seedDatabase } from "@/data/seeds"
@@ -47,7 +48,7 @@ function PremisesDetail() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex min-w-0 flex-col gap-6">
       <Link
         to="/premises"
         className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
@@ -102,7 +103,7 @@ function PremisesDetail() {
           </CardContent>
         </Card>
       </div>
-      <Tabs defaultValue="certificates">
+      <Tabs defaultValue="certificates" className="min-w-0">
         <TabsList>
           <TabsTrigger value="certificates">Certificates</TabsTrigger>
           <TabsTrigger value="inspections">Inspections</TabsTrigger>
@@ -118,22 +119,13 @@ function PremisesDetail() {
             }
           />
         </TabsContent>
-        <TabsContent value="inspections">
-          <Card>
-            <CardContent className="divide-y p-6">
-              {record.inspections.map((i) => (
-                <div key={i.id} className="flex justify-between py-3">
-                  <div>
-                    <p className="font-medium">{i.type}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {i.scheduledAt} · {i.officer}
-                    </p>
-                  </div>
-                  <StatusBadge status={i.status} />
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+        <TabsContent value="inspections" className="min-w-0">
+          <PremisesInspectionTable
+            entries={record.inspections.map((inspection) => ({
+              ...inspection,
+              date: inspection.scheduledAt,
+            }))}
+          />
         </TabsContent>
         <TabsContent value="documents">
           <Card>

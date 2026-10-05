@@ -60,7 +60,7 @@ export function LgaDashboard() {
         ? "—"
         : approvals.filter((item) => item.status === "Awaiting decision")
             .length,
-      href: "/lga/health-approvals",
+      href: "/lga/premises?approval=Awaiting%20decision",
     },
     {
       label: "Inspections due",

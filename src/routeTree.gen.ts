@@ -83,6 +83,7 @@ import { Route as BusinessPortalFumigationTrackerRouteImport } from './routes/bu
 import { Route as EhoPortalFumigationJobIdRouteImport } from './routes/eho._portal.fumigation.$jobId'
 import { Route as EhoPortalInspectionsInspectionIdRouteImport } from './routes/eho._portal.inspections.$inspectionId'
 import { Route as EhoPortalPremisesPremisesIdRouteImport } from './routes/eho._portal.premises.$premisesId'
+import { Route as LgaPortalFinancePaymentIdRouteImport } from './routes/lga._portal.finance_.$paymentId'
 import { Route as LgaPortalHealthApprovalsCaseIdRouteImport } from './routes/lga._portal.health-approvals_.$caseId'
 import { Route as LgaPortalInspectionsInspectionIdRouteImport } from './routes/lga._portal.inspections_.$inspectionId'
 import { Route as LgaPortalPremisesPremisesIdRouteImport } from './routes/lga._portal.premises_.$premisesId'
@@ -482,6 +483,12 @@ const EhoPortalPremisesPremisesIdRoute =
     path: '/premises/$premisesId',
     getParentRoute: () => EhoPortalRoute,
   } as any)
+const LgaPortalFinancePaymentIdRoute =
+  LgaPortalFinancePaymentIdRouteImport.update({
+    id: '/finance_/$paymentId',
+    path: '/finance/$paymentId',
+    getParentRoute: () => LgaPortalRoute,
+  } as any)
 const LgaPortalHealthApprovalsCaseIdRoute =
   LgaPortalHealthApprovalsCaseIdRouteImport.update({
     id: '/health-approvals_/$caseId',
@@ -626,6 +633,7 @@ export interface FileRoutesByFullPath {
   '/eho/fumigation/$jobId': typeof EhoPortalFumigationJobIdRoute
   '/eho/inspections/$inspectionId': typeof EhoPortalInspectionsInspectionIdRouteWithChildren
   '/eho/premises/$premisesId': typeof EhoPortalPremisesPremisesIdRoute
+  '/lga/finance/$paymentId': typeof LgaPortalFinancePaymentIdRoute
   '/lga/health-approvals/$caseId': typeof LgaPortalHealthApprovalsCaseIdRoute
   '/lga/inspections/$inspectionId': typeof LgaPortalInspectionsInspectionIdRoute
   '/lga/premises/$premisesId': typeof LgaPortalPremisesPremisesIdRoute
@@ -706,6 +714,7 @@ export interface FileRoutesByTo {
   '/eho/fumigation/$jobId': typeof EhoPortalFumigationJobIdRoute
   '/eho/inspections/$inspectionId': typeof EhoPortalInspectionsInspectionIdRouteWithChildren
   '/eho/premises/$premisesId': typeof EhoPortalPremisesPremisesIdRoute
+  '/lga/finance/$paymentId': typeof LgaPortalFinancePaymentIdRoute
   '/lga/health-approvals/$caseId': typeof LgaPortalHealthApprovalsCaseIdRoute
   '/lga/inspections/$inspectionId': typeof LgaPortalInspectionsInspectionIdRoute
   '/lga/premises/$premisesId': typeof LgaPortalPremisesPremisesIdRoute
@@ -795,6 +804,7 @@ export interface FileRoutesById {
   '/eho/_portal/fumigation/$jobId': typeof EhoPortalFumigationJobIdRoute
   '/eho/_portal/inspections/$inspectionId': typeof EhoPortalInspectionsInspectionIdRouteWithChildren
   '/eho/_portal/premises/$premisesId': typeof EhoPortalPremisesPremisesIdRoute
+  '/lga/_portal/finance_/$paymentId': typeof LgaPortalFinancePaymentIdRoute
   '/lga/_portal/health-approvals_/$caseId': typeof LgaPortalHealthApprovalsCaseIdRoute
   '/lga/_portal/inspections_/$inspectionId': typeof LgaPortalInspectionsInspectionIdRoute
   '/lga/_portal/premises_/$premisesId': typeof LgaPortalPremisesPremisesIdRoute
@@ -881,6 +891,7 @@ export interface FileRouteTypes {
     | '/eho/fumigation/$jobId'
     | '/eho/inspections/$inspectionId'
     | '/eho/premises/$premisesId'
+    | '/lga/finance/$paymentId'
     | '/lga/health-approvals/$caseId'
     | '/lga/inspections/$inspectionId'
     | '/lga/premises/$premisesId'
@@ -961,6 +972,7 @@ export interface FileRouteTypes {
     | '/eho/fumigation/$jobId'
     | '/eho/inspections/$inspectionId'
     | '/eho/premises/$premisesId'
+    | '/lga/finance/$paymentId'
     | '/lga/health-approvals/$caseId'
     | '/lga/inspections/$inspectionId'
     | '/lga/premises/$premisesId'
@@ -1049,6 +1061,7 @@ export interface FileRouteTypes {
     | '/eho/_portal/fumigation/$jobId'
     | '/eho/_portal/inspections/$inspectionId'
     | '/eho/_portal/premises/$premisesId'
+    | '/lga/_portal/finance_/$paymentId'
     | '/lga/_portal/health-approvals_/$caseId'
     | '/lga/_portal/inspections_/$inspectionId'
     | '/lga/_portal/premises_/$premisesId'
@@ -1592,6 +1605,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EhoPortalPremisesPremisesIdRouteImport
       parentRoute: typeof EhoPortalRoute
     }
+    '/lga/_portal/finance_/$paymentId': {
+      id: '/lga/_portal/finance_/$paymentId'
+      path: '/finance/$paymentId'
+      fullPath: '/lga/finance/$paymentId'
+      preLoaderRoute: typeof LgaPortalFinancePaymentIdRouteImport
+      parentRoute: typeof LgaPortalRoute
+    }
     '/lga/_portal/health-approvals_/$caseId': {
       id: '/lga/_portal/health-approvals_/$caseId'
       path: '/health-approvals/$caseId'
@@ -1901,6 +1921,7 @@ interface LgaPortalRouteChildren {
   LgaPortalInspectionsRoute: typeof LgaPortalInspectionsRoute
   LgaPortalPremisesRoute: typeof LgaPortalPremisesRoute
   LgaPortalReportsRoute: typeof LgaPortalReportsRoute
+  LgaPortalFinancePaymentIdRoute: typeof LgaPortalFinancePaymentIdRoute
   LgaPortalHealthApprovalsCaseIdRoute: typeof LgaPortalHealthApprovalsCaseIdRoute
   LgaPortalInspectionsInspectionIdRoute: typeof LgaPortalInspectionsInspectionIdRoute
   LgaPortalPremisesPremisesIdRoute: typeof LgaPortalPremisesPremisesIdRoute
@@ -1913,6 +1934,7 @@ const LgaPortalRouteChildren: LgaPortalRouteChildren = {
   LgaPortalInspectionsRoute: LgaPortalInspectionsRoute,
   LgaPortalPremisesRoute: LgaPortalPremisesRoute,
   LgaPortalReportsRoute: LgaPortalReportsRoute,
+  LgaPortalFinancePaymentIdRoute: LgaPortalFinancePaymentIdRoute,
   LgaPortalHealthApprovalsCaseIdRoute: LgaPortalHealthApprovalsCaseIdRoute,
   LgaPortalInspectionsInspectionIdRoute: LgaPortalInspectionsInspectionIdRoute,
   LgaPortalPremisesPremisesIdRoute: LgaPortalPremisesPremisesIdRoute,

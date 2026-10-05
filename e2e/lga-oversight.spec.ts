@@ -63,11 +63,13 @@ test("LGA premises reuse filters and details while foreign links fail closed", a
 }) => {
   await signIn(page)
   await page.getByRole("link", { name: "Premises", exact: true }).click()
+  await page.getByRole("button", { name: "Filters", exact: true }).click()
   await page.getByRole("combobox", { name: "Filter by ward" }).click()
   await expect(
     page.getByRole("option", { name: "Rumuokoro", exact: true })
   ).toHaveCount(0)
   await page.getByRole("option", { name: "Diobu", exact: true }).click()
+  await page.getByRole("button", { name: "Apply changes", exact: true }).click()
   await expect(page.getByText("2 premises", { exact: true })).toBeVisible()
   await page.getByRole("button", { name: "Clear filters" }).click()
   await page.getByRole("searchbox", { name: "Search premises" }).fill("PR-001")
@@ -126,7 +128,7 @@ test("LGA overview and lists remain read-only and fit 390px", async ({
   for (const [path, title] of [
     ["dashboard", "Dashboard"],
     ["finance", "Finance"],
-    ["health-approvals", "Health approvals"],
+    ["health-approvals", "Premises"],
     ["premises", "Premises"],
     ["inspections", "Inspections"],
     ["reports", "Reports"],

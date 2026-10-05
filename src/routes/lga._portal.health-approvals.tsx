@@ -1,6 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router"
-import { LgaApprovalsPage } from "@/features/lga/lga-pages"
+import { createFileRoute, redirect } from "@tanstack/react-router"
 
 export const Route = createFileRoute("/lga/_portal/health-approvals")({
-  component: LgaApprovalsPage,
+  beforeLoad: () => {
+    throw redirect({
+      to: "/lga/premises",
+      search: { approval: "all" },
+      replace: true,
+    })
+  },
 })

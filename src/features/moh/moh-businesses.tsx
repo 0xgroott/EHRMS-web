@@ -1,3 +1,13 @@
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { PremisesInspectionTable } from "@/components/shared/premises-inspection-table"
+import { StatusBadge } from "@/components/shared/status-badge"
 import { LinkedTableRow } from "@/components/shared/linked-table-row"
 import { useMemo, useState } from "react"
 import { Link } from "@tanstack/react-router"
@@ -5,6 +15,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Search,
+  SlidersHorizontal,
   Building2,
   ShieldAlert,
   ClipboardClock,
@@ -28,7 +39,6 @@ import {
   Card,
   CardAction,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -65,6 +75,7 @@ export interface MohBusinessDirectoryEntry {
   ward: string
   stage: string
   status: MohBusinessStatus
+  healthApproval?: string
   kybVerified: boolean
 }
 
@@ -193,7 +204,11 @@ export function MohBusinessesDirectory({
   businesses,
   basePath = "/moh/businesses",
   showMetrics = false,
+  healthApprovalFilter,
+  filtersInDialog = false,
 }: {
+  filtersInDialog?: boolean
+  healthApprovalFilter?: { value: string; onChange: (value: string) => void }
   showMetrics?: boolean
   basePath?: string
   businesses: MohBusinessDirectoryEntry[]
@@ -203,6 +218,40 @@ export function MohBusinessesDirectory({
   const [ward, setWard] = useState("all")
   const [premisesType, setPremisesType] = useState("all")
   const [sort, setSort] = useState<MohBusinessSort>("business-asc")
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [draft, setDraft] = useState({
+    approval: "all",
+    ward: "all",
+    premisesType: "all",
+    status: "all" as MohBusinessStatus | "all",
+    sort: "business-asc" as MohBusinessSort,
+  })
+  const activeFilterCount = [
+    healthApprovalFilter && healthApprovalFilter.value !== "all",
+    ward !== "all",
+    premisesType !== "all",
+    status !== "all",
+    sort !== "business-asc",
+  ].filter(Boolean).length
+  function openFilters(open: boolean) {
+    if (open)
+      setDraft({
+        approval: healthApprovalFilter?.value ?? "all",
+        ward,
+        premisesType,
+        status,
+        sort,
+      })
+    setFiltersOpen(open)
+  }
+  function applyFilters() {
+    setWard(draft.ward)
+    setPremisesType(draft.premisesType)
+    setStatus(draft.status)
+    setSort(draft.sort)
+    healthApprovalFilter?.onChange(draft.approval)
+    setFiltersOpen(false)
+  }
   const wards = useMemo(
     () => [...new Set(businesses.map((business) => business.ward))].sort(),
     [businesses]
@@ -212,6 +261,20 @@ export function MohBusinessesDirectory({
       [...new Set(businesses.map((business) => business.premisesType))].sort(),
     [businesses]
   )
+  const approvalOptions = [
+    ...new Set([
+      "Approved",
+      "Awaiting decision",
+      "Denied",
+      "Not applied",
+      "Expiring Soon",
+      "Expired",
+      "Suspended",
+      ...businesses
+        .map((business) => business.healthApproval)
+        .filter((value): value is string => !!value),
+    ]),
+  ].sort()
   const visibleBusinesses = useMemo(
     () =>
       filterAndSortMohBusinesses(
@@ -221,10 +284,16 @@ export function MohBusinessesDirectory({
         ward,
         premisesType,
         sort
+      ).filter(
+        (business) =>
+          !healthApprovalFilter ||
+          healthApprovalFilter.value === "all" ||
+          business.healthApproval === healthApprovalFilter.value
       ),
-    [businesses, premisesType, query, sort, status, ward]
+    [businesses, premisesType, query, sort, status, ward, healthApprovalFilter]
   )
   const controlsActive =
+    (healthApprovalFilter && healthApprovalFilter.value !== "all") ||
     !!query.trim() ||
     status !== "all" ||
     ward !== "all" ||
@@ -232,6 +301,7 @@ export function MohBusinessesDirectory({
     sort !== "business-asc"
 
   function resetDirectory() {
+    healthApprovalFilter?.onChange("all")
     setQuery("")
     setStatus("all")
     setWard("all")
@@ -243,11 +313,190 @@ export function MohBusinessesDirectory({
     return `${basePath}/${encodeURIComponent(id)}?source=search`
   }
 
+  const filterControls = (
+    <FieldGroup
+      className={
+        filtersInDialog
+          ? "grid gap-4 sm:grid-cols-2"
+          : "grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+      }
+    >
+      {healthApprovalFilter && (
+        <Field className="gap-2">
+          <FieldLabel htmlFor="premises-health-approval">
+            Health Approval
+          </FieldLabel>
+          <Select
+            items={[
+              { value: "all", label: "All approval statuses" },
+              ...approvalOptions.map((value) => ({ value, label: value })),
+            ]}
+            value={
+              filtersInDialog ? draft.approval : healthApprovalFilter.value
+            }
+            onValueChange={(value) =>
+              filtersInDialog
+                ? setDraft({ ...draft, approval: value ?? "all" })
+                : healthApprovalFilter.onChange(value ?? "all")
+            }
+          >
+            <SelectTrigger
+              id="premises-health-approval"
+              className="min-h-11 w-full"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value="all">All approval statuses</SelectItem>
+                {approvalOptions.map((value) => (
+                  <SelectItem key={value} value={value}>
+                    {value}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </Field>
+      )}
+      <Field className="gap-2">
+        <FieldLabel htmlFor="moh-premises-ward">Ward</FieldLabel>
+        <Select
+          items={[
+            { value: "all", label: "All wards" },
+            ...wards.map((item) => ({ value: item, label: item })),
+          ]}
+          value={filtersInDialog ? draft.ward : ward}
+          onValueChange={(value) =>
+            filtersInDialog
+              ? setDraft({ ...draft, ward: value ?? "all" })
+              : setWard(value ?? "all")
+          }
+        >
+          <SelectTrigger
+            id="moh-premises-ward"
+            aria-label="Filter by ward"
+            className="min-h-11 w-full"
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem value="all">All wards</SelectItem>
+              {wards.map((item) => (
+                <SelectItem key={item} value={item}>
+                  {item}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </Field>
+      <Field className="gap-2">
+        <FieldLabel htmlFor="moh-premises-type">Business type</FieldLabel>
+        <Select
+          items={[
+            { value: "all", label: "All business types" },
+            ...premisesTypes.map((item) => ({
+              value: item,
+              label: item,
+            })),
+          ]}
+          value={filtersInDialog ? draft.premisesType : premisesType}
+          onValueChange={(value) =>
+            filtersInDialog
+              ? setDraft({ ...draft, premisesType: value ?? "all" })
+              : setPremisesType(value ?? "all")
+          }
+        >
+          <SelectTrigger
+            id="moh-premises-type"
+            aria-label="Filter by business type"
+            className="min-h-11 w-full"
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem value="all">All business types</SelectItem>
+              {premisesTypes.map((item) => (
+                <SelectItem key={item} value={item}>
+                  {item}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </Field>
+      <Field className="gap-2">
+        <FieldLabel htmlFor="moh-premises-status">Status</FieldLabel>
+        <Select
+          items={statusOptions}
+          value={filtersInDialog ? draft.status : status}
+          onValueChange={(value) =>
+            filtersInDialog
+              ? setDraft({ ...draft, status: value ?? "all" })
+              : setStatus(value ?? "all")
+          }
+        >
+          <SelectTrigger
+            id="moh-premises-status"
+            aria-label="Filter by status"
+            className="min-h-11 w-full"
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              {statusOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </Field>
+      <Field className="gap-2">
+        <FieldLabel htmlFor="moh-premises-sort">Sort by</FieldLabel>
+        <Select
+          items={sortOptions}
+          value={filtersInDialog ? draft.sort : sort}
+          onValueChange={(value) =>
+            filtersInDialog
+              ? setDraft({ ...draft, sort: value ?? "business-asc" })
+              : setSort(value ?? "business-asc")
+          }
+        >
+          <SelectTrigger
+            id="moh-premises-sort"
+            aria-label="Sort premises"
+            className="min-h-11 w-full"
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              {sortOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </Field>
+    </FieldGroup>
+  )
   return (
     <div className="flex flex-col gap-7">
       <PageHeader
         title="Premises"
-        description="Browse registered premises, their current certification stage, and overall compliance status."
+        description={
+          healthApprovalFilter
+            ? "Browse registered premises, Health Approval and compliance status."
+            : "Browse registered premises, their current certification stage, and overall compliance status."
+        }
         divided={false}
       />
       {showMetrics && (
@@ -292,137 +541,70 @@ export function MohBusinessesDirectory({
       )}
 
       <section aria-label="Find premises" className="flex flex-col gap-6">
-        <div className="relative min-w-0">
-          <Search
-            className="pointer-events-none absolute top-3.5 left-3 size-4 text-muted-foreground"
-            aria-hidden="true"
-          />
-          <label htmlFor="moh-premises-search" className="sr-only">
-            Search premises
-          </label>
-          <Input
-            id="moh-premises-search"
-            type="search"
-            className="min-h-11 pl-10"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search name, reference, address, ward, type or stage"
-          />
+        <div className="flex items-center gap-3">
+          <div className="relative min-w-0 flex-1">
+            <Search
+              className="pointer-events-none absolute top-3.5 left-3 size-4 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <label htmlFor="moh-premises-search" className="sr-only">
+              Search premises
+            </label>
+            <Input
+              id="moh-premises-search"
+              type="search"
+              className="min-h-11 pl-10"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder={
+                filtersInDialog
+                  ? "Search premises"
+                  : "Search name, reference, address, ward, type or stage"
+              }
+            />
+          </div>
+          {filtersInDialog && (
+            <Dialog open={filtersOpen} onOpenChange={openFilters}>
+              <DialogTrigger
+                render={<Button variant="outline" className="min-h-11" />}
+              >
+                <SlidersHorizontal
+                  data-icon="inline-start"
+                  aria-hidden="true"
+                />
+                Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
+              </DialogTrigger>
+              <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>Filters</DialogTitle>
+                </DialogHeader>
+                {filterControls}
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    className="min-h-11"
+                    onClick={() =>
+                      setDraft({
+                        approval: "all",
+                        ward: "all",
+                        premisesType: "all",
+                        status: "all",
+                        sort: "business-asc",
+                      })
+                    }
+                  >
+                    Reset
+                  </Button>
+                  <Button className="min-h-11" onClick={applyFilters}>
+                    Apply changes
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
 
-        <FieldGroup className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <Field className="gap-2">
-            <FieldLabel htmlFor="moh-premises-ward">Ward</FieldLabel>
-            <Select
-              items={[
-                { value: "all", label: "All wards" },
-                ...wards.map((item) => ({ value: item, label: item })),
-              ]}
-              value={ward}
-              onValueChange={(value) => setWard(value ?? "all")}
-            >
-              <SelectTrigger
-                id="moh-premises-ward"
-                aria-label="Filter by ward"
-                className="min-h-11 w-full"
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectItem value="all">All wards</SelectItem>
-                  {wards.map((item) => (
-                    <SelectItem key={item} value={item}>
-                      {item}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </Field>
-          <Field className="gap-2">
-            <FieldLabel htmlFor="moh-premises-type">Business type</FieldLabel>
-            <Select
-              items={[
-                { value: "all", label: "All business types" },
-                ...premisesTypes.map((item) => ({
-                  value: item,
-                  label: item,
-                })),
-              ]}
-              value={premisesType}
-              onValueChange={(value) => setPremisesType(value ?? "all")}
-            >
-              <SelectTrigger
-                id="moh-premises-type"
-                aria-label="Filter by business type"
-                className="min-h-11 w-full"
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectItem value="all">All business types</SelectItem>
-                  {premisesTypes.map((item) => (
-                    <SelectItem key={item} value={item}>
-                      {item}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </Field>
-          <Field className="gap-2">
-            <FieldLabel htmlFor="moh-premises-status">Status</FieldLabel>
-            <Select
-              items={statusOptions}
-              value={status}
-              onValueChange={(value) => setStatus(value ?? "all")}
-            >
-              <SelectTrigger
-                id="moh-premises-status"
-                aria-label="Filter by status"
-                className="min-h-11 w-full"
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {statusOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </Field>
-          <Field className="gap-2">
-            <FieldLabel htmlFor="moh-premises-sort">Sort by</FieldLabel>
-            <Select
-              items={sortOptions}
-              value={sort}
-              onValueChange={(value) => setSort(value ?? "business-asc")}
-            >
-              <SelectTrigger
-                id="moh-premises-sort"
-                aria-label="Sort premises"
-                className="min-h-11 w-full"
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {sortOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </Field>
-        </FieldGroup>
+        {!filtersInDialog && filterControls}
       </section>
 
       <section aria-label="Premises directory" className="flex flex-col gap-2">
@@ -440,7 +622,8 @@ export function MohBusinessesDirectory({
               status === "all" &&
               ward === "all" &&
               premisesType === "all" &&
-              sort === "business-asc"
+              sort === "business-asc" &&
+              (!healthApprovalFilter || healthApprovalFilter.value === "all")
                 ? "Clear search"
                 : "Clear filters"}
             </Button>
@@ -459,7 +642,11 @@ export function MohBusinessesDirectory({
                     <TableHead className="px-4">Business</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Ward</TableHead>
-                    <TableHead>Current stage</TableHead>
+                    <TableHead>
+                      {healthApprovalFilter
+                        ? "Health Approval"
+                        : "Current stage"}
+                    </TableHead>
                     <TableHead className="px-4">Status</TableHead>
                     <TableHead className="px-4 text-right">Action</TableHead>
                   </TableRow>
@@ -485,7 +672,15 @@ export function MohBusinessesDirectory({
                       </TableCell>
                       <TableCell>{business.premisesType}</TableCell>
                       <TableCell>{business.ward}</TableCell>
-                      <TableCell>{business.stage}</TableCell>
+                      <TableCell>
+                        {healthApprovalFilter ? (
+                          <StatusBadge
+                            status={business.healthApproval ?? "Not applied"}
+                          />
+                        ) : (
+                          business.stage
+                        )}
+                      </TableCell>
                       <TableCell className="px-4">
                         <BusinessStatusBadge status={business.status} />
                       </TableCell>
@@ -532,7 +727,16 @@ export function MohBusinessesDirectory({
                     </CardAction>
                   </CardHeader>
                   <CardContent className="flex flex-col gap-2 text-sm">
-                    <p>{business.stage}</p>
+                    {healthApprovalFilter ? (
+                      <p className="flex items-center gap-2">
+                        Health Approval{" "}
+                        <StatusBadge
+                          status={business.healthApproval ?? "Not applied"}
+                        />
+                      </p>
+                    ) : (
+                      <p>{business.stage}</p>
+                    )}
                     <p className="text-muted-foreground">{business.address}</p>
                     <Button
                       variant="outline"
@@ -640,54 +844,19 @@ export function MohPremisesOverview({
                 <PremisesBusinessInfoPanel premises={premises} />
               </TabsContent>
               <TabsContent value="history">
-                <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_16rem]">
-                  {premises.inspections.length ? (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Inspection history</CardTitle>
-                        <CardDescription>
-                          Completed and scheduled visits for this premises.
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="divide-y">
-                        {premises.inspections.map((inspection) => (
-                          <div
-                            key={inspection.id}
-                            className="flex flex-wrap items-start justify-between gap-3 py-3"
-                          >
-                            <div>
-                              <p className="font-medium">{inspection.type}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {inspection.id} · {inspection.scheduledAt} ·{" "}
-                                {inspection.officer}
-                              </p>
-                            </div>
-                            <Badge variant="secondary">
-                              {inspection.status}
-                            </Badge>
-                          </div>
-                        ))}
-                      </CardContent>
-                    </Card>
-                  ) : (
-                    <EmptyState
-                      title="No inspection history"
-                      description="Completed and scheduled inspections will appear here."
-                    />
-                  )}
-                  <Card size="sm" className="h-fit">
-                    <CardHeader>
-                      <CardTitle>Open findings</CardTitle>
-                      <CardDescription>
-                        Findings awaiting corrective action.
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <strong className="text-3xl font-semibold tabular-nums">
-                        {premises.outstandingContraventions}
-                      </strong>
-                    </CardContent>
-                  </Card>
+                <div className="min-w-0 space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    <span>Open findings</span>:{" "}
+                    <strong className="font-semibold text-foreground tabular-nums">
+                      {premises.outstandingContraventions}
+                    </strong>
+                  </p>
+                  <PremisesInspectionTable
+                    entries={premises.inspections.map((inspection) => ({
+                      ...inspection,
+                      date: inspection.scheduledAt,
+                    }))}
+                  />
                 </div>
               </TabsContent>
               <TabsContent value="certificates">

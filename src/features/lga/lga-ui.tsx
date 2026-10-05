@@ -26,11 +26,13 @@ export const premisesHref = (id: string) =>
 
 export function LgaSelect({
   label,
+  showLabel = false,
   value,
   options,
   onChange,
 }: {
   label: string
+  showLabel?: boolean
   value: string
   options: { value: string; label: string }[]
   onChange: (value: string) => void
@@ -38,7 +40,7 @@ export function LgaSelect({
   const id = useId()
   return (
     <Field className="w-full min-w-0 gap-2 sm:w-auto sm:min-w-40">
-      <FieldLabel htmlFor={id} className="sr-only">
+      <FieldLabel htmlFor={id} className={showLabel ? undefined : "sr-only"}>
         {label}
       </FieldLabel>
       <Select
@@ -67,16 +69,24 @@ export function LgaFilterBar({
   onChange,
   dates = false,
   services = false,
+  showLabels = false,
   leading,
   children,
+  dateLabels = ["From", "To"],
+  onClear,
+  hasActiveFilters,
 }: {
   wards: string[]
   filters: LgaFilters
   onChange: (filters: LgaFilters) => void
   dates?: boolean
   services?: boolean
+  showLabels?: boolean
   leading?: ReactNode
   children?: ReactNode
+  dateLabels?: [string, string]
+  onClear?: () => void
+  hasActiveFilters?: boolean
 }) {
   return (
     <section aria-label="Filters" className="flex flex-col gap-3">
@@ -84,6 +94,7 @@ export function LgaFilterBar({
         {leading}
         <LgaSelect
           label="Ward"
+          showLabel={showLabels}
           value={filters.ward ?? "all"}
           options={[
             { value: "all", label: "All wards" },
@@ -96,6 +107,7 @@ export function LgaFilterBar({
         {services && (
           <LgaSelect
             label="Service"
+            showLabel={showLabels}
             value={filters.service ?? "all"}
             options={[
               { value: "all", label: "All services" },
@@ -115,7 +127,7 @@ export function LgaFilterBar({
         {dates && (
           <>
             <Field className="w-full min-w-0 gap-2 sm:w-40">
-              <FieldLabel htmlFor="lga-from">From</FieldLabel>
+              <FieldLabel htmlFor="lga-from">{dateLabels[0]}</FieldLabel>
               <Input
                 id="lga-from"
                 type="date"
@@ -130,7 +142,7 @@ export function LgaFilterBar({
               />
             </Field>
             <Field className="w-full min-w-0 gap-2 sm:w-40">
-              <FieldLabel htmlFor="lga-to">To</FieldLabel>
+              <FieldLabel htmlFor="lga-to">{dateLabels[1]}</FieldLabel>
               <Input
                 id="lga-to"
                 type="date"
@@ -144,11 +156,11 @@ export function LgaFilterBar({
           </>
         )}
         {children}
-        {Object.values(filters).some(Boolean) && (
+        {(hasActiveFilters ?? Object.values(filters).some(Boolean)) && (
           <Button
             variant="ghost"
             className="min-h-11 self-start sm:self-end"
-            onClick={() => onChange({})}
+            onClick={onClear ?? (() => onChange({}))}
           >
             Clear filters
           </Button>

@@ -19,13 +19,18 @@ export function LgaCollectionsChart({ payments }: { payments: LgaPayment[] }) {
   }))
   const maximum = Math.max(...collections.map((item) => item.amount), 0)
   return (
-    <Card role="region" aria-label="Collections by service">
+    <Card
+      size="sm"
+      role="region"
+      aria-label="Collections by service"
+      className="min-w-0"
+    >
       <CardHeader>
         <CardTitle>
           <h2>Collections by service</h2>
         </CardTitle>
         <CardDescription>
-          Collected amounts after refunds, in NGN.
+          Net collections by certificate service.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -34,7 +39,7 @@ export function LgaCollectionsChart({ payments }: { payments: LgaPayment[] }) {
             No collections match these filters.
           </p>
         ) : (
-          <dl className="grid gap-6">
+          <dl className="grid gap-4">
             {collections.map(({ service, amount }) => (
               <div key={service} className="grid gap-2">
                 <div className="flex items-baseline justify-between gap-4 text-sm">
@@ -43,10 +48,10 @@ export function LgaCollectionsChart({ payments }: { payments: LgaPayment[] }) {
                     {money(amount)}
                   </dd>
                 </div>
-                <div aria-hidden="true" className="h-7 border-l border-border">
+                <div aria-hidden="true" className="h-2 border-l border-border">
                   <div
                     data-slot="collection-bar"
-                    className="h-full rounded-r-sm bg-primary"
+                    className="h-full rounded-r-sm bg-primary/70"
                     style={{
                       width: `${maximum > 0 ? (amount / maximum) * 100 : 0}%`,
                     }}

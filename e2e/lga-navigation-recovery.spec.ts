@@ -39,16 +39,14 @@ for (const width of [1440, 390]) {
         page.getByRole("heading", { name: label, exact: true })
       ).toBeVisible()
     }
-    await nav("Health approvals")
-    const approvalView = page
-      .getByRole("table", { name: "Health approvals" })
-      .getByRole("link", { name: "View", exact: true })
-      .first()
+    await nav("Premises")
     for (let repeat = 0; repeat < 3; repeat++) {
-      await approvalView.click()
-      await expect(page).toHaveURL(/\/lga\/health-approvals\/HA-REV-/)
+      await page
+        .getByRole("button", { name: "View", exact: true })
+        .first()
+        .click()
       await expect(
-        page.getByRole("link", { name: "View premises", exact: true })
+        page.locator('[data-slot="premises-workspace"]')
       ).toBeVisible()
       expect(
         documents,
@@ -56,32 +54,11 @@ for (const width of [1440, 390]) {
       ).toEqual([])
       await page.goBack()
       await expect(
-        page.getByRole("heading", { name: "Health approvals", exact: true })
-      ).toBeVisible()
-      await page.goForward()
-      await expect(
-        page.getByRole("link", { name: "View premises", exact: true })
-      ).toBeVisible()
-      await page
-        .getByRole("link", { name: "View premises", exact: true })
-        .click()
-      await expect(
-        page.locator('[data-slot="premises-workspace"]')
-      ).toBeVisible()
-      await page.goBack()
-      await page
-        .getByRole("link", { name: "Back to health approvals", exact: true })
-        .click()
-      await expect(
-        page.getByRole("heading", { name: "Health approvals", exact: true })
+        page.getByRole("heading", { name: "Premises", exact: true })
       ).toBeVisible()
     }
     await nav("Inspections")
-    await page
-      .getByRole("table", { name: "Inspections" })
-      .getByRole("link", { name: "View", exact: true })
-      .first()
-      .click()
+    await page.getByRole("link", { name: "View", exact: true }).first().click()
     await expect(
       page.getByRole("link", { name: "View premises", exact: true })
     ).toBeVisible()
@@ -100,6 +77,10 @@ for (const width of [1440, 390]) {
       .getByRole("link")
       .first()
       .click()
+    await expect(
+      page.getByRole("heading", { name: "Payment details", exact: true })
+    ).toBeVisible()
+    await page.getByRole("link", { name: "View premises", exact: true }).click()
     await expect(page.locator('[data-slot="premises-workspace"]')).toBeVisible()
     await page.goBack()
     await nav("Reports")
@@ -281,8 +262,8 @@ for (const width of [1440, 390]) {
       [
         "health-approvals/unknown",
         "Health Approval not found",
-        "Back to health approvals",
-        "Health approvals",
+        "Back to premises",
+        "Premises",
       ],
       [
         "inspections/unknown",

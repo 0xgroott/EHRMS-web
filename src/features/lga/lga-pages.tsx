@@ -1,3 +1,19 @@
+import { healthApprovalStatus } from "./lga-health-approval"
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Field, FieldLabel } from "@/components/ui/field"
+import {
+  selectInspections,
+  validateInspectionSearch,
+  isInspectionOverdue,
+  formatInspectionDate,
+} from "./lga-inspection-filters"
 import { LinkedTableRow } from "@/components/shared/linked-table-row"
 import { EmptyState } from "@/components/shared/empty-state"
 import {
@@ -8,10 +24,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Link, useLocation } from "@tanstack/react-router"
-import { useState } from "react"
+import {
+  Link,
+  Navigate,
+  useLocation,
+  useSearch,
+  useNavigate,
+} from "@tanstack/react-router"
 import { AssignedAccountSignIn } from "@/components/shared/assigned-account-sign-in"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, ArrowRight } from "lucide-react"
+import { PremisesAvatar } from "@/components/shared/premises-avatar"
+import { VerifiedBusinessName } from "@/components/shared/verified-business-name"
+import { Button } from "@/components/ui/button"
 import { PremisesCertificateDetail } from "@/components/shared/premises-certificate-detail"
 import { PageHeader } from "@/components/shared/page-header"
 import { StatusBadge } from "@/components/shared/status-badge"
@@ -30,8 +54,7 @@ import {
 } from "./lga-account"
 import { useLga } from "./lga-session"
 import { useLgaData } from "./use-lga-data"
-import { filterLgaRows } from "./lga-data"
-import type { LgaFilters } from "./lga-data"
+import type { LgaApproval, LgaInspection } from "./lga-data"
 import { LgaFilterBar, LgaSelect, daysSince, premisesHref } from "./lga-ui"
 
 export function LgaSignInPage() {
@@ -54,16 +77,40 @@ export function LgaSignInPage() {
 }
 
 export function LgaPremisesPage() {
+  const search = useSearch({ from: "/lga/_portal/premises" })
+  const navigate = useNavigate({ from: "/lga/premises" })
   const { account } = useLga()
   const data = useLgaData()
   return (
-    <MohBusinessesDirectory
-      businesses={buildMohBusinessDirectory(
-        data.premises,
-        account?.councilId ?? ""
+    <div className="flex flex-col gap-6">
+      {data.error && (
+        <Alert variant="destructive">
+          <AlertDescription>{data.error}</AlertDescription>
+        </Alert>
       )}
-      basePath="/lga/premises"
-    />
+      <MohBusinessesDirectory
+        filtersInDialog
+        businesses={buildMohBusinessDirectory(
+          data.premises,
+          account?.councilId ?? ""
+        ).map((business) => ({
+          ...business,
+          healthApproval: data.error
+            ? "Unavailable"
+            : healthApprovalStatus(
+                data.premises.find((item) => item.id === business.id)!,
+                data.approvals
+              ),
+        }))}
+        healthApprovalFilter={{
+          value: search.approval,
+          onChange: (approval) => {
+            void navigate({ search: { approval }, replace: true })
+          },
+        }}
+        basePath="/lga/premises"
+      />
+    </div>
   )
 }
 
@@ -119,11 +166,23 @@ export function LgaPremisesDetail({ premisesId }: { premisesId: string }) {
     )
   }
   return premises ? (
-    <MohPremisesOverview
-      premises={premises}
-      basePath="/lga/premises"
-      showDocuments={false}
-    />
+    <div className="flex flex-col gap-6">
+      <MohPremisesOverview
+        premises={premises}
+        basePath="/lga/premises"
+        showDocuments={false}
+      />
+      {data.error && (
+        <Alert variant="destructive">
+          <AlertDescription>{data.error}</AlertDescription>
+        </Alert>
+      )}
+      {data.approvals
+        .filter((item) => item.premisesId === premises.id)
+        .map((item) => (
+          <ApprovalSummary key={item.id} item={item} />
+        ))}
+    </div>
   ) : (
     <Unavailable
       title="Premises not found"
@@ -133,125 +192,25 @@ export function LgaPremisesDetail({ premisesId }: { premisesId: string }) {
   )
 }
 
-export function LgaApprovalsPage() {
-  const data = useLgaData()
-  const [filters, setFilters] = useState<LgaFilters>({})
-  const [query, setQuery] = useState("")
-  const [status, setStatus] = useState("all")
-  const rows = filterLgaRows(
-    data.approvals,
-    filters,
-    (item) => item.date
-  ).filter(
-    (item) =>
-      (status === "all" || item.status === status) &&
-      `${item.businessName} ${item.id} ${item.reference}`
-        .toLowerCase()
-        .includes(query.trim().toLowerCase())
-  )
-  return (
-    <div className="flex flex-col gap-6">
-      <PageHeader title="Health approvals" divided={false} />
-      {data.error && (
-        <Alert variant="destructive" role="alert">
-          <AlertDescription>{data.error}</AlertDescription>
-        </Alert>
-      )}
-      <LgaFilterBar
-        wards={[...new Set(data.premises.map((item) => item.ward))].sort()}
-        filters={filters}
-        onChange={setFilters}
-        leading={
-          <div className="col-span-2 w-full sm:w-72">
-            <label htmlFor="approval-search" className="sr-only">
-              Search health approvals
-            </label>
-            <Input
-              id="approval-search"
-              type="search"
-              value={query}
-              className="min-h-11"
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search premises or reference"
-            />
-          </div>
-        }
-      >
-        <LgaSelect
-          label="Status"
-          value={status}
-          onChange={setStatus}
-          options={[
-            { value: "all", label: "All statuses" },
-            ...["Awaiting decision", "Approved", "Denied"].map((value) => ({
-              value,
-              label: value,
-            })),
-          ]}
-        />
-      </LgaFilterBar>
-      {rows.length ? (
-        <div className="min-w-0 overflow-hidden rounded-xl border bg-card">
-          <Table aria-label="Health approvals">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Premises</TableHead>
-                <TableHead>Ward</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Waiting time</TableHead>
-                <TableHead className="text-right">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((item) => (
-                <LinkedTableRow key={item.id}>
-                  <TableCell>
-                    <span className="font-medium">{item.businessName}</span>
-                  </TableCell>
-                  <TableCell>{item.ward}</TableCell>
-                  <TableCell>
-                    <StatusBadge status={item.status} />
-                  </TableCell>
-                  <TableCell>
-                    {item.status === "Awaiting decision"
-                      ? `${daysSince(item.date)} days`
-                      : "Decision recorded"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Link
-                      className="inline-flex min-h-11 items-center font-medium text-primary hover:underline"
-                      to="/lga/health-approvals/$caseId"
-                      params={{ caseId: item.id }}
-                    >
-                      View
-                    </Link>
-                  </TableCell>
-                </LinkedTableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      ) : (
-        <EmptyState
-          title="No health approvals found"
-          description="Try another search or choose different filters."
-        />
-      )}
-    </div>
-  )
-}
-
 export function LgaApprovalDetail({ caseId }: { caseId: string }) {
   const data = useLgaData()
   const item = data.approvals.find((approval) => approval.id === caseId)
-  if (!item)
-    return (
-      <Unavailable
-        title="Health Approval not found"
-        href="/lga/health-approvals"
-        label="Back to health approvals"
-      />
-    )
+  return item ? (
+    <Navigate
+      to="/lga/premises/$premisesId"
+      params={{ premisesId: item.premisesId }}
+      replace
+    />
+  ) : (
+    <Unavailable
+      title="Health Approval not found"
+      href="/lga/premises"
+      label="Back to premises"
+    />
+  )
+}
+
+function ApprovalSummary({ item }: { item: LgaApproval }) {
   const fields = [
     ["Reference", item.id],
     ["Ward", item.ward],
@@ -272,112 +231,232 @@ export function LgaApprovalDetail({ caseId }: { caseId: string }) {
     ...(item.reason ? [["Reason", item.reason]] : []),
   ]
   return (
-    <div className="space-y-6">
-      <Link
-        to="/lga/health-approvals"
-        className="inline-flex min-h-11 items-center text-sm text-primary hover:underline"
-      >
-        Back to health approvals
-      </Link>
-      <PageHeader
-        title={item.businessName}
-        description="Health Approval"
-        actions={<StatusBadge status={item.status} />}
-      />
-      {data.error && (
-        <Alert variant="destructive" role="alert">
-          <AlertDescription>{data.error}</AlertDescription>
-        </Alert>
-      )}
+    <section aria-label="Health Approval" className="flex flex-col gap-4">
+      <h2 className="text-lg font-semibold">Health Approval</h2>
       <RecordDetails fields={fields} />
-      <Link
-        to={premisesHref(item.premisesId)}
-        className="inline-flex min-h-11 items-center text-sm font-medium text-primary hover:underline"
-      >
-        View premises
-      </Link>
-    </div>
+    </section>
   )
 }
 
 export function LgaInspectionsPage() {
   const data = useLgaData()
-  const [filters, setFilters] = useState<LgaFilters>({})
-  const [status, setStatus] = useState("all")
-  const rows = filterLgaRows(
-    data.inspections,
-    filters,
-    (item) => item.scheduledAt
-  ).filter((item) => status === "all" || item.status === status)
-  const openFindings = filterLgaRows(data.premises, {
-    ward: filters.ward,
-  }).reduce((total, item) => total + item.outstandingContraventions, 0)
+  const filters = useSearch({ from: "/lga/_portal/inspections" })
+  const navigate = useNavigate({ from: "/lga/inspections" })
+  const rows = selectInspections(data.inspections, filters)
+  const active = Boolean(
+    filters.q ||
+    filters.ward ||
+    filters.from ||
+    filters.to ||
+    filters.status !== "all"
+  )
+  const businessName = (item: LgaInspection) => (
+    <VerifiedBusinessName
+      name={item.businessName}
+      verified={
+        data.premises.find((premises) => premises.id === item.premisesId)
+          ?.kybVerified ?? false
+      }
+    />
+  )
+  const view = (item: LgaInspection) => (
+    <Button
+      variant="outline"
+      className="min-h-11"
+      nativeButton={false}
+      role="link"
+      render={
+        <Link
+          to="/lga/inspections/$inspectionId"
+          params={{ inspectionId: item.id }}
+          search={filters}
+        />
+      }
+    >
+      View
+      <ArrowRight data-icon="inline-end" aria-hidden="true" />
+    </Button>
+  )
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex min-w-0 flex-col gap-6">
       <PageHeader title="Inspections" divided={false} />
       <LgaFilterBar
         wards={[...new Set(data.premises.map((item) => item.ward))].sort()}
         filters={filters}
-        onChange={setFilters}
+        onChange={(next) => {
+          void navigate({
+            search: {
+              ...filters,
+              ...next,
+              ward: next.ward,
+              from: next.from,
+              to: next.to,
+            },
+            replace: true,
+          })
+        }}
         dates
+        dateLabels={["Scheduled from", "Scheduled to"]}
+        hasActiveFilters={active}
+        onClear={() => {
+          void navigate({ search: validateInspectionSearch({}), replace: true })
+        }}
+        leading={
+          <Field className="col-span-2 min-w-0 sm:w-72">
+            <FieldLabel htmlFor="inspection-search" className="sr-only">
+              Search premises or inspection reference
+            </FieldLabel>
+            <Input
+              id="inspection-search"
+              type="search"
+              className="min-h-11"
+              placeholder="Search premises or inspection reference"
+              value={filters.q}
+              onChange={(event) => {
+                void navigate({
+                  search: { ...filters, q: event.target.value },
+                  replace: true,
+                })
+              }}
+            />
+          </Field>
+        }
       >
         <LgaSelect
           label="Status"
-          value={status}
-          onChange={setStatus}
+          value={filters.status}
+          onChange={(status) => {
+            void navigate({ search: { ...filters, status }, replace: true })
+          }}
           options={[
             { value: "all", label: "All statuses" },
-            ...[...new Set(data.inspections.map((item) => item.status))].map(
-              (value) => ({ value, label: value })
-            ),
+            ...[
+              ...new Set([
+                ...data.inspections.map((item) => item.status),
+                "Overdue",
+              ]),
+            ].map((value) => ({ value, label: value })),
           ]}
         />
       </LgaFilterBar>
-      <p className="text-sm text-muted-foreground">
-        {openFindings} open findings · {filters.ward ?? "All wards"}
+      <p className="text-sm text-muted-foreground" role="status">
+        {rows.length} {rows.length === 1 ? "inspection" : "inspections"}
       </p>
       {rows.length ? (
-        <div className="min-w-0 overflow-hidden rounded-xl border bg-card">
-          <Table aria-label="Inspections">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Premises</TableHead>
-                <TableHead>Inspection</TableHead>
-                <TableHead>Scheduled date</TableHead>
-                <TableHead>Officer</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((item) => (
-                <LinkedTableRow key={item.id}>
-                  <TableCell>{item.businessName}</TableCell>
-                  <TableCell>{item.type}</TableCell>
-                  <TableCell>{item.scheduledAt}</TableCell>
-                  <TableCell>{item.officer}</TableCell>
-                  <TableCell>
-                    <StatusBadge status={item.status} />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Link
-                      className="inline-flex min-h-11 items-center font-medium text-primary hover:underline"
-                      to="/lga/inspections/$inspectionId"
-                      params={{ inspectionId: item.id }}
-                    >
-                      View
-                    </Link>
-                  </TableCell>
-                </LinkedTableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <>
+          <div className="hidden min-w-0 overflow-hidden rounded-xl border bg-card shadow-xs md:block">
+            <Table aria-label="Inspections">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="px-4">Business</TableHead>
+                  <TableHead>Ward</TableHead>
+                  <TableHead>Inspection type</TableHead>
+                  <TableHead>Scheduled date</TableHead>
+                  <TableHead>Officer</TableHead>
+                  <TableHead className="px-4">Status</TableHead>
+                  <TableHead className="px-4 text-right">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map((item) => (
+                  <LinkedTableRow key={item.id}>
+                    <TableCell className="px-4 py-3 whitespace-normal">
+                      <div className="flex items-center gap-3">
+                        <PremisesAvatar name={item.businessName} />
+                        <div className="min-w-0">
+                          <p className="font-semibold">{businessName(item)}</p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {item.id}
+                          </p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>{item.ward}</TableCell>
+                    <TableCell>{item.type}</TableCell>
+                    <TableCell className="tabular-nums">
+                      <time dateTime={item.scheduledAt}>
+                        {formatInspectionDate(item.scheduledAt)}
+                      </time>
+                    </TableCell>
+                    <TableCell>{item.officer}</TableCell>
+                    <TableCell className="px-4">
+                      <InspectionStatus item={item} />
+                    </TableCell>
+                    <TableCell className="px-4 text-right">
+                      {view(item)}
+                    </TableCell>
+                  </LinkedTableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <ul aria-label="Inspections" className="grid gap-3 md:hidden">
+            {rows.map((item) => (
+              <li key={item.id}>
+                <Card size="sm">
+                  <CardHeader>
+                    <div className="flex items-center gap-3">
+                      <PremisesAvatar name={item.businessName} />
+                      <div className="min-w-0">
+                        <CardTitle>{businessName(item)}</CardTitle>
+                        <CardDescription className="mt-1">
+                          {item.id} · {item.type}
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="flex flex-col gap-4">
+                    <InspectionStatus item={item} />
+                    <dl className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <dt className="text-muted-foreground">Ward</dt>
+                        <dd>{item.ward}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-muted-foreground">
+                          Scheduled date
+                        </dt>
+                        <dd>
+                          <time dateTime={item.scheduledAt}>
+                            {formatInspectionDate(item.scheduledAt)}
+                          </time>
+                        </dd>
+                      </div>
+                      <div className="col-span-2">
+                        <dt className="text-muted-foreground">Officer</dt>
+                        <dd>{item.officer}</dd>
+                      </div>
+                    </dl>
+                    {view(item)}
+                  </CardContent>
+                </Card>
+              </li>
+            ))}
+          </ul>
+        </>
       ) : (
         <EmptyState
-          title="No inspections found"
-          description="Try another search or choose different filters."
+          title={
+            active
+              ? "No inspections match these filters"
+              : "No inspections recorded yet"
+          }
+          description={
+            active
+              ? "Change or clear the filters to see more inspections."
+              : "Inspections will appear here when they are scheduled."
+          }
         />
+      )}
+    </div>
+  )
+}
+function InspectionStatus({ item }: { item: LgaInspection }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      <StatusBadge status={item.status} />
+      {isInspectionOverdue(item) && (
+        <Badge variant="destructive">Overdue</Badge>
       )}
     </div>
   )
@@ -388,6 +467,7 @@ export function LgaInspectionDetail({
 }: {
   inspectionId: string
 }) {
+  const filters = useSearch({ from: "/lga/_portal/inspections_/$inspectionId" })
   const data = useLgaData()
   const item = data.inspections.find(
     (inspection) => inspection.id === inspectionId
@@ -401,9 +481,10 @@ export function LgaInspectionDetail({
       />
     )
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       <Link
         to="/lga/inspections"
+        search={filters}
         className="inline-flex min-h-11 items-center text-sm text-primary hover:underline"
       >
         Back to inspections
@@ -411,14 +492,13 @@ export function LgaInspectionDetail({
       <PageHeader
         title={item.businessName}
         description={`${item.type} · ${item.id}`}
-        actions={<StatusBadge status={item.status} />}
+        actions={<InspectionStatus item={item} />}
       />
       <RecordDetails
         fields={[
           ["Ward", item.ward],
           ["Officer", item.officer],
-          ["Scheduled date", item.scheduledAt],
-          ["Status", item.status],
+          ["Scheduled date", formatInspectionDate(item.scheduledAt)],
           ["Open findings at premises", String(item.outstandingContraventions)],
         ]}
       />

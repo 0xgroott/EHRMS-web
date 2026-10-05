@@ -4,7 +4,6 @@ import { Outlet, useLocation } from "@tanstack/react-router"
 import {
   Banknote,
   Building2,
-  ClipboardCheck,
   ClipboardList,
   FileChartColumn,
   Gauge,
@@ -19,11 +18,6 @@ import { useLga } from "./lga-session"
 export const lgaNavigation = [
   { label: "Dashboard", href: "/lga/dashboard", icon: Gauge },
   { label: "Finance", href: "/lga/finance", icon: Banknote },
-  {
-    label: "Health approvals",
-    href: "/lga/health-approvals",
-    icon: ClipboardCheck,
-  },
   { label: "Premises", href: "/lga/premises", icon: Building2 },
   { label: "Inspections", href: "/lga/inspections", icon: ClipboardList },
   { label: "Reports", href: "/lga/reports", icon: FileChartColumn },

@@ -29,6 +29,33 @@ async function renderWithRouter(ui: ReactNode) {
 }
 
 describe("MOH businesses directory", () => {
+  it("stages dialog resets until Apply and discards edits when closed", async () => {
+    const onChange = vi.fn()
+    await renderWithRouter(
+      <MohBusinessesDirectory
+        businesses={[]}
+        filtersInDialog
+        healthApprovalFilter={{ value: "Approved", onChange }}
+      />
+    )
+    fireEvent.click(screen.getByRole("button", { name: "Filters (1)" }))
+    fireEvent.click(screen.getByRole("button", { name: "Reset" }))
+    expect(
+      screen.getByRole("combobox", { name: "Health Approval" })
+    ).toHaveTextContent("All approval statuses")
+    expect(onChange).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole("button", { name: "Close" }))
+    fireEvent.click(screen.getByRole("button", { name: "Filters (1)" }))
+    expect(
+      screen.getByRole("combobox", { name: "Health Approval" })
+    ).toHaveTextContent("Approved")
+    fireEvent.click(screen.getByRole("button", { name: "Reset" }))
+    fireEvent.click(
+      screen.getByRole("button", { name: "Apply changes" })
+    )
+    expect(onChange).toHaveBeenCalledWith("all")
+  })
+
   it("summarises the registered businesses for the MOH council", () => {
     const businesses = buildMohBusinessDirectory(seedDatabase.premises, "phc")
 
