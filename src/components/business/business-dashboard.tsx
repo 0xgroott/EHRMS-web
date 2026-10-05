@@ -1,3 +1,4 @@
+import { LinkedTableRow } from "@/components/shared/linked-table-row"
 import { Link } from "@tanstack/react-router"
 import { useState } from "react"
 import {
@@ -714,7 +715,7 @@ export function BusinessDashboard({
                   </TableHeader>
                   <TableBody>
                     {certificateRows.map((certificate) => (
-                      <TableRow key={certificate.name}>
+                      <LinkedTableRow key={certificate.name}>
                         <TableCell className="font-medium">
                           {certificate.name}
                         </TableCell>
@@ -737,7 +738,7 @@ export function BusinessDashboard({
                             {certificate.action}
                           </QuietLink>
                         </TableCell>
-                      </TableRow>
+                      </LinkedTableRow>
                     ))}
                   </TableBody>
                 </Table>

@@ -1,185 +1,169 @@
 import { useState } from "react"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Link, useNavigate, useSearch } from "@tanstack/react-router"
+import { ArrowLeft, Download } from "lucide-react"
 import { PageHeader } from "@/components/shared/page-header"
-import { StatusBadge } from "@/components/shared/status-badge"
+import { EmptyState } from "@/components/shared/empty-state"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { filterLgaRows, createLgaCsv } from "./lga-data"
-import type { LgaFilters } from "./lga-data"
-import { useLgaData } from "./use-lga-data"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Field, FieldLabel } from "@/components/ui/field"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  getLgaReports,
+  findLgaReport,
+  reportCategories,
+} from "./lga-report-library"
+import type { LgaReport, ReportCategory } from "./lga-report-library"
 import { useLga } from "./lga-session"
-import { LgaExport, LgaFilterBar, LgaTable, daysSince } from "./lga-ui"
-import { LgaFinanceSummary, LgaPaymentsTable } from "./lga-finance"
+
+const formatDate = (date: string) =>
+  new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(date))
 
 export function LgaReportsPage() {
-  const data = useLgaData()
   const { account } = useLga()
-  const [report, setReport] = useState("revenue")
-  const [filters, setFilters] = useState<LgaFilters>({})
-  const wards = [...new Set(data.premises.map((item) => item.ward))].sort()
-  const premises = filterLgaRows(data.premises, { ward: filters.ward })
-  const payments = filterLgaRows(data.payments, filters, (item) => item.paidAt)
-  const approvals = filterLgaRows(data.approvals, filters, (item) => item.date)
-  const inspections = filterLgaRows(
-    data.inspections,
-    filters,
-    (item) => item.scheduledAt
-  )
-  const performance = wards
-    .filter((ward) => !filters.ward || ward === filters.ward)
-    .map((ward) => {
-      const wardApprovals = approvals.filter((item) => item.ward === ward)
-      const decided = wardApprovals.filter((item) => item.decidedAt)
-      const pending = wardApprovals.filter(
-        (item) => item.status === "Awaiting decision"
+  const search = useSearch({ from: "/lga/_portal/reports" })
+  const navigate = useNavigate({ from: "/lga/reports" })
+  const [error, setError] = useState("")
+  const reports = getLgaReports(account?.councilId, search.category, search.q)
+  const selected = search.report
+    ? findLgaReport(account?.councilId, search.report)
+    : undefined
+
+  function download(report: LgaReport) {
+    try {
+      const url = URL.createObjectURL(
+        new Blob([report.content], { type: "text/plain;charset=utf-8" })
       )
-      const visits = inspections.filter((item) => item.ward === ward)
-      const completed = visits.filter(
-        (item) => item.status === "Completed"
-      ).length
-      return {
-        ward,
-        pending: pending.length,
-        oldest: pending.length
-          ? Math.max(...pending.map((item) => daysSince(item.date)))
-          : 0,
-        average: decided.length
-          ? Math.round(
-              decided.reduce(
-                (total, item) => total + daysSince(item.date, item.decidedAt),
-                0
-              ) / decided.length
-            )
-          : null,
-        completed,
-        total: visits.length,
-        overdue: visits.filter(
-          (item) =>
-            item.status !== "Completed" &&
-            item.scheduledAt < new Date().toISOString().slice(0, 10)
-        ).length,
-      }
-    })
-  const revenueHeaders = [
-    "Reference",
-    "Date",
-    "Premises",
-    "Ward",
-    "Service",
-    "Gross amount (NGN)",
-    "Refunds (NGN)",
-    "Collections (NGN)",
-    "LGA share (NGN)",
-    "Payouts (NGN)",
-    "Outstanding settlements (NGN)",
-  ]
-  const complianceHeaders = [
-    "Premises",
-    "Ward",
-    "Business type",
-    "Status",
-    "Open findings",
-    "Certificates nearing expiry or expired",
-  ]
-  const performanceHeaders = [
-    "Ward",
-    "Awaiting decision",
-    "Oldest waiting (days)",
-    "Average decision time (days)",
-    "Completed inspections",
-    "Total inspections",
-    "Completion rate",
-    "Overdue inspections",
-  ]
-  const expiringCount = (
-    certificates: (typeof premises)[number]["certificates"]
-  ) =>
-    certificates.filter(
-      (item) =>
-        ["Expiring Soon", "Expired"].includes(item.status) ||
-        (item.expiresAt &&
-          Date.parse(item.expiresAt) < Date.now() + 30 * 86_400_000)
-    ).length
-  const csv =
-    report === "revenue"
-      ? createLgaCsv(
-          revenueHeaders,
-          payments.map((item) => [
-            item.id,
-            item.paidAt,
-            item.businessName,
-            item.ward,
-            item.service,
-            item.amount,
-            item.refunded,
-            item.amount - item.refunded,
-            item.lgaShare,
-            item.paidOut,
-            item.lgaShare - item.paidOut,
-          ])
-        )
-      : report === "compliance"
-        ? createLgaCsv(
-            complianceHeaders,
-            premises.map((item) => [
-              item.businessName,
-              item.ward,
-              item.premisesType,
-              item.complianceStatus,
-              item.outstandingContraventions,
-              expiringCount(item.certificates),
-            ])
-          )
-        : createLgaCsv(
-            performanceHeaders,
-            performance.map((item) => [
-              item.ward,
-              item.pending,
-              item.oldest,
-              item.average,
-              item.completed,
-              item.total,
-              item.total
-                ? `${Math.round((item.completed / item.total) * 100)}%`
-                : "No inspections",
-              item.overdue,
-            ])
-          )
-  const count =
-    report === "revenue"
-      ? payments.length
-      : report === "compliance"
-        ? premises.length
-        : performance.length
-  const invalidDates = Boolean(
-    filters.from && filters.to && filters.from > filters.to
+      const anchor = document.createElement("a")
+      anchor.href = url
+      anchor.download = report.filename
+      document.body.append(anchor)
+      anchor.click()
+      anchor.remove()
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+      setError("")
+    } catch {
+      setError("Unable to download this report. Please try again.")
+    }
+  }
+  const downloadButton = (report: LgaReport) => (
+    <Button
+      variant="outline"
+      className="min-h-11"
+      aria-label={`Download ${report.title}`}
+      onClick={() => download(report)}
+    >
+      <Download data-icon="inline-start" aria-hidden="true" />
+      Download
+    </Button>
   )
-  return (
-    <div className="flex flex-col gap-6">
-      <PageHeader
-        title="Reports"
-        divided={false}
-        actions={
-          <LgaExport
-            csv={csv}
-            filename={`${account?.councilId ?? "council"}-${report}.csv`}
-            disabled={
-              !count ||
-              invalidDates ||
-              (report === "performance" && Boolean(data.error))
-            }
-          />
+  const actions = (report: LgaReport) => (
+    <div className="flex flex-wrap gap-2 md:justify-end">
+      <Button
+        variant="outline"
+        className="min-h-11"
+        nativeButton={false}
+        aria-label={`View ${report.title}`}
+        render={
+          <Link to="/lga/reports" search={{ ...search, report: report.id }} />
         }
-      />
-      {data.error && (
+      >
+        View
+      </Button>
+      {downloadButton(report)}
+    </div>
+  )
+  if (search.report)
+    return (
+      <div className="flex min-w-0 flex-col gap-6">
+        <Button
+          variant="link"
+          className="min-h-11 self-start px-0"
+          nativeButton={false}
+          render={
+            <Link to="/lga/reports" search={{ ...search, report: undefined }} />
+          }
+        >
+          <ArrowLeft data-icon="inline-start" aria-hidden="true" />
+          Back to reports
+        </Button>
+        <PageHeader
+          title={selected?.title ?? "Report not found"}
+          divided={false}
+          actions={selected ? downloadButton(selected) : undefined}
+        />
+        {selected ? (
+          <>
+            <dl className="flex flex-wrap gap-x-8 gap-y-3 text-sm">
+              <div>
+                <dt className="text-muted-foreground">Ward</dt>
+                <dd>{selected.ward}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Date uploaded</dt>
+                <dd>
+                  <time dateTime={selected.uploadedAt}>
+                    {formatDate(selected.uploadedAt)}
+                  </time>
+                </dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Prepared by (MOH)</dt>
+                <dd>{selected.preparedBy}</dd>
+              </div>
+            </dl>
+            {error && (
+              <Alert variant="destructive" role="alert">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            <Card>
+              <CardContent>
+                <section
+                  aria-label="Report document"
+                  className="text-sm leading-7 break-words whitespace-pre-wrap"
+                >
+                  {selected.content}
+                </section>
+              </CardContent>
+            </Card>
+          </>
+        ) : (
+          <p className="text-muted-foreground">
+            This report is unavailable in your council workspace.
+          </p>
+        )}
+      </div>
+    )
+  return (
+    <div className="flex min-w-0 flex-col gap-6">
+      <PageHeader title="Reports" divided={false} />
+      {error && (
         <Alert variant="destructive" role="alert">
-          <AlertDescription>{data.error}</AlertDescription>
+          <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
       <Tabs
-        value={report}
-        onValueChange={(value) => {
-          setReport(value)
-          setFilters({ ward: filters.ward })
+        value={search.category}
+        onValueChange={(category) => {
+          setError("")
+          void navigate({
+            search: { ...search, category: category as ReportCategory },
+          })
         }}
         className="min-w-0 gap-5"
       >
@@ -189,11 +173,7 @@ export function LgaReportsPage() {
             aria-label="Report type"
             className="h-11! min-w-max! justify-start gap-1 rounded-none p-0"
           >
-            {[
-              ["revenue", "Revenue"],
-              ["compliance", "Compliance"],
-              ["performance", "Service performance"],
-            ].map(([value, label]) => (
+            {reportCategories.map(({ value, label }) => (
               <TabsTrigger
                 key={value}
                 value={value}
@@ -204,67 +184,114 @@ export function LgaReportsPage() {
             ))}
           </TabsList>
         </div>
-        <LgaFilterBar
-          wards={wards}
-          filters={filters}
-          onChange={setFilters}
-          dates={report !== "compliance"}
-          services={report === "revenue"}
-        />
-        <TabsContent value="revenue" className="space-y-5">
-          <LgaFinanceSummary payments={payments} />
-          <LgaPaymentsTable payments={payments} />
-        </TabsContent>
-        <TabsContent value="compliance" className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Current status · Certificates expired or due within 30 days.
-          </p>
-          <LgaTable
-            label="Compliance"
-            headers={complianceHeaders}
-            emptyTitle="No premises found"
-            rows={premises.map((item) => ({
-              id: item.id,
-              cells: [
-                item.businessName,
-                item.ward,
-                item.premisesType,
-                <StatusBadge status={item.complianceStatus} />,
-                item.outstandingContraventions,
-                expiringCount(item.certificates),
-              ],
-            }))}
+        <Field className="sm:max-w-sm">
+          <FieldLabel htmlFor="report-search" className="sr-only">
+            Search reports
+          </FieldLabel>{" "}
+          <Input
+            id="report-search"
+            type="search"
+            aria-label="Search reports"
+            placeholder="Search reports"
+            value={search.q}
+            onChange={(event) => {
+              void navigate({
+                search: { ...search, q: event.target.value },
+                replace: true,
+              })
+            }}
           />
-        </TabsContent>
-        <TabsContent value="performance" className="space-y-4">
-          <LgaTable
-            label="Service performance"
-            headers={performanceHeaders}
-            emptyTitle="No report data found"
-            rows={performance.map((item) => ({
-              id: item.ward,
-              cells: [
-                item.ward,
-                data.error ? "Unavailable" : item.pending,
-                data.error ? "Unavailable" : item.oldest,
-                data.error
-                  ? "Unavailable"
-                  : (item.average ?? "No decisions recorded"),
-                item.completed,
-                item.total,
-                item.total
-                  ? `${Math.round((item.completed / item.total) * 100)}%`
-                  : "No inspections",
-                item.overdue,
-              ],
-            }))}
-          />
-          <p className="text-sm text-muted-foreground">
-            Decision time starts at inspection completion. Dates filter
-            completed approval inspections and scheduled visits. Overdue visits
-            are past their scheduled date.
-          </p>
-        </TabsContent>
+        </Field>
+        {reportCategories.map(({ value, label }) => (
+          <TabsContent key={value} value={value}>
+            {reports.length ? (
+              <>
+                <div className="hidden overflow-hidden rounded-xl border bg-card md:block">
+                  <Table aria-label={`${label} reports`}>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Title</TableHead>
+                        <TableHead>Ward</TableHead>
+                        <TableHead>Date uploaded</TableHead>
+                        <TableHead>Prepared by (MOH)</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {reports.map((report) => (
+                        <TableRow key={report.id}>
+                          <TableCell className="font-medium whitespace-normal">
+                            {report.title}
+                          </TableCell>
+                          <TableCell>{report.ward}</TableCell>
+                          <TableCell>
+                            <time dateTime={report.uploadedAt}>
+                              {formatDate(report.uploadedAt)}
+                            </time>
+                          </TableCell>
+                          <TableCell>{report.preparedBy}</TableCell>
+                          <TableCell>{actions(report)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                <ul
+                  aria-label={`${label} reports`}
+                  className="grid gap-3 md:hidden"
+                >
+                  {reports.map((report) => (
+                    <li key={report.id}>
+                      <Card size="sm">
+                        <CardHeader>
+                          <CardTitle>{report.title}</CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex flex-col gap-4">
+                          <dl className="grid gap-2 text-sm">
+                            <div>
+                              <dt className="text-muted-foreground">Ward</dt>
+                              <dd>{report.ward}</dd>
+                            </div>
+                            <div>
+                              <dt className="text-muted-foreground">
+                                Date uploaded
+                              </dt>
+                              <dd>
+                                <time dateTime={report.uploadedAt}>
+                                  {formatDate(report.uploadedAt)}
+                                </time>
+                              </dd>
+                            </div>
+                            <div>
+                              <dt className="text-muted-foreground">
+                                Prepared by (MOH)
+                              </dt>
+                              <dd>{report.preparedBy}</dd>
+                            </div>
+                          </dl>
+                          {actions(report)}
+                        </CardContent>
+                      </Card>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : (
+              <EmptyState
+                title={
+                  search.q.trim()
+                    ? "No matching reports"
+                    : "No reports uploaded yet"
+                }
+                description={
+                  search.q.trim()
+                    ? "Try another report title."
+                    : "Reports will appear here when they are uploaded."
+                }
+              />
+            )}
+          </TabsContent>
+        ))}
       </Tabs>
     </div>
   )

@@ -1,3 +1,5 @@
+import { Link } from "@tanstack/react-router"
+import { LinkedTableRow } from "@/components/shared/linked-table-row"
 import { useEffect, useRef, useState } from "react"
 import { ArrowRight, Camera, MapPin, Search, X } from "lucide-react"
 import type { ComplianceStatus, Premises } from "@/domain/types"
@@ -58,17 +60,17 @@ const sortOptions: Array<{ value: PremisesSort; label: string }> = [
   { value: "status", label: "Status" },
 ]
 
+function premisesHref(id: string): string {
+  return `/eho/premises/${encodeURIComponent(id)}?source=search`
+}
+
 function PremisesLink({ premises }: { premises: Premises }) {
   return (
     <Button
       variant="outline"
       className="min-h-11"
       nativeButton={false}
-      render={
-        <a
-          href={`/eho/premises/${encodeURIComponent(premises.id)}?source=search`}
-        />
-      }
+      render={<Link to={premisesHref(premises.id)} />}
     >
       View
       <ArrowRight data-icon="inline-end" aria-hidden="true" />
@@ -498,7 +500,7 @@ export function EhoPremisesSearchPage() {
                 </TableHeader>
                 <TableBody>
                   {results.map((premises) => (
-                    <TableRow key={premises.id}>
+                    <LinkedTableRow key={premises.id}>
                       <TableCell className="min-w-64 whitespace-normal">
                         <div className="flex items-center gap-3">
                           <EhoPremisesAvatar name={premises.businessName} />
@@ -523,7 +525,7 @@ export function EhoPremisesSearchPage() {
                       <TableCell className="text-right">
                         <PremisesLink premises={premises} />
                       </TableCell>
-                    </TableRow>
+                    </LinkedTableRow>
                   ))}
                 </TableBody>
               </Table>

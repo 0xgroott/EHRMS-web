@@ -1,9 +1,18 @@
+import { LinkedTableRow } from "@/components/shared/linked-table-row"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { Link } from "@tanstack/react-router"
 import { useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { seedDatabase } from "@/data/seeds"
 import { PageHeader } from "@/components/shared/page-header"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { TelemetryCard } from "@/components/shared/telemetry-card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { StatusBadge } from "@/components/shared/status-badge"
 import { EmptyState } from "@/components/shared/empty-state"
@@ -11,7 +20,7 @@ import { filterLgaRows, financeTotals } from "./lga-data"
 import type { LgaFilters } from "./lga-data"
 import { useLgaData } from "./use-lga-data"
 import { useLga } from "./lga-session"
-import { LgaFilterBar, LgaTable, money, premisesHref } from "./lga-ui"
+import { LgaFilterBar, money, premisesHref } from "./lga-ui"
 
 export function LgaDashboard() {
   const { account } = useLga()
@@ -65,17 +74,19 @@ export function LgaDashboard() {
         title="Dashboard"
         description={`${council?.name ?? "Your LGA"} Council`}
         divided={false}
+        actions={
+          <LgaFilterBar
+            wards={[...new Set(data.premises.map((item) => item.ward))].sort()}
+            filters={filters}
+            onChange={setFilters}
+          />
+        }
       />
       {data.error && (
         <Alert variant="destructive" role="alert">
           <AlertDescription>{data.error}</AlertDescription>
         </Alert>
       )}
-      <LgaFilterBar
-        wards={[...new Set(data.premises.map((item) => item.ward))].sort()}
-        filters={filters}
-        onChange={setFilters}
-      />
       <section
         aria-label="Council overview"
         className="grid grid-cols-2 gap-3 lg:grid-cols-4"
@@ -86,16 +97,11 @@ export function LgaDashboard() {
             to={metric.href}
             className="min-w-0 rounded-xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
           >
-            <Card size="sm" className="h-full">
-              <CardHeader>
-                <CardTitle>{metric.label}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-semibold tracking-tight tabular-nums sm:text-3xl">
-                  {metric.value}
-                </p>
-              </CardContent>
-            </Card>
+            <TelemetryCard
+              label={metric.label}
+              value={metric.value}
+              className="h-full"
+            />
           </Link>
         ))}
       </section>
@@ -122,49 +128,89 @@ export function LgaDashboard() {
           </TabsList>
         </div>
         <TabsContent value="risks">
-          <LgaTable
-            label="Compliance risks"
-            headers={["Premises", "Ward", "Open findings", "Status", "Action"]}
-            emptyTitle="No compliance risks"
-            rows={risks.map((item) => ({
-              id: item.id,
-              cells: [
-                <span className="font-medium">{item.businessName}</span>,
-                item.ward,
-                item.outstandingContraventions,
-                <StatusBadge status={item.complianceStatus} />,
-                <Link
-                  to={premisesHref(item.id)}
-                  className="inline-flex min-h-11 items-center font-medium text-primary hover:underline"
-                >
-                  View
-                </Link>,
-              ],
-            }))}
-          />
+          {risks.length ? (
+            <div className="min-w-0 overflow-hidden rounded-xl border bg-card">
+              <Table aria-label="Compliance risks">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Premises</TableHead>
+                    <TableHead>Ward</TableHead>
+                    <TableHead>Open findings</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {risks.map((item) => (
+                    <LinkedTableRow key={item.id}>
+                      <TableCell>
+                        <span className="font-medium">{item.businessName}</span>
+                      </TableCell>
+                      <TableCell>{item.ward}</TableCell>
+                      <TableCell>{item.outstandingContraventions}</TableCell>
+                      <TableCell>
+                        <StatusBadge status={item.complianceStatus} />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Link
+                          to={premisesHref(item.id)}
+                          className="inline-flex min-h-11 items-center font-medium text-primary hover:underline"
+                        >
+                          View
+                        </Link>
+                      </TableCell>
+                    </LinkedTableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <EmptyState
+              title="No compliance risks"
+              description="Try another search or choose different filters."
+            />
+          )}
         </TabsContent>
         <TabsContent value="expiry">
           <p className="mb-4 text-sm text-muted-foreground">
             Expired or due within 30 days.
           </p>
-          <LgaTable
-            label="Expiring certificates"
-            headers={["Premises", "Ward", "Action"]}
-            emptyTitle="No certificates nearing expiry"
-            rows={expiring.map((item) => ({
-              id: item.id,
-              cells: [
-                <span className="font-medium">{item.businessName}</span>,
-                item.ward,
-                <Link
-                  to={premisesHref(item.id)}
-                  className="inline-flex min-h-11 items-center font-medium text-primary hover:underline"
-                >
-                  View certificates
-                </Link>,
-              ],
-            }))}
-          />
+          {expiring.length ? (
+            <div className="min-w-0 overflow-hidden rounded-xl border bg-card">
+              <Table aria-label="Expiring certificates">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Premises</TableHead>
+                    <TableHead>Ward</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {expiring.map((item) => (
+                    <LinkedTableRow key={item.id}>
+                      <TableCell>
+                        <span className="font-medium">{item.businessName}</span>
+                      </TableCell>
+                      <TableCell>{item.ward}</TableCell>
+                      <TableCell className="text-right">
+                        <Link
+                          to={premisesHref(item.id)}
+                          className="inline-flex min-h-11 items-center font-medium text-primary hover:underline"
+                        >
+                          View certificates
+                        </Link>
+                      </TableCell>
+                    </LinkedTableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <EmptyState
+              title="No certificates nearing expiry"
+              description="Try another search or choose different filters."
+            />
+          )}
         </TabsContent>
         <TabsContent value="activity">
           <p className="mb-4 text-sm text-muted-foreground">Council-wide</p>

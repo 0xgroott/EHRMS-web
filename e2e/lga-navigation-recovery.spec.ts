@@ -104,11 +104,12 @@ for (const width of [1440, 390]) {
     await page.goBack()
     await nav("Reports")
     await page
-      .getByRole("table", { name: "Payments" })
-      .getByRole("link")
+      .getByRole("button", { name: /^View Revenue report/ })
       .first()
       .click()
-    await expect(page.locator('[data-slot="premises-workspace"]')).toBeVisible()
+    await expect(
+      page.getByRole("region", { name: "Report document" })
+    ).toBeVisible()
     await page.goBack()
     await nav("Dashboard")
     for (const label of [

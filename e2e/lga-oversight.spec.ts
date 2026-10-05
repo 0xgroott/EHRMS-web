@@ -97,9 +97,7 @@ test("LGA premises reuse filters and details while foreign links fail closed", a
   ).toBeVisible()
 })
 
-test("LGA finance and reports filter and export only local records", async ({
-  page,
-}) => {
+test("LGA finance filters only local records", async ({ page }) => {
   await signIn(page)
   await page.getByRole("link", { name: "Finance", exact: true }).click()
   await expect(
@@ -118,22 +116,6 @@ test("LGA finance and reports filter and export only local records", async ({
     page.getByText("No payments found", { exact: true })
   ).toBeVisible()
   await page.getByRole("button", { name: "Clear filters", exact: true }).click()
-  await page.getByRole("link", { name: "Reports", exact: true }).click()
-  const downloadPromise = page.waitForEvent("download")
-  await page.getByRole("button", { name: "Export", exact: true }).click()
-  const download = await downloadPromise
-  const stream = await download.createReadStream()
-  let csv = ""
-  for await (const chunk of stream) csv += chunk.toString()
-  expect(csv).toContain("Riverside Kitchen")
-  expect(csv).not.toContain("Rumuokoro")
-  expect(csv).not.toContain("Bonny")
-  await page.getByLabel("From", { exact: true }).fill("2026-10-20")
-  await page.getByLabel("To", { exact: true }).fill("2026-10-01")
-  await expect(page.getByRole("alert")).toContainText("end date")
-  await expect(
-    page.getByRole("button", { name: "Export", exact: true })
-  ).toBeDisabled()
 })
 
 test("LGA overview and lists remain read-only and fit 390px", async ({
@@ -164,10 +146,10 @@ test("LGA overview and lists remain read-only and fit 390px", async ({
       })
     ).toHaveCount(0)
   }
+  await page.getByRole("button", { name: "Open LGA navigation" }).click()
   await page.getByRole("button", { name: "LGA account" }).click()
   await page.getByRole("menuitemradio", { name: "Dark", exact: true }).click()
   await expect(page.locator("html")).toHaveClass(/dark/)
-  await page.getByRole("button", { name: "Open LGA navigation" }).click()
   await page.getByRole("link", { name: "Dashboard", exact: true }).click()
   await expect(page).toHaveURL(/\/lga\/dashboard$/)
   await expect(
@@ -184,7 +166,7 @@ test("LGA session cannot open the legacy admin workspace by direct link", async 
   await expect(page.getByText("Rumuokoro Fresh Mart")).toHaveCount(0)
 })
 
-test("LGA reads recorded decisions and switches report types without exposing actions", async ({
+test("LGA reads recorded decisions and handles unavailable records without exposing actions", async ({
   page,
 }) => {
   await signIn(page)
@@ -215,32 +197,14 @@ test("LGA reads recorded decisions and switches report types without exposing ac
   await expect(
     page.getByRole("heading", { name: "Inspection not found" })
   ).toBeVisible()
-  await page.goto("/lga/reports")
-  await page.getByRole("tab", { name: "Compliance", exact: true }).click()
-  await expect(
-    page.getByRole("table", { name: "Compliance", exact: true })
-  ).toContainText("Riverside Kitchen")
-  await expect(page.getByLabel("From", { exact: true })).toHaveCount(0)
-  await page
-    .getByRole("tab", { name: "Service performance", exact: true })
-    .click()
-  await expect(
-    page.getByRole("table", { name: "Service performance", exact: true })
-  ).toContainText("Completion rate")
   await page.evaluate(() =>
     localStorage.setItem(
       "ehrcms:moh:MOH-001:decisions:v1",
       JSON.stringify({ "HA-REV-001": { outcome: "approved" } })
     )
   )
-  await page.reload()
+  await page.goto("/lga/health-approvals")
   await expect(page.getByRole("alert")).toContainText("could not be loaded")
-  await page
-    .getByRole("tab", { name: "Service performance", exact: true })
-    .click()
-  await expect(
-    page.getByRole("button", { name: "Export", exact: true })
-  ).toBeDisabled()
 })
 
 test("LGA dashboard keeps summaries compact and groups detail in tabs", async ({

@@ -1,3 +1,4 @@
+import { SidebarAccountMenu } from "@/components/shared/sidebar-account-menu"
 import { useEffect } from "react"
 import { Outlet, useLocation } from "@tanstack/react-router"
 import {
@@ -62,10 +63,25 @@ export function LgaPortal() {
         roleLabel="LGA"
         workspaceLabel="LGA Council"
         homeHref="/lga/dashboard"
-        footer={`${councilName} Council · LGA Chairman`}
+        footerClassName="border-t p-3 group-data-[collapsible=icon]:p-2"
+        accountMenu={
+          <SidebarAccountMenu
+            name={account.name}
+            label="LGA account"
+            initials={account.name
+              .split(/\s+/)
+              .filter(Boolean)
+              .slice(0, 2)
+              .map((part) => part[0])
+              .join("")}
+            description={`${councilName} Council`}
+            onSignOut={signOut}
+          />
+        }
       />
       <SidebarInset className="min-w-0">
         <MohHeader
+          showAccount={false}
           title={title}
           accountName={account.name}
           councilName={councilName}

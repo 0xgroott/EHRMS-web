@@ -18,6 +18,7 @@ import { mohNavigation } from "./moh-navigation"
 
 export function MohSidebar({
   pathname,
+  footerClassName = "p-3",
   accountMenu,
   items = mohNavigation,
   roleLabel = "MOH",
@@ -25,6 +26,7 @@ export function MohSidebar({
   homeHref = "/moh/health-approvals",
   footer = "Clear decisions for safer businesses and communities.",
 }: {
+  footerClassName?: string
   accountMenu?: ReactNode
   pathname: string
   items?: readonly { label: string; href: string; icon: LucideIcon }[]
@@ -93,7 +95,7 @@ export function MohSidebar({
           </SidebarGroup>
         </nav>
       </SidebarContent>
-      <SidebarFooter className="p-3">
+      <SidebarFooter className={footerClassName}>
         {accountMenu ? (
           <SidebarMenu>
             <SidebarMenuItem>{accountMenu}</SidebarMenuItem>

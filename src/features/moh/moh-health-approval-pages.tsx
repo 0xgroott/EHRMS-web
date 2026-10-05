@@ -1,3 +1,4 @@
+import { LinkedTableRow } from "@/components/shared/linked-table-row"
 import { useState } from "react"
 import { Link } from "@tanstack/react-router"
 import {
@@ -158,7 +159,7 @@ function WorklistTable({ cases }: { cases: HealthApprovalWorkCase[] }) {
           </TableHeader>
           <TableBody>
             {cases.map((workCase) => (
-              <TableRow key={workCase.id}>
+              <LinkedTableRow key={workCase.id}>
                 <TableCell className="min-w-64 whitespace-normal">
                   <div className="flex items-center gap-3">
                     <PremisesAvatar name={workCase.businessName} />
@@ -187,7 +188,7 @@ function WorklistTable({ cases }: { cases: HealthApprovalWorkCase[] }) {
                 <TableCell className="text-right">
                   <CaseAction workCase={workCase} />
                 </TableCell>
-              </TableRow>
+              </LinkedTableRow>
             ))}
           </TableBody>
         </Table>

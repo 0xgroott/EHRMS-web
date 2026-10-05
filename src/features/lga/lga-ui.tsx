@@ -1,5 +1,4 @@
-import { Download } from "lucide-react"
-import { useId, useState } from "react"
+import { useId } from "react"
 import type { ReactNode } from "react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -12,15 +11,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { EmptyState } from "@/components/shared/empty-state"
 import type { LgaFilters } from "./lga-data"
 
 export const money = (value: number) =>
@@ -172,98 +162,5 @@ export function LgaFilterBar({
         </Alert>
       )}
     </section>
-  )
-}
-
-export function LgaTable({
-  label,
-  headers,
-  rows,
-  emptyTitle,
-}: {
-  label: string
-  headers: string[]
-  rows: { id: string; cells: ReactNode[] }[]
-  emptyTitle: string
-}) {
-  if (!rows.length)
-    return (
-      <EmptyState
-        title={emptyTitle}
-        description="Try another search or choose different filters."
-      />
-    )
-  return (
-    <div className="min-w-0">
-      <Table aria-label={label}>
-        <TableHeader>
-          <TableRow>
-            {headers.map((header) => (
-              <TableHead key={header} className="px-4">
-                {header}
-              </TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map((row) => (
-            <TableRow key={row.id}>
-              {row.cells.map((cell, index) => (
-                <TableCell key={headers[index]} className="px-4 py-4">
-                  {cell}
-                </TableCell>
-              ))}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
-  )
-}
-
-export function LgaExport({
-  csv,
-  filename,
-  disabled,
-}: {
-  csv: string
-  filename: string
-  disabled?: boolean
-}) {
-  const [error, setError] = useState("")
-  function download() {
-    try {
-      const url = URL.createObjectURL(
-        new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" })
-      )
-      const anchor = document.createElement("a")
-      anchor.href = url
-      anchor.download = filename
-      document.body.append(anchor)
-      anchor.click()
-      anchor.remove()
-      window.setTimeout(() => URL.revokeObjectURL(url), 1000)
-      setError("")
-    } catch {
-      setError("Unable to export this report. Please try again.")
-    }
-  }
-  return (
-    <div className="space-y-2">
-      <Button
-        variant="outline"
-        className="min-h-11"
-        disabled={disabled}
-        onClick={download}
-      >
-        <Download aria-hidden="true" />
-        Export
-      </Button>
-      {error && (
-        <p role="alert" className="text-sm text-destructive">
-          {error}
-        </p>
-      )}
-    </div>
   )
 }

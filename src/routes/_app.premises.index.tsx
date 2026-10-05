@@ -1,3 +1,4 @@
+import { LinkedTableRow } from "@/components/shared/linked-table-row"
 import { useMemo, useState } from "react"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import {
@@ -143,7 +144,7 @@ function PremisesDirectory() {
             </TableHeader>
             <TableBody>
               {table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
+                <LinkedTableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
                       {flexRender(
@@ -152,7 +153,7 @@ function PremisesDirectory() {
                       )}
                     </TableCell>
                   ))}
-                </TableRow>
+                </LinkedTableRow>
               ))}
             </TableBody>
           </Table>

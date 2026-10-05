@@ -1,3 +1,4 @@
+import { LinkedTableRow } from "@/components/shared/linked-table-row"
 import { useMemo, useState } from "react"
 import { Link } from "@tanstack/react-router"
 import {
@@ -465,7 +466,7 @@ export function MohBusinessesDirectory({
                 </TableHeader>
                 <TableBody>
                   {visibleBusinesses.map((business) => (
-                    <TableRow key={business.id}>
+                    <LinkedTableRow key={business.id}>
                       <TableCell className="px-4 py-3 whitespace-normal">
                         <div className="flex items-center gap-3">
                           <PremisesAvatar name={business.businessName} />
@@ -502,7 +503,7 @@ export function MohBusinessesDirectory({
                           />
                         </Button>
                       </TableCell>
-                    </TableRow>
+                    </LinkedTableRow>
                   ))}
                 </TableBody>
               </Table>

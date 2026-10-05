@@ -1,3 +1,4 @@
+import { LinkedTableRow } from "@/components/shared/linked-table-row"
 import { useState } from "react"
 import { Link } from "@tanstack/react-router"
 import {
@@ -223,7 +224,7 @@ export function MohDashboard({
                   {visibleSubmissions.map((submission) => {
                     const decision = decisions[submission.id]
                     return (
-                      <TableRow key={submission.id}>
+                      <LinkedTableRow key={submission.id}>
                         <TableCell className="px-4 py-3 whitespace-normal">
                           <div className="flex items-center gap-3">
                             <PremisesAvatar
@@ -274,7 +275,7 @@ export function MohDashboard({
                         <TableCell className="px-4 py-3 text-right">
                           <ReviewLink submission={submission} />
                         </TableCell>
-                      </TableRow>
+                      </LinkedTableRow>
                     )
                   })}
                   {visibleSubmissions.length === 0 && (

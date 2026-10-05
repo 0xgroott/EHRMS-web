@@ -1,3 +1,4 @@
+import { LinkedTableRow } from "@/components/shared/linked-table-row"
 import { useEffect, useState } from "react"
 import { cn } from "cn"
 import { Link } from "@tanstack/react-router"
@@ -360,7 +361,7 @@ function JobTable({
               {filteredRows.map((assignment) => {
                 const premises = premisesFor(assignment)
                 return (
-                  <TableRow key={assignment.id}>
+                  <LinkedTableRow key={assignment.id}>
                     <TableCell className="min-w-52 whitespace-normal">
                       <div className="flex items-center gap-3">
                         <EhoPremisesAvatar
@@ -397,7 +398,7 @@ function JobTable({
                     <TableCell className="text-right">
                       {action(assignment)}
                     </TableCell>
-                  </TableRow>
+                  </LinkedTableRow>
                 )
               })}
             </TableBody>

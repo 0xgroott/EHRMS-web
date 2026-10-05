@@ -1,3 +1,13 @@
+import { LinkedTableRow } from "@/components/shared/linked-table-row"
+import { EmptyState } from "@/components/shared/empty-state"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { Link, useLocation } from "@tanstack/react-router"
 import { useState } from "react"
 import { AssignedAccountSignIn } from "@/components/shared/assigned-account-sign-in"
@@ -22,13 +32,7 @@ import { useLga } from "./lga-session"
 import { useLgaData } from "./use-lga-data"
 import { filterLgaRows } from "./lga-data"
 import type { LgaFilters } from "./lga-data"
-import {
-  LgaFilterBar,
-  LgaSelect,
-  LgaTable,
-  daysSince,
-  premisesHref,
-} from "./lga-ui"
+import { LgaFilterBar, LgaSelect, daysSince, premisesHref } from "./lga-ui"
 
 export function LgaSignInPage() {
   const session = useLga()
@@ -186,29 +190,53 @@ export function LgaApprovalsPage() {
           ]}
         />
       </LgaFilterBar>
-      <LgaTable
-        label="Health approvals"
-        headers={["Premises", "Ward", "Status", "Waiting time", "Action"]}
-        emptyTitle="No health approvals found"
-        rows={rows.map((item) => ({
-          id: item.id,
-          cells: [
-            <span className="font-medium">{item.businessName}</span>,
-            item.ward,
-            <StatusBadge status={item.status} />,
-            item.status === "Awaiting decision"
-              ? `${daysSince(item.date)} days`
-              : "Decision recorded",
-            <Link
-              className="inline-flex min-h-11 items-center font-medium text-primary hover:underline"
-              to="/lga/health-approvals/$caseId"
-              params={{ caseId: item.id }}
-            >
-              View
-            </Link>,
-          ],
-        }))}
-      />
+      {rows.length ? (
+        <div className="min-w-0 overflow-hidden rounded-xl border bg-card">
+          <Table aria-label="Health approvals">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Premises</TableHead>
+                <TableHead>Ward</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Waiting time</TableHead>
+                <TableHead className="text-right">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((item) => (
+                <LinkedTableRow key={item.id}>
+                  <TableCell>
+                    <span className="font-medium">{item.businessName}</span>
+                  </TableCell>
+                  <TableCell>{item.ward}</TableCell>
+                  <TableCell>
+                    <StatusBadge status={item.status} />
+                  </TableCell>
+                  <TableCell>
+                    {item.status === "Awaiting decision"
+                      ? `${daysSince(item.date)} days`
+                      : "Decision recorded"}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Link
+                      className="inline-flex min-h-11 items-center font-medium text-primary hover:underline"
+                      to="/lga/health-approvals/$caseId"
+                      params={{ caseId: item.id }}
+                    >
+                      View
+                    </Link>
+                  </TableCell>
+                </LinkedTableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      ) : (
+        <EmptyState
+          title="No health approvals found"
+          description="Try another search or choose different filters."
+        />
+      )}
     </div>
   )
 }
@@ -308,35 +336,49 @@ export function LgaInspectionsPage() {
       <p className="text-sm text-muted-foreground">
         {openFindings} open findings · {filters.ward ?? "All wards"}
       </p>
-      <LgaTable
-        label="Inspections"
-        headers={[
-          "Premises",
-          "Inspection",
-          "Scheduled date",
-          "Officer",
-          "Status",
-          "Action",
-        ]}
-        emptyTitle="No inspections found"
-        rows={rows.map((item) => ({
-          id: item.id,
-          cells: [
-            item.businessName,
-            item.type,
-            item.scheduledAt,
-            item.officer,
-            <StatusBadge status={item.status} />,
-            <Link
-              className="inline-flex min-h-11 items-center font-medium text-primary hover:underline"
-              to="/lga/inspections/$inspectionId"
-              params={{ inspectionId: item.id }}
-            >
-              View
-            </Link>,
-          ],
-        }))}
-      />
+      {rows.length ? (
+        <div className="min-w-0 overflow-hidden rounded-xl border bg-card">
+          <Table aria-label="Inspections">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Premises</TableHead>
+                <TableHead>Inspection</TableHead>
+                <TableHead>Scheduled date</TableHead>
+                <TableHead>Officer</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((item) => (
+                <LinkedTableRow key={item.id}>
+                  <TableCell>{item.businessName}</TableCell>
+                  <TableCell>{item.type}</TableCell>
+                  <TableCell>{item.scheduledAt}</TableCell>
+                  <TableCell>{item.officer}</TableCell>
+                  <TableCell>
+                    <StatusBadge status={item.status} />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Link
+                      className="inline-flex min-h-11 items-center font-medium text-primary hover:underline"
+                      to="/lga/inspections/$inspectionId"
+                      params={{ inspectionId: item.id }}
+                    >
+                      View
+                    </Link>
+                  </TableCell>
+                </LinkedTableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      ) : (
+        <EmptyState
+          title="No inspections found"
+          description="Try another search or choose different filters."
+        />
+      )}
     </div>
   )
 }
