@@ -13,6 +13,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { businessNavigation } from "./business-navigation"
+import { BusinessAccountMenu } from "./business-account-menu"
 
 const applicationRoutePrefixes = ["/business/fitness", "/business/fumigation"]
 
@@ -34,24 +35,27 @@ export function BusinessSidebar({ pathname }: { pathname: string }) {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="p-3">
-        <a
-          href="/business/dashboard"
+        <Link
+          to="/business/dashboard"
           aria-label="EHRCMS business home"
+          onClick={() => setOpenMobile(false)}
           className="flex min-h-11 items-center gap-3 rounded-md focus-visible:outline-2 focus-visible:outline-ring"
         >
-          <span
-            className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary text-sm font-semibold text-primary-foreground"
+          <img
+            src="/favicon/logo-green-48.svg"
+            alt=""
             aria-hidden="true"
-          >
-            EH
-          </span>
+            width={48}
+            height={48}
+            className="size-8 shrink-0 rounded-lg"
+          />
           <span className="min-w-0 leading-tight group-data-[collapsible=icon]:hidden">
             <strong className="block text-sm">EHRCMS</strong>
             <span className="text-xs text-muted-foreground">
               Business portal
             </span>
           </span>
-        </a>
+        </Link>
       </SidebarHeader>
       <SidebarSeparator />
       <SidebarContent>
@@ -64,13 +68,7 @@ export function BusinessSidebar({ pathname }: { pathname: string }) {
                   return (
                     <SidebarMenuItem key={href}>
                       <SidebarMenuButton
-                        render={
-                          href === "/business/dashboard" ? (
-                            <a href={href} />
-                          ) : (
-                            <Link to={href} />
-                          )
-                        }
+                        render={<Link to={href} />}
                         isActive={active}
                         aria-current={active ? "page" : undefined}
                         aria-label={label}
@@ -91,10 +89,8 @@ export function BusinessSidebar({ pathname }: { pathname: string }) {
           </SidebarGroup>
         </nav>
       </SidebarContent>
-      <SidebarFooter className="p-4 group-data-[collapsible=icon]:hidden">
-        <p className="text-xs leading-5 text-muted-foreground">
-          Your business. One place for public health compliance.
-        </p>
+      <SidebarFooter className="border-t p-3 group-data-[collapsible=icon]:p-2">
+        <BusinessAccountMenu />
       </SidebarFooter>
     </Sidebar>
   )

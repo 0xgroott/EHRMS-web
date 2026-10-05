@@ -1,4 +1,4 @@
-import { Outlet, useLocation } from "@tanstack/react-router"
+import { Link, Outlet, useLocation } from "@tanstack/react-router"
 import { ClipboardCheck } from "lucide-react"
 import { useBusinessSession } from "@/app/business-session"
 import { buttonVariants } from "@/components/ui/button"
@@ -67,14 +67,15 @@ export function BusinessShell() {
                   Complete KYB to use the app
                 </p>
               </div>
-              <a
-                href="/business/settings#kyb"
+              <Link
+                to="/business/settings"
+                hash="kyb"
                 className={buttonVariants({
                   className: "min-h-11 shrink-0 self-start sm:self-auto",
                 })}
               >
                 Complete KYB
-              </a>
+              </Link>
             </section>
           )}
           <Outlet />

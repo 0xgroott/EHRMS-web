@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router"
 import { useState } from "react"
 import { BusinessFormDrawer } from "@/components/business/business-form-drawer"
 import { DocumentDownloadButton } from "@/components/business/document-download-button"
@@ -68,7 +69,7 @@ function ApprovalLink({ children }: { children: React.ReactNode }) {
     <Button
       nativeButton={false}
       role="link"
-      render={<a href="/business/health-approval" />}
+      render={<Link to="/business/health-approval" />}
       variant="link"
       className="min-h-11 px-0"
     >

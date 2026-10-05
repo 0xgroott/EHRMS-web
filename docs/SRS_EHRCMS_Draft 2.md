@@ -110,7 +110,7 @@ Figure 1 — Who uses the system, and what it connects to.
 | **Medical Officer of Health / Director**                    | Approves facilities and providers, approves their prices, decides applications, signs and issues certificates, suspends and revokes |
 | **Finance officer**                                         | Sets up how each payment is split, reconciles the money, handles refunds                                                            |
 | **Settings administrator**                                  | Changes the council’s own settings: forms, wording, time limits, split ratios                                                       |
-| **Supervisor**                                              | Ministry or Board level. Reads and reports across councils. Issues nothing                                                          |
+| **LGA Council / LGA Chairman**                               | Read-only oversight of revenue, approvals, premises, inspections and reports within the assigned LGA and its wards. Issues nothing   |
 | **System administrator**                                    | Manages user accounts. Issues nothing                                                                                               |
 | **Anyone with a phone**                                     | Scans the barcode on a certificate to check whether it is real and still valid                                                      |
 
@@ -359,7 +359,8 @@ Figure 9 — What a council controls for itself, and what is fixed everywhere.
 | Facility screens | Approved facilities          | Publish services and prices for approval, offer appointment times, record results, upload lab documents                                             |
 | Provider screens | Licensed providers           | Publish services and prices, offer dates, file job reports                                                                                          |
 | Field app        | Officers                     | Inspection list, notices and whether they were acknowledged, offline checklists with photographs, the whole picture of a premises, barcode scanning |
-| Officer console  | MOH, Director, supervisors   | Approval queues, the Health Approval eligibility list, issuing, suspending, revoking, reporting                                                     |
+| Officer console  | MOH, Director               | Approval queues, the Health Approval eligibility list, issuing, suspending, revoking, reporting                                                     |
+| LGA Council console | LGA Chairman | Dashboard, Finance, Health approvals, Premises, Inspections and Reports; read-only and restricted to the assigned LGA and its wards |
 | Finance console  | Finance officers             | Price list approval, split percentages, reconciliation, refunds, waivers, reports                                                                   |
 | Settings console | Settings administrators      | Everything in Section 10, with draft, preview, approve, publish                                                                                     |
 

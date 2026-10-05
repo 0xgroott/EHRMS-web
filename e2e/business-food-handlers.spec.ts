@@ -7,6 +7,7 @@ test("business user can find, archive, and restore staff", async ({ page }) => {
     if (message.type() === "error") browserErrors.push(message.text())
   })
 
+  await page.setViewportSize({ width: 1440, height: 819 })
   await page.goto("/business/sign-in")
   await expect(async () => {
     await page
@@ -50,9 +51,54 @@ test("business user can find, archive, and restore staff", async ({ page }) => {
     )
   })
 
+  await page.reload()
+  const dashboardTable = page.getByRole("table", {
+    name: "Dashboard staff list",
+  })
+  await expect(dashboardTable).toBeVisible()
+  const dashboardSurface = dashboardTable.locator("../..")
+  await expect(dashboardSurface).toHaveCSS(
+    "background-color",
+    "rgb(255, 255, 255)"
+  )
+  await expect(dashboardSurface).toHaveCSS("border-top-width", "1px")
+  await expect(page.locator('[data-slot="page-header"]')).toHaveCSS(
+    "border-bottom-width",
+    "0px"
+  )
+  await page.setViewportSize({ width: 390, height: 844 })
+  await expect(dashboardTable.locator("..")).toHaveCSS("overflow-x", "auto")
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth
+    )
+  ).toBe(true)
+  await page.setViewportSize({ width: 1440, height: 819 })
   await page.goto("/business/food-handlers")
   const records = page.getByRole("region", { name: "Staff list" })
   await expect(records).toBeVisible()
+  await expect(
+    page.getByRole("banner").getByText("Business account", { exact: true })
+  ).toHaveCount(0)
+  const tableSurface = records
+    .locator('[data-slot="table-container"]')
+    .locator("..")
+  await expect(records.getByRole("table")).toHaveCSS(
+    "background-color",
+    "rgb(255, 255, 255)"
+  )
+  await expect(tableSurface).toHaveClass(/bg-card/)
+  await expect(tableSurface).toHaveCSS("background-color", "rgb(255, 255, 255)")
+  await expect(page.locator('[data-slot="page-header"]')).toHaveCSS(
+    "border-bottom-width",
+    "0px"
+  )
+  await expect(tableSurface).toHaveCSS("border-top-width", "1px")
+  await expect(tableSurface).toHaveCSS("border-radius", "14px")
+  await expect(records.getByText("Not approved").first()).toHaveAttribute(
+    "data-variant",
+    "secondary"
+  )
   await expect(
     page.getByRole("heading", { name: "Food handler records" })
   ).toHaveCount(0)
@@ -69,6 +115,10 @@ test("business user can find, archive, and restore staff", async ({ page }) => {
   ).toEqual(["0px", "0px", "0px"])
   await page.setViewportSize({ width: 390, height: 844 })
   await expect(records).toBeVisible()
+  await expect(records.locator('[data-slot="table-container"]')).toHaveCSS(
+    "overflow-x",
+    "auto"
+  )
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth
@@ -77,20 +127,20 @@ test("business user can find, archive, and restore staff", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 })
   const search = page.getByRole("searchbox", { name: "Search staff" })
   const filter = page.getByRole("combobox", { name: "Show" })
-  await expect(page.getByText("Ada Okafor")).toBeVisible()
+  await expect(records.getByText("Ada Okafor")).toBeVisible()
   await search.fill("bisi")
-  await expect(page.getByText("Bisi Bello")).toBeVisible()
-  await expect(page.getByText("Ada Okafor")).toBeHidden()
+  await expect(records.getByText("Bisi Bello")).toBeVisible()
+  await expect(records.getByText("Ada Okafor")).toBeHidden()
   await search.clear()
   await page.getByRole("button", { name: "Archive Ada Okafor" }).click()
-  await expect(page.getByText("Ada Okafor")).toBeHidden()
+  await expect(records.getByText("Ada Okafor")).toBeHidden()
 
   await page.reload()
   await filter.selectOption("archived")
-  await expect(page.getByText("Ada Okafor")).toBeVisible()
+  await expect(records.getByText("Ada Okafor")).toBeVisible()
   await page.getByRole("button", { name: "Restore Ada Okafor" }).click()
   await filter.selectOption("active")
-  await expect(page.getByText("Ada Okafor")).toBeVisible()
+  await expect(records.getByText("Ada Okafor")).toBeVisible()
   expect(browserErrors).toEqual([])
 })
 

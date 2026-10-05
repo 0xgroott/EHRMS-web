@@ -1,9 +1,11 @@
+import { useNavigate } from "@tanstack/react-router"
 import { useState } from "react"
 import { useBusinessSession } from "@/app/business-session"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 
 export function SavedRegistration() {
+  const navigate = useNavigate()
   const session = useBusinessSession()
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string>()
@@ -23,9 +25,10 @@ export function SavedRegistration() {
       state?.profile &&
       (state.stage === "verification" || state.stage === "setup")
     ) {
-      globalThis.location.assign(
-        state.stage === "setup" ? "/business/dashboard" : "/business/verify"
-      )
+      await navigate({
+        to:
+          state.stage === "setup" ? "/business/dashboard" : "/business/verify",
+      })
     } else {
       setError("Unable to resume this registration. Please try again.")
     }

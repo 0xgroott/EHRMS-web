@@ -12,7 +12,7 @@ test("welcome selection leads to business sign-in and returns after sign-out", a
   await expect(
     page.getByRole("heading", { level: 1, name: "Choose your account type" })
   ).toBeVisible()
-  await expect(page.getByRole("radio")).toHaveCount(3)
+  await expect(page.getByRole("radio")).toHaveCount(4)
   await expect(page.getByText("Admin", { exact: true })).toHaveCount(0)
   await expect(
     page.getByRole("button", { name: "Continue to sign in" })
@@ -95,6 +95,7 @@ test("welcome selection supports MOH verification and sign-out", async ({
       () => document.documentElement.scrollWidth <= window.innerWidth
     )
   ).toBe(true)
+  await page.getByRole("button", { name: "Open MOH navigation" }).click()
   await page.getByRole("button", { name: "MOH account" }).click()
   await page.getByRole("menuitem", { name: "Sign out" }).click()
   await expect(page).toHaveURL(/\/$/)

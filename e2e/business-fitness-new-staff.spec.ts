@@ -99,8 +99,17 @@ for (const width of [1440, 390]) {
         expect(fumigationBox.y).toBeGreaterThan(fitnessBox.y)
       }
     }
+    const documentRequests: string[] = []
+    page.on("request", (request) => {
+      if (
+        request.isNavigationRequest() &&
+        request.resourceType() === "document"
+      )
+        documentRequests.push(request.url())
+    })
     await page.getByRole("button", { name: "Apply for new staff" }).click()
     await expect(page).toHaveURL(/\/business\/fitness\/apply$/)
+    expect(documentRequests).toEqual([])
     await expect(
       page.getByRole("heading", { name: "Select new food handlers" })
     ).toBeVisible()
@@ -125,7 +134,9 @@ for (const width of [1440, 390]) {
     await expect(history.getByText("fitness-application-1")).toBeVisible()
     await expect(history.getByText("Approved")).toBeVisible()
     await page.goto("/business/fitness/certificate")
-    await expect(page.getByText("Ada Okafor")).toBeVisible()
+    await expect(
+      page.locator("#business-content").getByText("Ada Okafor")
+    ).toBeVisible()
     expect(browserErrors).toEqual([])
   })
 }

@@ -10,10 +10,10 @@ function collectBrowserErrors(page: Page) {
   return errors
 }
 
-test("MOH sees the read-only premises workspace", async ({ page }) => {
+test("MOH sees the read-only premises workspace", async ({ page, baseURL }) => {
   const browserErrors = collectBrowserErrors(page)
   await page.context().grantPermissions(["clipboard-read", "clipboard-write"], {
-    origin: "http://127.0.0.1:3100",
+    origin: baseURL,
   })
 
   await page.goto("/moh/sign-in")

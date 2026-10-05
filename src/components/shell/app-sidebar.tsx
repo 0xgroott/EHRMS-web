@@ -22,10 +22,19 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b p-4">
-        <Link to="/dashboard" className="flex items-center gap-3">
-          <span className="grid size-9 place-items-center rounded-lg bg-primary font-semibold text-primary-foreground">
-            EH
-          </span>
+        <Link
+          to="/dashboard"
+          aria-label="EHRCMS home"
+          className="flex items-center gap-3"
+        >
+          <img
+            src="/favicon/logo-green-48.svg"
+            alt=""
+            aria-hidden="true"
+            width={48}
+            height={48}
+            className="size-9 shrink-0 rounded-lg"
+          />
           <span className="leading-tight group-data-[collapsible=icon]:hidden">
             <strong className="block text-sm">EHRCMS</strong>
             <span className="text-xs text-muted-foreground">

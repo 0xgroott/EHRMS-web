@@ -48,6 +48,59 @@ describe("MOH businesses directory", () => {
     })
   })
 
+  it("keeps council summary totals stable while filtering the directory", async () => {
+    const businesses = buildMohBusinessDirectory(seedDatabase.premises, "phc")
+      .slice(0, 5)
+      .map((business, index) => ({
+        ...business,
+        status: (
+          [
+            "Compliant",
+            "Non-compliant",
+            "Suspended",
+            "Pending",
+            "Expiring soon",
+          ] as const
+        )[index],
+      }))
+    await renderWithRouter(
+      <MohBusinessesDirectory businesses={businesses} showMetrics />
+    )
+    const summary = screen.getByRole("region", { name: "Premises summary" })
+    const cards = within(summary).getAllByText(
+      /^(Registered|Action required|Pending|Expiring soon)$/
+    )
+    expect(cards.map((card) => card.textContent)).toEqual([
+      "Registered",
+      "Action required",
+      "Pending",
+      "Expiring soon",
+    ])
+    const values = () =>
+      cards.map(
+        (label) =>
+          label.closest('[data-slot="card"]')?.querySelector("strong")
+            ?.textContent
+      )
+    expect(values()).toEqual(["5", "2", "1", "1"])
+    fireEvent.change(
+      screen.getByRole("searchbox", { name: "Search premises" }),
+      { target: { value: "no matching premises" } }
+    )
+    expect(values()).toEqual(["5", "2", "1", "1"])
+  })
+
+  it("shows zero summary totals when no premises are registered", async () => {
+    await renderWithRouter(
+      <MohBusinessesDirectory businesses={[]} showMetrics />
+    )
+    expect(
+      within(
+        screen.getByRole("region", { name: "Premises summary" })
+      ).getAllByText("0")
+    ).toHaveLength(4)
+  })
+
   it("filters by business details and simplified status", () => {
     const businesses = buildMohBusinessDirectory(seedDatabase.premises, "phc")
 

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title description">
+  <title id="title">EHRCMS icon</title>
+  <desc id="description">A rounded teal E with a lighter teal health cross at the upper right.</desc>
+  <path fill="#00786F" d="M248 100H224C113.54 100 24 187.75 24 296S113.54 492 224 492H336V412H224C176 412 134 384 116 344H336V264H112C126 215 171 180 224 180H248Z"/>
+  <path fill="#338F88" d="M334 32H422V96H486V184H422V248H334V184H270V96H334Z"/>
+</svg>

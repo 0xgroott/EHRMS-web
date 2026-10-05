@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
@@ -35,7 +36,7 @@ export function FumigationLink({
     <Button
       nativeButton={false}
       role="link"
-      render={<a href={href} />}
+      render={<Link to={href.split("#")[0]} hash={href.split("#")[1]} />}
       variant={variant}
       className={cn(
         "min-h-11 max-w-full text-left whitespace-normal",

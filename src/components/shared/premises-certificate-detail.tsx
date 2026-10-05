@@ -1,4 +1,5 @@
 import { ArrowLeft, FileBadge2 } from "lucide-react"
+import type { ReactNode } from "react"
 import type { CertificateSummary, Premises } from "@/domain/types"
 import { PageHeader } from "./page-header"
 import { StatusBadge } from "./status-badge"
@@ -9,22 +10,26 @@ export function PremisesCertificateDetail({
   premises,
   certificate,
   backHref,
+  backLink,
 }: {
   premises: Premises
   certificate: CertificateSummary
   backHref: string
+  backLink?: ReactNode
 }) {
   const found = certificate.status !== "Not Found"
 
   return (
     <div className="space-y-6">
-      <a
-        href={backHref}
-        className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-      >
-        <ArrowLeft className="size-4" aria-hidden="true" />
-        Back to premises certificates
-      </a>
+      {backLink ?? (
+        <a
+          href={backHref}
+          className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        >
+          <ArrowLeft className="size-4" aria-hidden="true" />
+          Back to premises certificates
+        </a>
+      )}
       <PageHeader
         eyebrow={certificate.id ?? "Certificate record"}
         title={`${certificate.type} certificate`}

@@ -1,6 +1,16 @@
 import { useMemo, useState } from "react"
-import { ArrowLeft, ArrowRight, Search } from "lucide-react"
+import { Link } from "@tanstack/react-router"
+import {
+  ArrowLeft,
+  ArrowRight,
+  Search,
+  Building2,
+  ShieldAlert,
+  ClipboardClock,
+  CalendarClock,
+} from "lucide-react"
 import type { ComplianceStatus, Premises } from "@/domain/types"
+import { TelemetryCard } from "@/components/shared/telemetry-card"
 import { EmptyState } from "@/components/shared/empty-state"
 import { PageHeader } from "@/components/shared/page-header"
 import { PremisesAvatar } from "@/components/shared/premises-avatar"
@@ -180,7 +190,11 @@ function BusinessStatusBadge({ status }: { status: MohBusinessStatus }) {
 
 export function MohBusinessesDirectory({
   businesses,
+  basePath = "/moh/businesses",
+  showMetrics = false,
 }: {
+  showMetrics?: boolean
+  basePath?: string
   businesses: MohBusinessDirectoryEntry[]
 }) {
   const [query, setQuery] = useState("")
@@ -224,6 +238,10 @@ export function MohBusinessesDirectory({
     setSort("business-asc")
   }
 
+  function premisesHref(id: string): string {
+    return `${basePath}/${encodeURIComponent(id)}?source=search`
+  }
+
   return (
     <div className="flex flex-col gap-7">
       <PageHeader
@@ -231,6 +249,46 @@ export function MohBusinessesDirectory({
         description="Browse registered premises, their current certification stage, and overall compliance status."
         divided={false}
       />
+      {showMetrics && (
+        <section
+          aria-label="Premises summary"
+          className="grid grid-cols-2 gap-3 lg:grid-cols-4"
+        >
+          <TelemetryCard
+            label="Registered"
+            value={businesses.length}
+            icon={Building2}
+          />
+          <TelemetryCard
+            label="Action required"
+            value={
+              businesses.filter(
+                (business) =>
+                  business.status === "Non-compliant" ||
+                  business.status === "Suspended"
+              ).length
+            }
+            icon={ShieldAlert}
+          />
+          <TelemetryCard
+            label="Pending"
+            value={
+              businesses.filter((business) => business.status === "Pending")
+                .length
+            }
+            icon={ClipboardClock}
+          />
+          <TelemetryCard
+            label="Expiring soon"
+            value={
+              businesses.filter(
+                (business) => business.status === "Expiring soon"
+              ).length
+            }
+            icon={CalendarClock}
+          />
+        </section>
+      )}
 
       <section aria-label="Find premises" className="flex flex-col gap-6">
         <div className="relative min-w-0">
@@ -435,11 +493,7 @@ export function MohBusinessesDirectory({
                           variant="outline"
                           className="min-h-11"
                           nativeButton={false}
-                          render={
-                            <a
-                              href={`/moh/businesses/${encodeURIComponent(business.id)}?source=search`}
-                            />
-                          }
+                          render={<Link to={premisesHref(business.id)} />}
                         >
                           View
                           <ArrowRight
@@ -483,11 +537,7 @@ export function MohBusinessesDirectory({
                       variant="outline"
                       className="mt-2 min-h-11 w-full"
                       nativeButton={false}
-                      render={
-                        <a
-                          href={`/moh/businesses/${encodeURIComponent(business.id)}?source=search`}
-                        />
-                      }
+                      render={<Link to={premisesHref(business.id)} />}
                     >
                       View
                       <ArrowRight data-icon="inline-end" aria-hidden="true" />
@@ -508,7 +558,15 @@ export function MohBusinessesDirectory({
   )
 }
 
-export function MohPremisesOverview({ premises }: { premises: Premises }) {
+export function MohPremisesOverview({
+  premises,
+  basePath = "/moh/businesses",
+  showDocuments = true,
+}: {
+  premises: Premises
+  basePath?: string
+  showDocuments?: boolean
+}) {
   const [activeTab, setActiveTab] = useState("business-info")
   const profile = resolvePremisesProfile(premises)
   const documentCount = premises.documents.length + profile.photos.length
@@ -525,7 +583,7 @@ export function MohPremisesOverview({ premises }: { premises: Premises }) {
       <PremisesCertificateDetail
         premises={premises}
         certificate={selectedCertificate}
-        backHref={`/moh/businesses/${encodeURIComponent(premises.id)}?source=search`}
+        backHref={`${basePath}/${encodeURIComponent(premises.id)}?source=search`}
       />
     )
   }
@@ -536,7 +594,7 @@ export function MohPremisesOverview({ premises }: { premises: Premises }) {
         variant="link"
         className="min-h-11 self-start px-0"
         nativeButton={false}
-        render={<a href="/moh/businesses" />}
+        render={<Link to={basePath} />}
       >
         <ArrowLeft data-icon="inline-start" aria-hidden="true" />
         Back to premises
@@ -566,9 +624,11 @@ export function MohPremisesOverview({ premises }: { premises: Premises }) {
                 <TabsTrigger value="certificates" className="flex-none px-4">
                   Certificates · {premises.certificates.length}
                 </TabsTrigger>
-                <TabsTrigger value="documents" className="flex-none px-4">
-                  Documents · {documentCount}
-                </TabsTrigger>
+                {showDocuments && (
+                  <TabsTrigger value="documents" className="flex-none px-4">
+                    Documents · {documentCount}
+                  </TabsTrigger>
+                )}
               </TabsList>
             </div>
             <div
@@ -634,18 +694,20 @@ export function MohPremisesOverview({ premises }: { premises: Premises }) {
                   certificates={premises.certificates}
                   getCertificateHref={(certificate) =>
                     certificate.id
-                      ? `/moh/businesses/${encodeURIComponent(premises.id)}?source=search&certificate=${encodeURIComponent(certificate.id)}`
+                      ? `${basePath}/${encodeURIComponent(premises.id)}?source=search&certificate=${encodeURIComponent(certificate.id)}`
                       : undefined
                   }
                 />
               </TabsContent>
-              <TabsContent value="documents">
-                <PremisesDocumentsPanel
-                  businessName={profile.businessName}
-                  documents={premises.documents}
-                  photos={profile.photos}
-                />
-              </TabsContent>
+              {showDocuments && (
+                <TabsContent value="documents">
+                  <PremisesDocumentsPanel
+                    businessName={profile.businessName}
+                    documents={premises.documents}
+                    photos={profile.photos}
+                  />
+                </TabsContent>
+              )}
             </div>
           </Tabs>
         </div>

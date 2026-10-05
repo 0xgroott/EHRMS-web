@@ -1,4 +1,5 @@
-import { render, screen, within } from "@testing-library/react"
+import { render } from "@/test/render-with-router"
+import { screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, expect, it, vi } from "vitest"
 import { HealthApprovalPage } from "./health-approval-page"

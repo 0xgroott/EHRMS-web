@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router"
+import { Link, useNavigate } from "@tanstack/react-router"
 import { useRef, useState } from "react"
 import { useBusinessSession } from "@/app/business-session"
 import { AccountForm } from "@/components/business/account-form"
@@ -10,12 +10,13 @@ import {
   VERIFIED_BUSINESS_ONBOARDING_STEPS,
 } from "@/components/business/onboarding-shell"
 import { SavedRegistration } from "@/components/business/saved-registration"
-import { notifySuccessAfterNavigation } from "@/components/ui/app-toast"
+import { notifySuccess } from "@/components/ui/app-toast"
 import { Button } from "@/components/ui/button"
 import { createBusinessRepository } from "@/services/business-repository"
 import { createBusinessStorage } from "@/services/business-storage"
 
 export function BusinessRegister() {
+  const navigate = useNavigate()
   const session = useBusinessSession()
   const [accountStep, setAccountStep] = useState<1 | 2>(1)
   const identityCompletionInProgress = useRef(false)
@@ -55,7 +56,7 @@ export function BusinessRegister() {
               }
             identityCompletionInProgress.current = true
             await session.refresh()
-            globalThis.location.assign("/business/dashboard")
+            await navigate({ to: "/business/dashboard" })
           }}
         />
       </OnboardingShell>
@@ -98,8 +99,8 @@ export function BusinessRegister() {
                 "Unable to create your account. Please try again.",
             }
           await session.refresh()
-          notifySuccessAfterNavigation("Business account created")
-          window.location.assign("/business/verify")
+          notifySuccess("Business account created")
+          await navigate({ to: "/business/verify" })
         }}
         signInLink={
           <Button

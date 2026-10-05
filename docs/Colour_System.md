@@ -185,6 +185,17 @@ Brand and success are intentionally different. Brand identifies navigation, acti
 | Fumigation      | `--surface-certificate-fumigation`      | `#541220` | `--text-certificate-fumigation-strong`      | `#FFF7F8`   | `--text-certificate-fumigation-weak`      | `#E8B5C0` | `--icon-certificate-fumigation`      | `#FF9BAE` | `--border-certificate-fumigation`      | `#7C2A3B` |
 | Health Approval | `--surface-certificate-health-approval` | `#124A3E` | `--text-certificate-health-approval-strong` | `#F4FCF9`   | `--text-certificate-health-approval-weak` | `#B8D8CF` | `--icon-certificate-health-approval` | `#74D8BC` | `--border-certificate-health-approval` | `#2B6D5C` |
 
+## Table headers
+
+All application `th` elements use these tokens, including the shared `TableHead` and native HTML tables. The opaque cell fill stays consistent on row hover. Header labels and icons inherit the header text colour.
+
+| Token | Light mode | Dark mode | Purpose |
+| --- | --- | --- | --- |
+| `--surface-table-header` | `--background-neutral-weak` (`#F0F5F3`) | `--border-neutral-weaker` (`#303A39`) | Distinct neutral header fill |
+| `--text-table-header` | `--text-neutral-strong` (`#172022`) | `--text-neutral-strong` (`#F2F7F5`) | High-contrast header text |
+
+The global base rule applies both tokens to `th`; avoid feature-level header text or fill overrides.
+
 ## Application rules
 
 - Use `strong` for primary content or boundaries, `weak` for supporting content, and `weaker` for metadata, separators, or the lowest-emphasis layer.

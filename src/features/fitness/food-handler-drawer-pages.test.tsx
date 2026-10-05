@@ -1,4 +1,6 @@
-import { fireEvent, render, screen } from "@testing-library/react"
+import { render } from "@/test/render-with-router"
+import type * as RouterModule from "@tanstack/react-router"
+import { fireEvent, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import {
@@ -30,7 +32,8 @@ const mocks = vi.hoisted(() => ({
   }>,
 }))
 
-vi.mock("@tanstack/react-router", () => ({
+vi.mock("@tanstack/react-router", async (importOriginal) => ({
+  ...(await importOriginal<typeof RouterModule>()),
   useNavigate: () => mocks.navigate,
 }))
 

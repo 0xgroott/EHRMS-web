@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router"
 import { useState } from "react"
 import { Check, Clock3, ExternalLink } from "lucide-react"
 import { useBusinessSession } from "@/app/business-session"
@@ -83,15 +84,15 @@ export function FitnessLink({
   variant?: "default" | "outline" | "link"
 }) {
   return (
-    <a
-      href={href}
+    <Link
+      to={href}
       className={cn(
         buttonVariants({ variant }),
         "min-h-11 max-w-full text-left whitespace-normal"
       )}
     >
       {children}
-    </a>
+    </Link>
   )
 }
 
@@ -308,12 +309,12 @@ export function FitnessTrackerPage() {
                 </Dialog>
               )}
               {issued && (
-                <a
-                  href="/business/fitness/certificate"
+                <Link
+                  to="/business/fitness/certificate"
                   className={cn(buttonVariants(), "min-h-11")}
                 >
                   View Fitness Certificate
-                </a>
+                </Link>
               )}
             </div>
           </AlertAction>

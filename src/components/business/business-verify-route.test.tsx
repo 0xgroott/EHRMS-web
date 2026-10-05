@@ -1,3 +1,4 @@
+import type * as RouterModule from "@tanstack/react-router"
 import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
@@ -15,16 +16,18 @@ const validAccount = {
   acceptedTerms: true,
 }
 
+const navigate = vi.hoisted(() => vi.fn())
+vi.mock("@tanstack/react-router", async (importOriginal) => ({
+  ...(await importOriginal<typeof RouterModule>()),
+  useNavigate: () => navigate,
+}))
 describe("BusinessVerify route", () => {
-  let assign: ReturnType<typeof vi.fn>
-
   beforeEach(() => {
     localStorage.clear()
     createBusinessRepository(createBusinessStorage(localStorage)).createAccount(
       validAccount
     )
-    assign = vi.fn()
-    vi.stubGlobal("location", { assign })
+    navigate.mockClear()
   })
 
   afterEach(() => {
@@ -46,10 +49,13 @@ describe("BusinessVerify route", () => {
       .click(screen.getByRole("button", { name: "Verify and continue" }))
 
     await waitFor(() => {
-      expect(assign).toHaveBeenCalledWith("/business/dashboard")
+      expect(navigate).toHaveBeenCalledWith({ to: "/business/dashboard" })
     })
-    expect(assign).toHaveBeenCalledTimes(1)
-    expect(assign).not.toHaveBeenCalledWith("/business/register")
+    expect(navigate).toHaveBeenCalledTimes(1)
+    expect(navigate).not.toHaveBeenCalledWith({
+      to: "/business/register",
+      replace: true,
+    })
   })
 
   it("edits the populated email without exposing phone during onboarding", async () => {
@@ -102,7 +108,7 @@ describe("BusinessVerify route", () => {
       email: value,
     })
     expect(screen.getByText(/u\*\*\*@example.test/)).toBeVisible()
-    expect(assign).not.toHaveBeenCalled()
+    expect(navigate).not.toHaveBeenCalled()
   })
 
   it("recovers an expired persisted code through resend and verification", async () => {
@@ -131,7 +137,7 @@ describe("BusinessVerify route", () => {
     })
     fireEvent.click(screen.getByRole("button", { name: "Verify and continue" }))
     await waitFor(() =>
-      expect(assign).toHaveBeenCalledWith("/business/dashboard")
+      expect(navigate).toHaveBeenCalledWith({ to: "/business/dashboard" })
     )
     expect(storage.read().stage).toBe("setup")
   })

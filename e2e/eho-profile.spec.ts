@@ -61,7 +61,16 @@ test("EHO can review sync data and profile separately without losing saved work"
   await expect(sidebar.getByText("Assigned work for Ebi Briggs")).toHaveCount(0)
   await expect(sidebar.getByText("Ebi Briggs", { exact: true })).toBeVisible()
   await expect(sidebar.getByText("EHO", { exact: true })).toBeVisible()
-  await expect(sidebar.getByRole("button", { name: "Logout" })).toBeVisible()
+  await expect(sidebar.getByRole("button", { name: "Logout" })).toHaveCount(0)
+  await sidebar
+    .getByRole("button", { name: "EHO account — Ebi Briggs" })
+    .click()
+  await page.getByRole("menuitem", { name: "Log out", exact: true }).click()
+  await expect(page.getByRole("alertdialog")).toContainText(
+    "Your saved drafts and queued inspections will stay on this device"
+  )
+  await page.getByRole("button", { name: "Stay signed in" }).click()
+  await expect(page.getByRole("alertdialog")).toHaveCount(0)
   await sidebar.getByRole("link", { name: "Sync Data" }).click()
   await expect(
     page.getByRole("heading", { level: 1, name: "Sync Data" })
@@ -99,7 +108,7 @@ test("EHO can review sync data and profile separately without losing saved work"
   await page.getByRole("button", { name: "Open EHO navigation" }).click()
   await expect(sidebar.getByText("Ebi Briggs", { exact: true })).toBeVisible()
   await expect(sidebar.getByText("EHO", { exact: true })).toBeVisible()
-  await expect(sidebar.getByRole("button", { name: "Logout" })).toBeVisible()
+  await expect(sidebar.getByRole("button", { name: "Logout" })).toHaveCount(0)
   await sidebar
     .getByRole("button", { name: "EHO account — Ebi Briggs" })
     .click()
@@ -137,5 +146,20 @@ test("EHO can review sync data and profile separately without losing saved work"
   await expect(
     page.getByRole("link", { name: /Inspection EIN-104/ })
   ).toBeVisible()
+  await page.getByRole("button", { name: "Open EHO navigation" }).click()
+  await sidebar
+    .getByRole("button", { name: "EHO account — Ebi Briggs" })
+    .click()
+  await page.getByRole("menuitem", { name: "Log out", exact: true }).click()
+  await page.getByRole("button", { name: "Log out", exact: true }).click()
+  await expect(page).toHaveURL(/\/$/)
+  expect(
+    await page.evaluate(
+      () =>
+        JSON.parse(
+          localStorage.getItem("ehrcms:eho:fieldwork:v1:EHO-001") ?? "{}"
+        )["EIN-104"]?.status
+    )
+  ).toBe("queued")
   expect(browserErrors).toEqual([])
 })

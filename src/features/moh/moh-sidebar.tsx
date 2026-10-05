@@ -1,4 +1,6 @@
+import type { ReactNode } from "react"
 import { Link } from "@tanstack/react-router"
+import type { LucideIcon } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -12,41 +14,61 @@ import {
   SidebarSeparator,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { isMohNavigationItemActive, mohNavigation } from "./moh-navigation"
+import { mohNavigation } from "./moh-navigation"
 
-export function MohSidebar({ pathname }: { pathname: string }) {
+export function MohSidebar({
+  pathname,
+  accountMenu,
+  items = mohNavigation,
+  roleLabel = "MOH",
+  workspaceLabel = "MOH / Director",
+  homeHref = "/moh/health-approvals",
+  footer = "Clear decisions for safer businesses and communities.",
+}: {
+  accountMenu?: ReactNode
+  pathname: string
+  items?: readonly { label: string; href: string; icon: LucideIcon }[]
+  roleLabel?: string
+  workspaceLabel?: string
+  homeHref?: string
+  footer?: string
+}) {
   const { setOpenMobile, isMobile, state } = useSidebar()
 
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="p-3">
         <Link
-          to="/moh/health-approvals"
-          aria-label="EHRCMS MOH home"
+          to={homeHref}
+          onClick={() => setOpenMobile(false)}
+          aria-label={`EHRCMS ${roleLabel} home`}
           className="flex min-h-11 items-center gap-3 rounded-md focus-visible:outline-2 focus-visible:outline-ring"
         >
-          <span
-            className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary text-sm font-semibold text-primary-foreground"
+          <img
+            src="/favicon/logo-green-48.svg"
+            alt=""
             aria-hidden="true"
-          >
-            EH
-          </span>
+            width={48}
+            height={48}
+            className="size-8 shrink-0 rounded-lg"
+          />
           <span className="min-w-0 leading-tight group-data-[collapsible=icon]:hidden">
             <strong className="block text-sm">EHRCMS</strong>
             <span className="text-xs text-muted-foreground">
-              MOH / Director
+              {workspaceLabel}
             </span>
           </span>
         </Link>
       </SidebarHeader>
       <SidebarSeparator />
       <SidebarContent>
-        <nav aria-label="MOH navigation">
+        <nav aria-label={`${roleLabel} navigation`}>
           <SidebarGroup>
             <SidebarGroupContent>
               <SidebarMenu>
-                {mohNavigation.map(({ label, href, icon: Icon }) => {
-                  const active = isMohNavigationItemActive(pathname, href)
+                {items.map(({ label, href, icon: Icon }) => {
+                  const active =
+                    pathname === href || pathname.startsWith(`${href}/`)
                   return (
                     <SidebarMenuItem key={href}>
                       <SidebarMenuButton
@@ -71,10 +93,16 @@ export function MohSidebar({ pathname }: { pathname: string }) {
           </SidebarGroup>
         </nav>
       </SidebarContent>
-      <SidebarFooter className="p-4 group-data-[collapsible=icon]:hidden">
-        <p className="text-xs leading-5 text-muted-foreground">
-          Clear decisions for safer businesses and communities.
-        </p>
+      <SidebarFooter className="p-3">
+        {accountMenu ? (
+          <SidebarMenu>
+            <SidebarMenuItem>{accountMenu}</SidebarMenuItem>
+          </SidebarMenu>
+        ) : (
+          <p className="text-xs leading-5 text-muted-foreground group-data-[collapsible=icon]:hidden">
+            {footer}
+          </p>
+        )}
       </SidebarFooter>
     </Sidebar>
   )

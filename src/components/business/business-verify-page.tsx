@@ -1,12 +1,10 @@
+import { useNavigate } from "@tanstack/react-router"
 import { useEffect, useRef, useState } from "react"
 import { useBusinessSession } from "@/app/business-session"
 import { VerificationForm } from "@/components/business/verification-form"
 import { ContactForm } from "@/components/business/contact-form"
 import { OnboardingShell } from "@/components/business/onboarding-shell"
-import {
-  notifySuccess,
-  notifySuccessAfterNavigation,
-} from "@/components/ui/app-toast"
+import { notifySuccess } from "@/components/ui/app-toast"
 import { createBusinessRepository } from "@/services/business-repository"
 import type { BusinessRepositoryResult } from "@/services/business-repository"
 import { createBusinessStorage } from "@/services/business-storage"
@@ -27,6 +25,7 @@ function errorMessage(result: BusinessRepositoryResult) {
 }
 
 export function BusinessVerify() {
+  const navigate = useNavigate()
   const session = useBusinessSession()
   const profile = session.state.profile
   const completionInProgress = useRef(false)
@@ -39,9 +38,9 @@ export function BusinessVerify() {
   useEffect(() => {
     if (!session.isHydrated) return
     if (!canVerify && !completionInProgress.current) {
-      globalThis.location.assign("/business/register")
+      void navigate({ to: "/business/register", replace: true })
     }
-  }, [canVerify, session.isHydrated])
+  }, [canVerify, navigate, session.isHydrated])
 
   if (!session.isHydrated || !canVerify) {
     return (
@@ -90,8 +89,8 @@ export function BusinessVerify() {
             if (error) return { error }
             completionInProgress.current = true
             await session.refresh()
-            notifySuccessAfterNavigation("Email verified")
-            globalThis.location.assign("/business/dashboard")
+            notifySuccess("Email verified")
+            await navigate({ to: "/business/dashboard" })
           }}
           onResend={async () => {
             const result = createBusinessRepository(

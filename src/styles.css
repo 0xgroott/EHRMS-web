@@ -77,6 +77,9 @@
   --background-success: #ecfdf3;
   --background-information: #eff8ff;
 
+  --surface-table-header: var(--background-neutral-weak);
+  --text-table-header: var(--text-neutral-strong);
+
   --surface-neutral-strong: #ffffff;
   --surface-neutral-weak: #f4f8f7;
   --surface-neutral-weaker: #f9fbfa;
@@ -184,6 +187,9 @@
   --background-success: #173527;
   --background-information: #172d42;
 
+  --surface-table-header: var(--border-neutral-weaker);
+  --text-table-header: var(--text-neutral-strong);
+
   --surface-neutral-strong: #202829;
   --surface-neutral-weak: #1b2324;
   --surface-neutral-weaker: #171e1f;
@@ -269,6 +275,10 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+  }
+  th {
+    background-color: var(--surface-table-header);
+    color: var(--text-table-header);
   }
   body {
     @apply bg-background text-foreground;

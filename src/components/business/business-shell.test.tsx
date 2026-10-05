@@ -1,3 +1,5 @@
+import type * as RouterModule from "@tanstack/react-router"
+import { render as renderWithRouterContext } from "@/test/render-with-router"
 import { render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import {
@@ -83,7 +85,28 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
+const navigate = vi.hoisted(() => vi.fn())
+vi.mock("@tanstack/react-router", async (importOriginal) => ({
+  ...(await importOriginal<typeof RouterModule>()),
+  useNavigate: () => navigate,
+}))
 describe("Business shell", () => {
+  it("places the business account in the sidebar footer instead of the header", async () => {
+    shell()
+    const account = await screen.findByRole("button", {
+      name: "Business account",
+    })
+    expect(account.closest('[data-slot="sidebar-footer"]')).not.toBeNull()
+    expect(
+      within(screen.getByRole("banner")).queryByRole("button", {
+        name: "Business account",
+      })
+    ).not.toBeInTheDocument()
+    expect(account).toHaveTextContent(
+      returningBusinessState.profile!.contactName
+    )
+  })
+
   it("provides only the five business destinations and marks the current page", async () => {
     shell()
     const nav = await screen.findByRole("navigation", {
@@ -249,8 +272,7 @@ describe("Business portal access", () => {
     "redirects %s once without rendering protected content",
     async (_name, state, expected) => {
       localStorage.setItem("ehrcms:business:v1", JSON.stringify(state))
-      const assign = vi.fn()
-      vi.stubGlobal("location", { assign })
+      navigate.mockClear()
       render(
         <Providers>
           <BusinessPortalAccess>
@@ -260,8 +282,10 @@ describe("Business portal access", () => {
       )
       expect(screen.getByRole("status")).toBeVisible()
       expect(screen.queryByText("Protected content")).not.toBeInTheDocument()
-      await waitFor(() => expect(assign).toHaveBeenCalledWith(expected))
-      expect(assign).toHaveBeenCalledTimes(1)
+      await waitFor(() =>
+        expect(navigate).toHaveBeenCalledWith({ to: expected, replace: true })
+      )
+      expect(navigate).toHaveBeenCalledTimes(1)
       expect(screen.queryByText("Protected content")).not.toBeInTheDocument()
     }
   )
@@ -271,8 +295,7 @@ describe("Business portal access", () => {
     state.stage = "setup"
     if (state.profile) state.profile.premises = undefined
     createBusinessStorage(localStorage).write(state)
-    const assign = vi.fn()
-    vi.stubGlobal("location", { assign })
+    navigate.mockClear()
 
     render(
       <Providers>
@@ -285,12 +308,11 @@ describe("Business portal access", () => {
     expect(
       await screen.findByRole("heading", { name: "Protected content" })
     ).toBeVisible()
-    expect(assign).not.toHaveBeenCalled()
+    expect(navigate).not.toHaveBeenCalled()
   })
 
   it("admits a completed account only after hydration", async () => {
-    const assign = vi.fn()
-    vi.stubGlobal("location", { assign })
+    navigate.mockClear()
     render(
       <Providers>
         <BusinessPortalAccess>
@@ -302,13 +324,13 @@ describe("Business portal access", () => {
     expect(
       await screen.findByRole("heading", { name: "Protected content" })
     ).toBeVisible()
-    expect(assign).not.toHaveBeenCalled()
+    expect(navigate).not.toHaveBeenCalled()
   })
 })
 
 describe("Upcoming module", () => {
   it("explains delivery timing and provides a working dashboard destination", () => {
-    render(
+    renderWithRouterContext(
       <UpcomingModule
         title="Food handlers"
         description="Add and manage the people who handle food at your premises."

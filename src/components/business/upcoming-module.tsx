@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router"
 import { ArrowLeft } from "lucide-react"
 import { PageHeader } from "@/components/shared/page-header"
 import { Badge } from "@/components/ui/badge"
@@ -44,7 +45,7 @@ export function UpcomingModule({
             variant="outline"
             nativeButton={false}
             role="link"
-            render={<a href="/business/dashboard" />}
+            render={<Link to="/business/dashboard" />}
             className="min-h-11"
           >
             <ArrowLeft data-icon="inline-start" aria-hidden="true" />

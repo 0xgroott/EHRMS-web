@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router"
 import { useState } from "react"
 import { Check, Clock3, ExternalLink } from "lucide-react"
 import { useBusinessSession } from "@/app/business-session"
@@ -250,12 +251,12 @@ export function FumigationTrackerPage() {
                 </Dialog>
               )}
               {issued && (
-                <a
-                  href="/business/fumigation/certificate"
+                <Link
+                  to="/business/fumigation/certificate"
                   className={cn(buttonVariants(), "min-h-11")}
                 >
                   View Fumigation Certificate
-                </a>
+                </Link>
               )}
             </div>
           </AlertAction>

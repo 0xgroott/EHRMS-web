@@ -1,4 +1,11 @@
-import { act, render, screen, within } from "@testing-library/react"
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react"
 import {
   createMemoryHistory,
   createRootRoute,
@@ -9,6 +16,7 @@ import type { ReactNode } from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { ThemeProvider } from "@/app/theme"
+import { MohAccountMenu } from "./moh-account-menu"
 import { MohHeader } from "./moh-header"
 import { MohSidebar } from "./moh-sidebar"
 
@@ -43,9 +51,20 @@ describe("MOH shell", () => {
     await renderWithRouter(
       <ThemeProvider>
         <SidebarProvider>
-          <MohSidebar pathname="/moh/health-approvals" />
+          <MohSidebar
+            pathname="/moh/health-approvals"
+            accountMenu={
+              <MohAccountMenu
+                sidebar
+                accountName="Dr. Ibiwari Briggs"
+                councilName="Port Harcourt City"
+                onSignOut={signOut}
+              />
+            }
+          />
           <SidebarInset>
             <MohHeader
+              showAccount={false}
               title="Health approvals"
               accountName="Dr. Ibiwari Briggs"
               councilName="Port Harcourt City"
@@ -79,11 +98,54 @@ describe("MOH shell", () => {
     expect(
       within(screen.getByRole("banner")).getByText("Health approvals")
     ).toBeVisible()
-    expect(screen.queryByText("Dr. Ibiwari Briggs")).not.toBeInTheDocument()
+    expect(screen.getByText("Dr. Ibiwari Briggs")).toBeVisible()
+    expect(
+      within(screen.getByRole("banner")).queryByRole("button", {
+        name: "MOH account",
+      })
+    ).not.toBeInTheDocument()
+    expect(
+      screen
+        .getByRole("button", { name: "MOH account" })
+        .closest('[data-slot="sidebar-footer"]')
+    ).not.toBeNull()
     expect(
       screen.queryByText("Port Harcourt City Council")
     ).not.toBeInTheDocument()
 
     expect(screen.getByRole("button", { name: "MOH account" })).toBeVisible()
   })
+})
+
+it("closes mobile navigation when the workspace home link is selected", async () => {
+  vi.stubGlobal("innerWidth", 390)
+  vi.stubGlobal("scrollTo", vi.fn())
+  vi.stubGlobal(
+    "matchMedia",
+    vi.fn().mockReturnValue({
+      matches: true,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })
+  )
+  await renderWithRouter(
+    <SidebarProvider>
+      <MohSidebar pathname="/" homeHref="/" roleLabel="LGA" />
+      <SidebarInset>
+        <MohHeader
+          showAccount={false}
+          title="Dashboard"
+          accountName="Chairman"
+          councilName="Port Harcourt City"
+          roleLabel="LGA"
+          onSignOut={() => {}}
+        />
+      </SidebarInset>
+    </SidebarProvider>
+  )
+  const trigger = screen.getByRole("button", { name: "Open LGA navigation" })
+  fireEvent.click(trigger)
+  expect(trigger).toHaveAttribute("aria-expanded", "true")
+  fireEvent.click(screen.getByRole("link", { name: "EHRCMS LGA home" }))
+  await waitFor(() => expect(trigger).toHaveAttribute("aria-expanded", "false"))
 })

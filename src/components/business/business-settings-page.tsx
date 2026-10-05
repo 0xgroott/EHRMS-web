@@ -1,3 +1,4 @@
+import { useLocation, useNavigate } from "@tanstack/react-router"
 import { useEffect, useRef, useState } from "react"
 import { useBusinessSession } from "@/app/business-session"
 import { BusinessSetupForm } from "@/components/business/business-setup-form"
@@ -341,26 +342,6 @@ function SecuritySettings() {
   )
 }
 
-function useKybRoute() {
-  const [active, setActive] = useState(
-    () => globalThis.location.hash === "#kyb"
-  )
-
-  useEffect(() => {
-    const update = () => setActive(globalThis.location.hash === "#kyb")
-    globalThis.addEventListener("hashchange", update)
-    return () => globalThis.removeEventListener("hashchange", update)
-  }, [])
-
-  return active
-}
-
-function clearKybRoute() {
-  if (globalThis.location.hash !== "#kyb") return
-  globalThis.history.replaceState(null, "", "/business/settings")
-  globalThis.dispatchEvent(new HashChangeEvent("hashchange"))
-}
-
 function KybSettings({
   profile,
   onExit,
@@ -436,7 +417,7 @@ function KybSettings({
                 const error = resultError(result)
                 if (error) return { error }
                 await refresh()
-                clearKybRoute()
+                onExit()
                 notifySuccess("Business verification completed")
               } catch {
                 return {
@@ -464,6 +445,11 @@ function SettingsContent({
   kybComplete: boolean
   showKyb: boolean
 }) {
+  const navigate = useNavigate()
+  function clearKybRoute() {
+    if (showKyb)
+      void navigate({ to: "/business/settings", hash: "", replace: true })
+  }
   const kybAvailable = showKyb && !kybComplete
   const [activeTab, setActiveTab] = useState("profile")
   const [settings, setSettings] = useState(() =>
@@ -690,7 +676,7 @@ function SettingsContent({
 
 export function BusinessSettingsPage() {
   const { state, isHydrated } = useBusinessSession()
-  const showKyb = useKybRoute()
+  const showKyb = useLocation({ select: (location) => location.hash === "kyb" })
   if (!isHydrated) {
     return (
       <div role="status" className="space-y-4">

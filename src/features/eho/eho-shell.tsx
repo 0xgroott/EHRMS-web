@@ -19,7 +19,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -44,6 +43,7 @@ const navigation = [
 export function EhoPortal() {
   const { officer, hydrated, signedOut, error, signOut } = useEho()
   const [open, setOpen] = useState(false)
+  const [logoutOpen, setLogoutOpen] = useState(false)
   const pathname = useLocation({ select: (location) => location.pathname })
   const inspectionFlow =
     /^\/eho\/inspections\/[^/]+\/(checklist|issues(?:\/|$)|review|result|findings|follow-up)/.test(
@@ -98,9 +98,14 @@ export function EhoPortal() {
               className="flex items-center gap-3 font-semibold"
               onClick={() => setOpen(false)}
             >
-              <span className="grid size-9 place-items-center rounded-lg bg-primary text-primary-foreground">
-                EH
-              </span>
+              <img
+                src="/favicon/logo-green-48.svg"
+                alt=""
+                aria-hidden="true"
+                width={48}
+                height={48}
+                className="size-9 shrink-0 rounded-lg"
+              />
               <span>
                 EHRCMS{" "}
                 <small className="block font-normal text-muted-foreground">
@@ -137,19 +142,8 @@ export function EhoPortal() {
               </Link>
             ))}
           </nav>
-          <div className="mt-auto space-y-2 border-t pt-4">
-            <AlertDialog>
-              <AlertDialogTrigger
-                render={
-                  <Button
-                    variant="ghost"
-                    className="min-h-11 w-full justify-start px-3 text-muted-foreground"
-                  />
-                }
-              >
-                <LogOut data-icon="inline-start" aria-hidden="true" />
-                Logout
-              </AlertDialogTrigger>
+          <div className="mt-auto border-t pt-4">
+            <AlertDialog open={logoutOpen} onOpenChange={setLogoutOpen}>
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Log out of EHRCMS?</AlertDialogTitle>
@@ -193,7 +187,11 @@ export function EhoPortal() {
                   </span>
                 </span>
               </DropdownMenuTrigger>
-              <DropdownMenuContent side="top" align="start" className="w-60">
+              <DropdownMenuContent
+                side="top"
+                align="start"
+                className="w-60 max-w-[calc(100vw-2rem)]"
+              >
                 <DropdownMenuGroup>
                   <DropdownMenuLabel>{officer.name}</DropdownMenuLabel>
                   <DropdownMenuItem
@@ -207,6 +205,16 @@ export function EhoPortal() {
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <ThemeMenuGroup />
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                  <DropdownMenuItem
+                    onClick={() => setLogoutOpen(true)}
+                    className="min-h-11"
+                  >
+                    <LogOut aria-hidden="true" />
+                    Log out
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

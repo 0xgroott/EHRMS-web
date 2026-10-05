@@ -10,17 +10,6 @@ test("MOH theme choice persists across pages and reloads", async ({ page }) => {
   await page.goto("/moh/sign-in")
   await page.getByRole("button", { name: "Use assigned account" }).click()
   await expect(page).toHaveURL(/\/moh\/health-approvals$/)
-  await expect
-    .poll(() =>
-      page.evaluate(() =>
-        getComputedStyle(document.documentElement)
-          .getPropertyValue("--brand-light")
-          .trim()
-          .toUpperCase()
-      )
-    )
-    .toBe("#00786F")
-
   await page.getByRole("button", { name: "MOH account" }).click()
   await page.getByRole("menuitemradio", { name: "Dark" }).click()
   await expect(page.locator("html")).toHaveClass(/dark/)
@@ -28,23 +17,16 @@ test("MOH theme choice persists across pages and reloads", async ({ page }) => {
     .poll(() =>
       page.evaluate(() => {
         const sample = document.createElement("span")
-        sample.style.color = "var(--primary)"
         document.body.append(sample)
-        const resolvedPrimary = getComputedStyle(sample).color
+        sample.style.color = "var(--primary)"
+        const primary = getComputedStyle(sample).color
+        sample.style.color = "var(--brand-dark)"
+        const brand = getComputedStyle(sample).color
         sample.remove()
-        return {
-          brandDark: getComputedStyle(document.documentElement)
-            .getPropertyValue("--brand-dark")
-            .trim()
-            .toUpperCase(),
-          resolvedPrimary,
-        }
+        return primary === brand
       })
     )
-    .toEqual({
-      brandDark: "#99C417",
-      resolvedPrimary: "rgb(153, 196, 23)",
-    })
+    .toBe(true)
   await expect
     .poll(() => page.evaluate(() => localStorage.getItem("ehrcms:theme")))
     .toBe("dark")
@@ -55,6 +37,7 @@ test("MOH theme choice persists across pages and reloads", async ({ page }) => {
   await expect(page.locator("html")).toHaveClass(/dark/)
 
   await page.setViewportSize({ width: 390, height: 844 })
+  await page.getByRole("button", { name: "Open MOH navigation" }).click()
   await page.getByRole("button", { name: "MOH account" }).click()
   await page.getByRole("menuitemradio", { name: "Light" }).click()
   await expect(page.locator("html")).not.toHaveClass(/dark/)

@@ -1,3 +1,4 @@
+import { useNavigate } from "@tanstack/react-router"
 import { useState } from "react"
 import { useBusinessSession } from "@/app/business-session"
 import { DocumentDownloadButton } from "@/components/business/document-download-button"
@@ -6,7 +7,7 @@ import {
   certificateReminder,
   latestCertificateApplication,
 } from "@/domain/certificate-validity"
-import { notifySuccessAfterNavigation } from "@/components/ui/app-toast"
+import { notifySuccess } from "@/components/ui/app-toast"
 import { seedDatabase } from "@/data/seeds"
 import { fumigationCertificateDocument } from "@/domain/business-document-downloads"
 import { PageHeader } from "@/components/shared/page-header"
@@ -32,6 +33,7 @@ function CertificateDate({ value }: { value: string }) {
 }
 
 export function FumigationCertificatePage() {
+  const navigate = useNavigate()
   const { state, isHydrated, startRenewal } = useFumigation()
   const [renewalError, setRenewalError] = useState("")
   const { state: businessState } = useBusinessSession()
@@ -167,8 +169,8 @@ export function FumigationCertificatePage() {
             onClick={() => {
               const result = startRenewal()
               if (!result.ok) return setRenewalError(result.error)
-              notifySuccessAfterNavigation("Fumigation renewal started")
-              globalThis.location.assign("/business/fumigation/apply")
+              notifySuccess("Fumigation renewal started")
+              void navigate({ to: "/business/fumigation/apply" })
             }}
           >
             Start renewal

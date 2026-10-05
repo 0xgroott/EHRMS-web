@@ -1,7 +1,9 @@
+import { Link } from "@tanstack/react-router"
 import { useState } from "react"
 import {
   ArrowRight,
   BellRing,
+  Building2,
   ChevronLeft,
   ChevronRight,
   CheckCircle2,
@@ -25,6 +27,7 @@ import { formatFitnessReference } from "@/features/fitness/fitness-tracker-page"
 import { fitnessTestStatus } from "@/features/fitness/fitness-test-status"
 import { getUrgentBusinessAlerts } from "@/domain/business-next-action"
 import { validatePremises } from "@/domain/business-validation"
+import { TelemetryCard } from "@/components/shared/telemetry-card"
 import { PageHeader } from "@/components/shared/page-header"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -33,7 +36,6 @@ import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -82,7 +84,7 @@ function QuietLink({
       variant="link"
       nativeButton={false}
       role="link"
-      render={<a href={href} />}
+      render={<Link to={href.split("#")[0]} hash={href.split("#")[1]} />}
       className="min-h-11 max-w-full justify-start px-0 text-left whitespace-normal"
     >
       {children}
@@ -355,7 +357,7 @@ export function BusinessDashboard({
   )
   return (
     <div className="flex min-w-0 flex-col gap-8 break-words">
-      <PageHeader eyebrow="Business portal" title="Home" />
+      <PageHeader eyebrow="Business portal" title="Home" divided={false} />
       {urgentAlerts.length > 0 && (
         <Alert variant="destructive">
           <BellRing aria-hidden="true" />
@@ -445,18 +447,13 @@ export function BusinessDashboard({
                       Current status
                     </p>
                     <p className="mt-1 font-semibold">{healthApprovalStatus}</p>
-                    <p className="mt-2 text-sm leading-6 text-primary-foreground/75">
-                      {inspectionCase
-                        ? "Follow your inspection and approval progress."
-                        : "Both certificate requirements are complete. Your inspection status will appear here."}
-                    </p>
                   </div>
                   <Button
                     variant="secondary"
                     size="lg"
                     nativeButton={false}
                     role="link"
-                    render={<a href="/business/health-approval" />}
+                    render={<Link to="/business/health-approval" />}
                     className="min-h-11"
                   >
                     {healthApprovalIssued
@@ -515,7 +512,7 @@ export function BusinessDashboard({
                             nativeButton={false}
                             role="link"
                             aria-label={`${choice.label}. ${choice.status}`}
-                            render={<a href={choice.href} />}
+                            render={<Link to={choice.href} />}
                             className="h-auto min-h-20 w-full justify-start gap-3 px-4 py-3 text-left whitespace-normal"
                           >
                             <choice.icon
@@ -560,41 +557,23 @@ export function BusinessDashboard({
       </div>
       <section
         aria-label="Business metrics"
-        className="grid gap-4 sm:grid-cols-3"
+        className="grid gap-3 sm:grid-cols-3"
       >
-        <Card size="sm">
-          <CardHeader>
-            <CardTitle>Kitchen staff</CardTitle>
-            <CardDescription>Registered for this premises</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-semibold tabular-nums">
-              {activeStaffCount}
-            </p>
-          </CardContent>
-        </Card>
-        <Card size="sm">
-          <CardHeader>
-            <CardTitle>Branches</CardTitle>
-            <CardDescription>Registered business locations</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-semibold tabular-nums">
-              {profile?.premises ? 1 : 0}
-            </p>
-          </CardContent>
-        </Card>
-        <Card size="sm">
-          <CardHeader>
-            <CardTitle>Certificates issued</CardTitle>
-            <CardDescription>Health Fitness and Fumigation</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-semibold tabular-nums">
-              {issuedCertificateCount}
-            </p>
-          </CardContent>
-        </Card>
+        <TelemetryCard
+          label="Kitchen staff"
+          value={activeStaffCount}
+          icon={Users}
+        />
+        <TelemetryCard
+          label="Affiliated premises"
+          value={profile?.premises ? 1 : 0}
+          icon={Building2}
+        />
+        <TelemetryCard
+          label="Certificates issued"
+          value={issuedCertificateCount}
+          icon={FileBadge2}
+        />
       </section>
       <Tabs
         value={dashboardTab}
@@ -639,39 +618,43 @@ export function BusinessDashboard({
                 </p>
               </div>
             ) : (
-              <Table
-                aria-label="Dashboard staff list"
-                className="min-w-[38rem]"
-              >
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Job role</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Fitness test</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {visibleStaff.map((handler) => (
-                    <TableRow key={handler.id}>
-                      <TableCell className="font-medium">
-                        {handler.fullName}
-                      </TableCell>
-                      <TableCell>{handler.role || "Not recorded"}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={handler.archivedAt ? "outline" : "secondary"}
-                        >
-                          {handler.archivedAt ? "Archived" : "Active"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {fitnessTestStatus(fitness, handler.id)}
-                      </TableCell>
+              <div className="overflow-hidden rounded-xl border bg-card">
+                <Table
+                  aria-label="Dashboard staff list"
+                  className="min-w-[38rem]"
+                >
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Job role</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Fitness test</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {visibleStaff.map((handler) => (
+                      <TableRow key={handler.id}>
+                        <TableCell className="font-medium">
+                          {handler.fullName}
+                        </TableCell>
+                        <TableCell>{handler.role || "Not recorded"}</TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              handler.archivedAt ? "outline" : "secondary"
+                            }
+                          >
+                            {handler.archivedAt ? "Archived" : "Active"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {fitnessTestStatus(fitness, handler.id)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
             {fitness.handlers.length > STAFF_PAGE_SIZE && (
               <div className="mt-4 flex items-center justify-between border-t pt-4">
@@ -719,44 +702,46 @@ export function BusinessDashboard({
                 </p>
               </div>
             ) : (
-              <Table aria-label="Certificates" className="min-w-[40rem]">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Certificate</TableHead>
-                    <TableHead>Reference</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {certificateRows.map((certificate) => (
-                    <TableRow key={certificate.name}>
-                      <TableCell className="font-medium">
-                        {certificate.name}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {certificate.reference}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            certificate.status === "Expired"
-                              ? "destructive"
-                              : "secondary"
-                          }
-                        >
-                          {certificate.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <QuietLink href={certificate.href}>
-                          {certificate.action}
-                        </QuietLink>
-                      </TableCell>
+              <div className="overflow-hidden rounded-xl border bg-card">
+                <Table aria-label="Certificates" className="min-w-[40rem]">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Certificate</TableHead>
+                      <TableHead>Reference</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Action</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {certificateRows.map((certificate) => (
+                      <TableRow key={certificate.name}>
+                        <TableCell className="font-medium">
+                          {certificate.name}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {certificate.reference}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              certificate.status === "Expired"
+                                ? "destructive"
+                                : "secondary"
+                            }
+                          >
+                            {certificate.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <QuietLink href={certificate.href}>
+                            {certificate.action}
+                          </QuietLink>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </section>
         </TabsContent>
@@ -770,30 +755,32 @@ export function BusinessDashboard({
                 </p>
               </div>
             ) : (
-              <Table aria-label="Recent activity" className="min-w-[36rem]">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Activity</TableHead>
-                    <TableHead>Reference</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {recentActivity.map((item) => (
-                    <TableRow key={`${item.activity}-${item.reference}`}>
-                      <TableCell>
-                        <DashboardDate value={item.date} />
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {item.activity}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {item.reference}
-                      </TableCell>
+              <div className="overflow-hidden rounded-xl border bg-card">
+                <Table aria-label="Recent activity" className="min-w-[36rem]">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Activity</TableHead>
+                      <TableHead>Reference</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {recentActivity.map((item) => (
+                      <TableRow key={`${item.activity}-${item.reference}`}>
+                        <TableCell>
+                          <DashboardDate value={item.date} />
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {item.activity}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {item.reference}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </section>
         </TabsContent>

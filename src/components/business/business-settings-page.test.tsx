@@ -1,4 +1,5 @@
-import { act, render, screen, waitFor, within } from "@testing-library/react"
+import { render } from "@/test/render-with-router"
+import { act, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it } from "vitest"
 import { Providers } from "@/app/providers"
@@ -228,7 +229,7 @@ describe("business settings page", () => {
     createBusinessStorage(localStorage).write(state)
     window.history.replaceState(null, "", "/business/settings#kyb")
 
-    renderSettings()
+    const { router } = renderSettings()
 
     expect(
       await screen.findByRole("heading", {
@@ -263,17 +264,14 @@ describe("business settings page", () => {
         name: "Close business verification",
       })
     )
-    expect(window.location.hash).toBe("")
+    expect(router.state.location.hash).toBe("")
     expect(
       screen.queryByRole("heading", {
         name: "Complete business verification (KYB)",
       })
     ).not.toBeInTheDocument()
 
-    act(() => {
-      window.history.replaceState(null, "", "/business/settings#kyb")
-      window.dispatchEvent(new HashChangeEvent("hashchange"))
-    })
+    await act(() => router.navigate({ to: "/business/settings", hash: "kyb" }))
     expect(
       await screen.findByRole("heading", {
         name: "Complete business verification (KYB)",

@@ -1,7 +1,6 @@
-import { Bell, LogOut, Settings2 } from "lucide-react"
+import { Bell } from "lucide-react"
 import { Link } from "@tanstack/react-router"
 import { useBusinessSession } from "@/app/business-session"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import {
@@ -10,24 +9,14 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar"
-import { useBusinessMedia } from "@/features/business-media/business-media-context"
-import { ThemeMenuGroup } from "@/components/shared/theme-menu-group"
 
 export function BusinessHeader() {
-  const { state, signOut, error } = useBusinessSession()
-  const { media } = useBusinessMedia()
+  const { state, error } = useBusinessSession()
   const { isMobile, openMobile } = useSidebar()
   const profile = state.profile
-  const initials = (profile?.businessName ?? "Business")
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((name) => name[0])
-    .join("")
   return (
     <>
       <header className="sticky top-0 z-20 flex min-h-16 min-w-0 items-center gap-2 border-b bg-background/95 px-3 backdrop-blur md:gap-3 md:px-6">
@@ -46,7 +35,6 @@ export function BusinessHeader() {
           >
             {profile?.businessName ?? "Business portal"}
           </p>
-          <p className="text-xs text-muted-foreground">Business account</p>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger
@@ -87,59 +75,6 @@ export function BusinessHeader() {
                 className="min-h-11"
               >
                 View inspections
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-11 shrink-0"
-              />
-            }
-            aria-label="Business account"
-          >
-            <Avatar size="sm">
-              {media.avatar && (
-                <AvatarImage
-                  src={media.avatar.dataUrl}
-                  alt={`${profile?.businessName ?? "Business"} logo`}
-                />
-              )}
-              <AvatarFallback>{initials}</AvatarFallback>
-            </Avatar>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="end"
-            className="w-60 max-w-[calc(100vw-2rem)]"
-          >
-            <DropdownMenuGroup>
-              <DropdownMenuLabel className="break-words">
-                {profile?.contactName}
-              </DropdownMenuLabel>
-              <DropdownMenuItem
-                render={<Link to="/business/settings" />}
-                className="min-h-11"
-              >
-                <Settings2 aria-hidden="true" />
-                Settings
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <ThemeMenuGroup />
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem
-                onClick={() => {
-                  if (signOut()) window.location.assign("/")
-                }}
-                className="min-h-11"
-              >
-                <LogOut aria-hidden="true" />
-                Sign out
               </DropdownMenuItem>
             </DropdownMenuGroup>
           </DropdownMenuContent>

@@ -1,4 +1,5 @@
-import { render, screen } from "@testing-library/react"
+import { render } from "@/test/render-with-router"
+import { screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, expect, it, vi } from "vitest"
 import { returningBusinessState } from "@/data/business-seeds"

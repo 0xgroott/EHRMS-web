@@ -346,6 +346,22 @@ test("EHO dashboard separates jobs, follow-ups and completed work into searchabl
   const followUps = page.getByRole("tab", { name: "Follow-up" })
   const completed = page.getByRole("tab", { name: "Completed" })
   const myJobsPanel = page.getByRole("tabpanel", { name: "My Jobs" })
+  const search = myJobsPanel.getByRole("searchbox", { name: "Search My Jobs" })
+  await page.setViewportSize({ width: 1440, height: 819 })
+  await expect(search).toBeVisible()
+  const searchBounds = await search.boundingBox()
+  const tabsBounds = await page.getByRole("tablist").boundingBox()
+  const panelBounds = await myJobsPanel.boundingBox()
+  expect(searchBounds!.width).toBe(448)
+  expect(Math.abs(searchBounds!.y - tabsBounds!.y)).toBeLessThan(2)
+  expect(
+    Math.abs(
+      searchBounds!.x +
+        searchBounds!.width -
+        panelBounds!.x -
+        panelBounds!.width
+    )
+  ).toBeLessThan(2)
   const tabList = page.getByRole("tablist")
   const tabScroller = tabList.locator("..")
   await expect(tabScroller).toHaveCSS("overflow-x", "auto")
@@ -387,6 +403,15 @@ test("EHO dashboard separates jobs, follow-ups and completed work into searchabl
   await myJobsPanel.getByRole("searchbox", { name: "Search My Jobs" }).fill("")
 
   await page.setViewportSize({ width: 390, height: 844 })
+  await expect(search).toBeVisible()
+  const mobileSearchBounds = await search.boundingBox()
+  const mobileTabsBounds = await tabList.boundingBox()
+  expect(mobileSearchBounds!.y).toBeGreaterThan(
+    mobileTabsBounds!.y + mobileTabsBounds!.height
+  )
+  expect(mobileSearchBounds!.x + mobileSearchBounds!.width).toBeLessThanOrEqual(
+    390
+  )
   await expect(followUps).toBeVisible()
   await expect(completed).toBeVisible()
   await followUps.click()

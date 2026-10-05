@@ -1,3 +1,4 @@
+import { useNavigate } from "@tanstack/react-router"
 import { useEffect, useRef, useState } from "react"
 import { Dialog } from "@base-ui/react/dialog"
 import {
@@ -841,6 +842,7 @@ function FitnessSubmissionSuccess() {
 }
 
 export function BusinessApplicationsPage() {
+  const navigate = useNavigate()
   const { state, isHydrated, startNewStaffApplication } = useFitness()
   const [newStaffError, setNewStaffError] = useState("")
   const { state: fumigation, isHydrated: fumigationIsHydrated } =
@@ -906,7 +908,7 @@ export function BusinessApplicationsPage() {
         >
           <CardHeader>
             <CardTitle>
-              <h2>Fitness</h2>
+              <h2>Fitness test</h2>
             </CardTitle>
             <CardDescription>
               Assessment for the food handlers at your premises.
@@ -951,7 +953,7 @@ export function BusinessApplicationsPage() {
                     setNewStaffError("")
                     const result = startNewStaffApplication()
                     if (!result.ok) return setNewStaffError(result.error)
-                    globalThis.location.assign("/business/fitness/apply")
+                    void navigate({ to: "/business/fitness/apply" })
                   }}
                 >
                   Apply for new staff
@@ -971,7 +973,7 @@ export function BusinessApplicationsPage() {
         >
           <CardHeader>
             <CardTitle>
-              <h2>Fumigation</h2>
+              <h2>Premises Fumigation</h2>
             </CardTitle>
             <CardDescription>
               Premises fumigation by a licensed provider.

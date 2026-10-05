@@ -1,8 +1,10 @@
+import { useNavigate } from "@tanstack/react-router"
 import { useEffect, useRef } from "react"
 import type { ReactNode } from "react"
 import { useBusinessSession } from "@/app/business-session"
 
 export function BusinessPortalAccess({ children }: { children: ReactNode }) {
+  const navigate = useNavigate()
   const { state, isHydrated, signedOut } = useBusinessSession()
   const redirecting = useRef(false)
   const destination = !state.profile
@@ -17,8 +19,8 @@ export function BusinessPortalAccess({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isHydrated || !destination || redirecting.current) return
     redirecting.current = true
-    globalThis.location.assign(destination)
-  }, [destination, isHydrated])
+    void navigate({ to: destination, replace: true })
+  }, [destination, isHydrated, navigate])
   if (!isHydrated || destination)
     return (
       <main className="flex min-h-svh items-center justify-center p-6">

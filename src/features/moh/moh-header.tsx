@@ -1,33 +1,16 @@
-import { LogOut } from "lucide-react"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar"
-import { ThemeMenuGroup } from "@/components/shared/theme-menu-group"
-
-function accountInitials(name: string) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-}
+import { MohAccountMenu } from "./moh-account-menu"
 
 export function MohHeader({
   title,
   accountName,
   councilName,
   onSignOut,
+  roleLabel = "MOH",
+  showAccount = true,
 }: {
+  showAccount?: boolean
+  roleLabel?: string
   title: string
   accountName: string
   councilName: string
@@ -40,7 +23,11 @@ export function MohHeader({
       <SidebarTrigger
         size="icon"
         className="size-11 shrink-0"
-        aria-label={isMobile ? "Open MOH navigation" : "Toggle MOH navigation"}
+        aria-label={
+          isMobile
+            ? `Open ${roleLabel} navigation`
+            : `Toggle ${roleLabel} navigation`
+        }
         aria-expanded={isMobile ? openMobile : undefined}
       />
       <div className="min-w-0 flex-1">
@@ -48,40 +35,14 @@ export function MohHeader({
           {title}
         </p>
       </div>
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={
-            <Button variant="ghost" size="icon" className="size-11 shrink-0" />
-          }
-          aria-label="MOH account"
-        >
-          <Avatar size="sm">
-            <AvatarFallback>{accountInitials(accountName)}</AvatarFallback>
-          </Avatar>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent
-          align="end"
-          className="w-64 max-w-[calc(100vw-2rem)]"
-        >
-          <DropdownMenuGroup>
-            <DropdownMenuLabel className="break-words">
-              {accountName}
-              <span className="mt-0.5 block font-normal text-muted-foreground">
-                {councilName} Council
-              </span>
-            </DropdownMenuLabel>
-          </DropdownMenuGroup>
-          <DropdownMenuSeparator />
-          <ThemeMenuGroup />
-          <DropdownMenuSeparator />
-          <DropdownMenuGroup>
-            <DropdownMenuItem onClick={onSignOut} className="min-h-11">
-              <LogOut aria-hidden="true" />
-              Sign out
-            </DropdownMenuItem>
-          </DropdownMenuGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      {showAccount && (
+        <MohAccountMenu
+          accountName={accountName}
+          councilName={councilName}
+          onSignOut={onSignOut}
+          roleLabel={roleLabel}
+        />
+      )}
     </header>
   )
 }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { cn } from "cn"
 import { Link } from "@tanstack/react-router"
 import {
   ArrowLeft,
@@ -20,8 +21,8 @@ import {
   UserRoundCheck,
   WifiOff,
 } from "lucide-react"
-import type { LucideIcon } from "lucide-react"
 import { seedDatabase } from "@/data/seeds"
+import { TelemetryCard } from "@/components/shared/telemetry-card"
 import { EmptyState } from "@/components/shared/empty-state"
 import { PageHeader } from "@/components/shared/page-header"
 import { PremisesBusinessInfoPanel } from "@/components/shared/premises-business-info-panel"
@@ -268,30 +269,6 @@ export function EhoSignInPage() {
   )
 }
 
-function WorkMetric({
-  label,
-  value,
-  icon: Icon,
-}: {
-  label: string
-  value: number
-  icon: LucideIcon
-}) {
-  return (
-    <Card size="sm" className="min-h-28">
-      <CardHeader>
-        <CardTitle>{label}</CardTitle>
-        <CardAction>
-          <Icon className="size-5 text-primary" aria-hidden="true" />
-        </CardAction>
-      </CardHeader>
-      <CardContent className="mt-auto">
-        <strong className="text-3xl font-semibold tabular-nums">{value}</strong>
-      </CardContent>
-    </Card>
-  )
-}
-
 function assignmentSearchText(assignment: Assignment) {
   const premises = premisesFor(assignment)
   return `${assignment.id} ${assignment.type} ${premises?.businessName ?? ""} ${premises?.address ?? ""}`.toLowerCase()
@@ -338,6 +315,7 @@ function JobTable({
   action,
   scheduledAt = (assignment) => assignment.scheduledAt,
   additionalSearchText = () => "",
+  searchClassName,
 }: {
   label: string
   assignments: Assignment[]
@@ -346,6 +324,7 @@ function JobTable({
   action: (assignment: Assignment) => React.ReactNode
   scheduledAt?: (assignment: Assignment) => string
   additionalSearchText?: (assignment: Assignment) => string
+  searchClassName?: string
 }) {
   const [query, setQuery] = useState("")
   const filteredRows = rows.filter((assignment) =>
@@ -362,7 +341,7 @@ function JobTable({
         placeholder="Search by premises, address or reference"
         value={query}
         onChange={(event) => setQuery(event.target.value)}
-        className="min-h-11 max-w-md"
+        className={cn("min-h-11 max-w-md", searchClassName)}
       />
       {filteredRows.length ? (
         <div className="overflow-hidden rounded-xl border bg-background">
@@ -481,53 +460,56 @@ export function EhoMyWorkPage() {
         }
       />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <WorkMetric label="Open" value={open.length} icon={Inbox} />
-        <WorkMetric
+        <TelemetryCard label="Open" value={open.length} icon={Inbox} />
+        <TelemetryCard
           label="Assigned"
           value={assigned.length}
           icon={UserRoundCheck}
         />
-        <WorkMetric
+        <TelemetryCard
           label="Completed"
           value={completed.length}
           icon={CheckCircle2}
         />
-        <WorkMetric
+        <TelemetryCard
           label="Follow-up"
           value={followUps.length}
           icon={RotateCcw}
         />
       </div>
-      <Tabs defaultValue="my-jobs" className="gap-4">
-        <ScrollableTabsList>
-          <TabsTrigger
-            value="my-jobs"
-            aria-label="My Jobs"
-            className="min-h-11 flex-none gap-2 px-0"
-          >
-            My Jobs
-            <Badge variant="secondary">{assigned.length}</Badge>
-          </TabsTrigger>
-          <TabsTrigger
-            value="follow-ups"
-            aria-label="Follow-up"
-            className="min-h-11 flex-none gap-2 px-0"
-          >
-            Follow-up
-            <Badge variant="secondary">{followUps.length}</Badge>
-          </TabsTrigger>
-          <TabsTrigger
-            value="completed"
-            aria-label="Completed"
-            className="min-h-11 flex-none gap-2 px-0"
-          >
-            Completed
-            <Badge variant="secondary">{completed.length}</Badge>
-          </TabsTrigger>
-        </ScrollableTabsList>
+      <Tabs defaultValue="my-jobs" className="relative gap-4">
+        <div className="xl:pr-[29rem]">
+          <ScrollableTabsList>
+            <TabsTrigger
+              value="my-jobs"
+              aria-label="My Jobs"
+              className="min-h-11 flex-none gap-2 px-0"
+            >
+              My Jobs
+              <Badge variant="secondary">{assigned.length}</Badge>
+            </TabsTrigger>
+            <TabsTrigger
+              value="follow-ups"
+              aria-label="Follow-up"
+              className="min-h-11 flex-none gap-2 px-0"
+            >
+              Follow-up
+              <Badge variant="secondary">{followUps.length}</Badge>
+            </TabsTrigger>
+            <TabsTrigger
+              value="completed"
+              aria-label="Completed"
+              className="min-h-11 flex-none gap-2 px-0"
+            >
+              Completed
+              <Badge variant="secondary">{completed.length}</Badge>
+            </TabsTrigger>
+          </ScrollableTabsList>
+        </div>
         <TabsContent value="my-jobs">
           <JobTable
             label="My Jobs"
+            searchClassName="xl:absolute xl:top-0 xl:right-0 xl:w-md"
             assignments={assigned}
             emptyTitle="No assigned jobs"
             status={(assignment) =>

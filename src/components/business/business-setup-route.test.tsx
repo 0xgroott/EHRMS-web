@@ -1,39 +1,14 @@
-import { render, screen, waitFor } from "@testing-library/react"
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { Providers } from "@/app/providers"
-import { returningBusinessState } from "@/data/business-seeds"
-import { createBusinessStorage } from "@/services/business-storage"
+import { waitFor } from "@testing-library/react"
+import { describe, expect, it } from "vitest"
+import { render } from "@/test/render-with-router"
 import { BusinessSetup } from "./business-setup-page"
 
 describe("legacy BusinessSetup route", () => {
-  let assign: ReturnType<typeof vi.fn>
-
-  beforeEach(() => {
-    localStorage.clear()
-    createBusinessStorage(localStorage).write(
-      structuredClone(returningBusinessState)
-    )
-    assign = vi.fn()
-    vi.stubGlobal("location", { assign })
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-    vi.unstubAllGlobals()
-  })
-
   it("redirects the old onboarding URL to the KYB section in settings", async () => {
-    render(
-      <Providers>
-        <BusinessSetup />
-      </Providers>
-    )
-
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "Opening business verification"
-    )
+    const { router } = render(<BusinessSetup />)
     await waitFor(() =>
-      expect(assign).toHaveBeenCalledExactlyOnceWith("/business/settings#kyb")
+      expect(router.state.location.href).toBe("/business/settings#kyb")
     )
+    expect(router.history.length).toBe(1)
   })
 })

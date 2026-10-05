@@ -1,4 +1,5 @@
-import { render, screen, within } from "@testing-library/react"
+import { render } from "@/test/render-with-router"
+import { screen, within } from "@testing-library/react"
 import { describe, expect, it, vi } from "vitest"
 import { FoodHandlersPage } from "./food-handlers-page"
 import type { FitnessState } from "./fitness-types"
@@ -57,6 +58,10 @@ describe("FoodHandlersPage", () => {
       )
     ).toBeVisible()
     expect(screen.getByText("Not approved")).toBeVisible()
+    expect(screen.getByText("Not approved")).toHaveAttribute(
+      "data-variant",
+      "secondary"
+    )
     expect(screen.getByRole("region", { name: "Staff list" })).toBeVisible()
     expect(
       screen.queryByRole("heading", { name: "Food handler records" })
@@ -105,6 +110,10 @@ describe("FoodHandlersPage", () => {
     render(<FoodHandlersPage />)
 
     expect(screen.getByText("In progress")).toBeVisible()
+    expect(screen.getByText("In progress")).toHaveAttribute(
+      "data-variant",
+      "warning"
+    )
     expect(
       screen.queryByRole("link", { name: "Track Fitness application" })
     ).not.toBeInTheDocument()
@@ -150,6 +159,10 @@ describe("FoodHandlersPage", () => {
     render(<FoodHandlersPage />)
 
     expect(screen.getByText("Approved")).toBeVisible()
+    expect(screen.getByText("Approved")).toHaveAttribute(
+      "data-variant",
+      "success"
+    )
     expect(
       screen.queryByRole("link", { name: "View Fitness certificate" })
     ).not.toBeInTheDocument()

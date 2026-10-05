@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router"
 import { useState } from "react"
 import {
   Archive,
@@ -30,8 +31,19 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { fitnessTestStatus } from "./fitness-test-status"
+import type { FitnessTestStatus } from "./fitness-test-status"
 import { useFitness } from "./fitness-context"
 import type { FoodHandler } from "./fitness-types"
+
+function FitnessTestBadge({ status }: { status: FitnessTestStatus }) {
+  const variants = {
+    Approved: "success",
+    "In progress": "warning",
+    Expired: "destructive",
+    "Not approved": "secondary",
+  } as const
+  return <Badge variant={variants[status]}>{status}</Badge>
+}
 
 function AppLink({
   href,
@@ -48,7 +60,7 @@ function AppLink({
     <Button
       nativeButton={false}
       role="link"
-      render={<a href={href} />}
+      render={<Link to={href.split("#")[0]} hash={href.split("#")[1]} />}
       variant={variant}
       aria-label={ariaLabel}
     >
@@ -95,6 +107,7 @@ export function FoodHandlersPage() {
   return (
     <div className="flex min-w-0 flex-col gap-8">
       <PageHeader
+        divided={false}
         eyebrow="Fitness Certificate"
         title="Staff"
         description="Manage active and archived staff records for Fitness applications."
@@ -169,75 +182,79 @@ export function FoodHandlersPage() {
                 : "No staff match this search and status. Try another name or filter."}
             </div>
           ) : (
-            <Table className="min-w-[42rem]">
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Staff member</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Fitness test</TableHead>
-                  <TableHead>
-                    <span className="sr-only">Actions</span>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {visibleHandlers.map((handler) => (
-                  <TableRow key={handler.id}>
-                    <TableCell className="font-medium">
-                      {handler.fullName}
-                    </TableCell>
-                    <TableCell>{handler.role || "Not recorded"}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={handler.archivedAt ? "outline" : "secondary"}
-                      >
-                        {handler.archivedAt ? "Archived" : "Active"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {fitnessTestStatus(state, handler.id)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        {!handler.archivedAt && (
-                          <AppLink
-                            href={`/business/food-handler/${handler.id}`}
-                            variant="link"
-                            ariaLabel={`Edit ${handler.fullName}`}
-                          >
-                            <Pencil
-                              data-icon="inline-start"
-                              aria-hidden="true"
-                            />
-                            Edit
-                          </AppLink>
-                        )}
-                        <Button
-                          type="button"
-                          variant="link"
-                          aria-label={`${handler.archivedAt ? "Restore" : "Archive"} ${handler.fullName}`}
-                          onClick={() => changeArchiveStatus(handler)}
-                        >
-                          {handler.archivedAt ? (
-                            <RotateCcw
-                              data-icon="inline-start"
-                              aria-hidden="true"
-                            />
-                          ) : (
-                            <Archive
-                              data-icon="inline-start"
-                              aria-hidden="true"
-                            />
-                          )}
-                          {handler.archivedAt ? "Restore" : "Archive"}
-                        </Button>
-                      </div>
-                    </TableCell>
+            <div className="overflow-hidden rounded-xl border bg-card">
+              <Table className="min-w-[42rem] bg-card">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Staff member</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Fitness test</TableHead>
+                    <TableHead>
+                      <span className="sr-only">Actions</span>
+                    </TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {visibleHandlers.map((handler) => (
+                    <TableRow key={handler.id}>
+                      <TableCell className="font-medium">
+                        {handler.fullName}
+                      </TableCell>
+                      <TableCell>{handler.role || "Not recorded"}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={handler.archivedAt ? "outline" : "secondary"}
+                        >
+                          {handler.archivedAt ? "Archived" : "Active"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <FitnessTestBadge
+                          status={fitnessTestStatus(state, handler.id)}
+                        />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          {!handler.archivedAt && (
+                            <AppLink
+                              href={`/business/food-handler/${handler.id}`}
+                              variant="link"
+                              ariaLabel={`Edit ${handler.fullName}`}
+                            >
+                              <Pencil
+                                data-icon="inline-start"
+                                aria-hidden="true"
+                              />
+                              Edit
+                            </AppLink>
+                          )}
+                          <Button
+                            type="button"
+                            variant="link"
+                            aria-label={`${handler.archivedAt ? "Restore" : "Archive"} ${handler.fullName}`}
+                            onClick={() => changeArchiveStatus(handler)}
+                          >
+                            {handler.archivedAt ? (
+                              <RotateCcw
+                                data-icon="inline-start"
+                                aria-hidden="true"
+                              />
+                            ) : (
+                              <Archive
+                                data-icon="inline-start"
+                                aria-hidden="true"
+                              />
+                            )}
+                            {handler.archivedAt ? "Restore" : "Archive"}
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </section>
       )}

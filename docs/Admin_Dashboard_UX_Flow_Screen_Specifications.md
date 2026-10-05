@@ -8,7 +8,7 @@ title: "Admin Dashboard — UX Flow Screen Specifications"
 
 This document defines the shared admin dashboard experience for EHRCMS. Admin roles use the same core interface, with actions shown or hidden based on permission.
 
-**Assumption:** “Super Admin” refers to the highest platform-level administrator with broader cross-council access, user/role management, and configuration oversight. The SRS separately names Supervisor, System Administrator, Settings Administrator, Finance Officer, MOH/Director, and EHO roles, so the final permission matrix should confirm exactly which of these powers belong to Super Admin.
+**Assumption:** “Super Admin” refers to the highest platform-level administrator with broader cross-council access, user/role management, and configuration oversight. The SRS separately names LGA Council / LGA Chairman, System Administrator, Settings Administrator, Finance Officer, MOH/Director, and EHO roles, so the final permission matrix should confirm exactly which of these powers belong to Super Admin.
 
 ## UX Principles
 
@@ -657,7 +657,7 @@ Provide operational and compliance reporting.
 - Historical data spans multiple settings versions
 
 **Permission notes**
-- Supervisory/Super Admin roles may report across councils.
+- Super Admin may report across councils. LGA Council / LGA Chairman oversight is read-only and restricted to the assigned LGA and its wards.
 - Other users remain limited to their assigned council(s).
 
 ---

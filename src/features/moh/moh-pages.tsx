@@ -1,20 +1,14 @@
-import { useEffect, useState } from "react"
+import {
+  AssignedAccountAccess,
+  AssignedAccountSignIn,
+} from "@/components/shared/assigned-account-sign-in"
+import { useEffect } from "react"
 import { Link, useLocation } from "@tanstack/react-router"
-import { ArrowLeft, ArrowRight, ShieldCheck } from "lucide-react"
 import { seedDatabase } from "@/data/seeds"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { EmptyState } from "@/components/shared/empty-state"
 import { notifySuccess } from "@/components/ui/app-toast"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import {
   assignedMohAccount,
@@ -39,6 +33,7 @@ import {
   MohHealthApprovalCaseDetail,
   MohHealthApprovalWorklist,
 } from "./moh-health-approval-pages"
+import { MohAccountMenu } from "./moh-account-menu"
 import { MohHeader } from "./moh-header"
 import { useMoh } from "./moh-session"
 import { MohSidebar } from "./moh-sidebar"
@@ -51,235 +46,31 @@ export function MohAssignedAccountAccess({
   disabled?: boolean
 }) {
   return (
-    <Card size="sm">
-      <CardHeader>
-        <CardTitle>Quick access</CardTitle>
-        <CardDescription>
-          Use the assigned MOH account for this workspace.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <dl className="grid gap-x-5 gap-y-3 text-sm sm:grid-cols-2">
-          <div>
-            <dt className="text-muted-foreground">Staff ID</dt>
-            <dd className="mt-0.5 font-medium">{assignedMohAccount.id}</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Email</dt>
-            <dd className="mt-0.5 font-medium break-all">
-              {assignedMohAccount.email}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Password</dt>
-            <dd className="mt-0.5 font-medium">
-              {assignedMohCredentials.password}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Verification code</dt>
-            <dd className="mt-0.5 font-medium tabular-nums">
-              {assignedMohCredentials.verificationCode}
-            </dd>
-          </div>
-        </dl>
-      </CardContent>
-      <CardFooter>
-        <Button
-          type="button"
-          className="min-h-11 w-full"
-          disabled={disabled}
-          onClick={() => onUse(assignedMohAccount)}
-        >
-          Use assigned account
-          <ArrowRight data-icon="inline-end" aria-hidden="true" />
-        </Button>
-      </CardFooter>
-    </Card>
+    <AssignedAccountAccess
+      account={assignedMohAccount}
+      credentials={assignedMohCredentials}
+      roleLabel="MOH"
+      onUse={onUse}
+      disabled={disabled}
+    />
   )
 }
 
 export function MohSignInPage() {
   const session = useMoh()
-  const [contact, setContact] = useState("")
-  const [password, setPassword] = useState("")
-  const [code, setCode] = useState("")
-  const [pendingAccount, setPendingAccount] = useState<MohAccount | null>(null)
-  const [error, setError] = useState("")
-
-  function submitCredentials(event: React.FormEvent) {
-    event.preventDefault()
-    if (!contact.trim() || !password) {
-      setError("Enter your staff ID or email and password.")
-      return
-    }
-    const account = matchMohAccount(contact, password)
-    if (!account) {
-      setError("Staff ID, email or password is incorrect.")
-      return
-    }
-    setPassword("")
-    setPendingAccount(account)
-    setError("")
-  }
-
-  function submitCode(event: React.FormEvent) {
-    event.preventDefault()
-    if (!pendingAccount || !verifyMohCode(code)) {
-      setError("Enter the correct six-digit verification code.")
-      return
-    }
-    if (session.signIn(pendingAccount))
-      window.location.assign("/moh/health-approvals")
-  }
-
   return (
-    <main className="min-h-svh bg-background md:grid md:grid-cols-[minmax(18rem,.85fr)_minmax(0,1.15fr)]">
-      <section className="flex flex-col bg-primary p-6 text-primary-foreground md:p-12 lg:p-16">
-        <div className="flex items-center gap-3">
-          <ShieldCheck className="size-7" aria-hidden="true" />
-          <div>
-            <strong className="block text-lg">EHRCMS</strong>
-            <span className="text-sm">MOH / Director</span>
-          </div>
-        </div>
-        <div className="hidden max-w-sm flex-1 flex-col justify-center gap-5 md:flex">
-          <h2 className="text-3xl font-semibold tracking-tight">
-            Decisions in one place.
-          </h2>
-          <p className="leading-relaxed">
-            Access your assigned review and approval workspace.
-          </p>
-        </div>
-        <p className="hidden text-xs md:block">
-          Environmental Health Regulatory Case Management System
-        </p>
-      </section>
-      <section className="flex items-center justify-center px-6 py-12 md:px-12">
-        <div className="w-full max-w-md space-y-7">
-          <Link
-            to="/"
-            className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-primary hover:underline"
-          >
-            <ArrowLeft className="size-4" aria-hidden="true" /> Choose another
-            account type
-          </Link>
-          <header className="space-y-2">
-            <p className="text-xs font-semibold tracking-widest text-primary uppercase">
-              Assigned account
-            </p>
-            <h1 className="text-2xl font-semibold tracking-tight">
-              {pendingAccount ? "Verify your sign-in" : "Sign in as MOH"}
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              {pendingAccount
-                ? "Enter the six-digit code for your assigned account."
-                : "Use the account provided by your council administrator."}
-            </p>
-          </header>
-          {(error || session.error) && (
-            <Alert variant="destructive" role="alert">
-              <AlertDescription>{error || session.error}</AlertDescription>
-            </Alert>
-          )}
-          {!pendingAccount && (
-            <MohAssignedAccountAccess
-              disabled={!session.hydrated}
-              onUse={(account) => {
-                if (session.signIn(account))
-                  window.location.assign("/moh/health-approvals")
-              }}
-            />
-          )}
-          {pendingAccount ? (
-            <form className="grid gap-5" onSubmit={submitCode} noValidate>
-              <div className="grid gap-2">
-                <label htmlFor="moh-code" className="text-sm font-medium">
-                  Verification code
-                </label>
-                <Input
-                  id="moh-code"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  value={code}
-                  onChange={(event) => {
-                    setCode(event.target.value)
-                    setError("")
-                  }}
-                  className="min-h-11"
-                  maxLength={6}
-                  disabled={!session.hydrated}
-                />
-              </div>
-              <Button
-                type="submit"
-                className="min-h-11"
-                disabled={!session.hydrated}
-              >
-                Verify and sign in
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                className="min-h-11"
-                onClick={() => {
-                  setPendingAccount(null)
-                  setCode("")
-                  setError("")
-                }}
-              >
-                Use another account
-              </Button>
-            </form>
-          ) : (
-            <form
-              className="grid gap-5"
-              onSubmit={submitCredentials}
-              noValidate
-            >
-              <div className="grid gap-2">
-                <label htmlFor="moh-contact" className="text-sm font-medium">
-                  Staff ID or email
-                </label>
-                <Input
-                  id="moh-contact"
-                  autoComplete="username"
-                  value={contact}
-                  onChange={(event) => setContact(event.target.value)}
-                  className="min-h-11"
-                  disabled={!session.hydrated}
-                />
-              </div>
-              <div className="grid gap-2">
-                <label htmlFor="moh-password" className="text-sm font-medium">
-                  Password
-                </label>
-                <Input
-                  id="moh-password"
-                  type="password"
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  className="min-h-11"
-                  disabled={!session.hydrated}
-                />
-              </div>
-              <Button
-                type="submit"
-                className="min-h-11"
-                disabled={!session.hydrated}
-              >
-                Continue <ArrowRight aria-hidden="true" />
-              </Button>
-            </form>
-          )}
-          <p className="text-sm text-muted-foreground">
-            Need access or forgot your password? Contact your council
-            administrator.
-          </p>
-        </div>
-      </section>
-    </main>
+    <AssignedAccountSignIn
+      account={assignedMohAccount}
+      credentials={assignedMohCredentials}
+      roleLabel="MOH"
+      workspaceLabel="MOH / Director"
+      headline="Decisions in one place."
+      description="Access your assigned review and approval workspace."
+      destination="/moh/health-approvals"
+      session={session}
+      matchAccount={matchMohAccount}
+      verifyCode={verifyMohCode}
+    />
   )
 }
 
@@ -299,7 +90,7 @@ function MohWorkspace({
   if (!hydrated || !account)
     return (
       <main className="grid min-h-svh place-items-center" role="status">
-        Opening MOH sign-in…
+        {!hydrated ? "Loading MOH workspace…" : "Opening MOH sign-in…"}
       </main>
     )
   const council = seedDatabase.councils.find(
@@ -314,9 +105,22 @@ function MohWorkspace({
       >
         Skip to content
       </a>
-      <MohSidebar pathname={pathname} />
+      <MohSidebar
+        pathname={pathname}
+        accountMenu={
+          <MohAccountMenu
+            sidebar
+            accountName={account.name}
+            councilName={councilName}
+            onSignOut={() => {
+              if (signOut()) window.location.assign("/")
+            }}
+          />
+        }
+      />
       <SidebarInset className="min-w-0">
         <MohHeader
+          showAccount={false}
           title={title}
           accountName={account.name}
           councilName={councilName}
@@ -409,7 +213,7 @@ export function MohBusinessesPage() {
 
   return (
     <MohWorkspace title="Premises">
-      <MohBusinessesDirectory businesses={businesses} />
+      <MohBusinessesDirectory businesses={businesses} showMetrics />
     </MohWorkspace>
   )
 }

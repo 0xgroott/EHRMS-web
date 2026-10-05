@@ -1,0 +1,36 @@
+# LGA Council oversight
+
+Approved scope: assigned accounts like MOH; sign-in and verification land directly on Dashboard. The role is LGA Chairman and the workspace is LGA Council. Reuse existing components, names and structures.
+
+## Pages and boundaries
+
+- Dashboard: collections, registered premises, pending Health approvals, inspections due, compliance risks, certificate expiry and recent activity.
+- Finance: collections, LGA share, payouts, outstanding settlements and refunds, filtered by date, ward and service.
+- Health approvals: read-only status, inspection reference and waiting time; no decision controls.
+- Premises: existing searchable directory, ward/type/status filters, shared read-only profile, inspection history and certificates. Exclude individual medical results and document contents from oversight.
+- Inspections: existing inspection summaries, outstanding findings and follow-up visibility, without conducting or scheduling controls.
+- Reports: revenue, compliance and service-performance summaries with filtered CSV export.
+
+Premises-linked records are selected using the assigned account's council ID and joined to premises in that council before filtering or aggregation. Ward labels are subordinate to council IDs, not independent authorization identifiers. Council-level recent activity has no ward or premises identifier in the existing model; it stays council-scoped and is explicitly labelled council-wide, independent of the ward filter. No council switcher. Unknown and foreign record links return the same unavailable state. No administrative, financial-write or certificate-decision capability. Active LGA sessions opening the legacy shared admin console are redirected to LGA Dashboard before records render.
+
+## Reuse
+
+Parameterize the existing MOH access, header, sidebar and premises components with defaults preserving MOH behavior. Use Business-style compact Card summaries and shared PageHeader, EmptyState, StatusBadge, table, tabs, input, select and sidebar primitives. No new dependencies or color tokens. Existing semantic colors and theme controls apply.
+
+## Data and limitations
+
+Use existing fictional premises, inspections, approvals and activity. Finance requires new fictional ledger fixtures for Fitness medical tests and Fumigation linked to those premises; there are no Health Approval, application or certificate fees (SRS section 9). It has no existing functional data model. Persist only an assigned account identifier in the LGA session key, never passwords/codes. Like the current app, authentication and data are frontend fixtures; real authorization must be enforced by a backend before deployment with real records. No external integration is in scope.
+
+## Motion review
+
+No additional motion is needed. Reject animated metric counting (interferes with reading), page/list entrances (frequent navigation) and animated filter results (functional data). Reuse existing component transitions. The upstream sidebar animates layout properties; changing that shared behavior is outside this task.
+
+## Verification
+
+Unit tests: account validation, canonical session identity, foreign/unknown premises exclusion, aggregates, filters and CSV escaping. Component tests: reused MOH behavior and LGA navigation. Saved headless Playwright: sign-in/code errors, quick access, direct Dashboard landing, reload/logout, all pages, filtering, exports, foreign links, desktop/390px overflow and console/page errors. Run focused unit tests separately from browser tests; lint explicitly touched files and run typecheck/build for new routes.
+
+## Interface simplification — second pass
+
+Reuse Business Dashboard compact cards and line tabs. Dashboard groups compliance risks, expiring certificates and recent activity into tabs. Finance uses three principal totals plus an inline row for payouts/refunds/payment count; net-of-refund context stays visible. Reports use the same line tabs. Search, ward and status share a compact toolbar; date controls retain visible labels and errors. Remove generic introductions, decorative metric icons, redundant card borders around tables and details, repeated zero-findings messages and repeated expiry instructions. Preserve all records, filters, report exports, LGA scope and accessible names. No additional motion or color tokens.
+
+Second-pass verification: task lint passed for the five changed LGA presentation files and the updated browser spec; all seven LGA browser tests passed, including desktop/390px layout, dashboard/report tabs, filters, exports and console/page error checks.

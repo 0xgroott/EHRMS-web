@@ -1,11 +1,5 @@
-import {
-  act,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-  within,
-} from "@testing-library/react"
+import { render } from "@/test/render-with-router"
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterAll, beforeAll, beforeEach, expect, it, vi } from "vitest"
 import { returningBusinessState } from "@/data/business-seeds"

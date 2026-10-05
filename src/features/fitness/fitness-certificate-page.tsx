@@ -1,3 +1,4 @@
+import { useNavigate } from "@tanstack/react-router"
 import { useState } from "react"
 import { CheckCircle2, Circle } from "lucide-react"
 import { useBusinessSession } from "@/app/business-session"
@@ -7,7 +8,7 @@ import {
   certificateReminder,
   latestCertificateApplication,
 } from "@/domain/certificate-validity"
-import { notifySuccessAfterNavigation } from "@/components/ui/app-toast"
+import { notifySuccess } from "@/components/ui/app-toast"
 import { seedDatabase } from "@/data/seeds"
 import { fitnessCertificateDocument } from "@/domain/business-document-downloads"
 import { PageHeader } from "@/components/shared/page-header"
@@ -54,6 +55,7 @@ function CertificateDate({ value }: { value: string }) {
 }
 
 export function FitnessCertificatePage() {
+  const navigate = useNavigate()
   const { state, isHydrated, startRenewal } = useFitness()
   const [renewalError, setRenewalError] = useState("")
   const { state: businessState } = useBusinessSession()
@@ -192,8 +194,8 @@ export function FitnessCertificatePage() {
             onClick={() => {
               const result = startRenewal()
               if (!result.ok) return setRenewalError(result.error)
-              notifySuccessAfterNavigation("Fitness renewal started")
-              globalThis.location.assign("/business/fitness/apply")
+              notifySuccess("Fitness renewal started")
+              void navigate({ to: "/business/fitness/apply" })
             }}
           >
             Start renewal

@@ -1,3 +1,4 @@
+import type * as RouterModule from "@tanstack/react-router"
 import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { renderToString } from "react-dom/server"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
@@ -6,12 +7,15 @@ import { createBusinessRepository } from "@/services/business-repository"
 import { createBusinessStorage } from "@/services/business-storage"
 import { SavedRegistration } from "./saved-registration"
 
+const navigate = vi.hoisted(() => vi.fn())
+vi.mock("@tanstack/react-router", async (importOriginal) => ({
+  ...(await importOriginal<typeof RouterModule>()),
+  useNavigate: () => navigate,
+}))
 describe("saved registration entry", () => {
-  const assign = vi.fn()
   beforeEach(() => {
     localStorage.clear()
-    assign.mockClear()
-    vi.stubGlobal("location", { assign })
+    navigate.mockClear()
   })
   afterEach(() => vi.unstubAllGlobals())
 
@@ -55,9 +59,9 @@ describe("saved registration entry", () => {
         })
       )
       await waitFor(() =>
-        expect(assign).toHaveBeenCalledWith(
-          stage === "setup" ? "/business/dashboard" : "/business/verify"
-        )
+        expect(navigate).toHaveBeenCalledWith({
+          to: stage === "setup" ? "/business/dashboard" : "/business/verify",
+        })
       )
       expect(repository.getState()).toEqual(before)
       expect(screen.getByText(/saved in this browser/i)).toBeVisible()

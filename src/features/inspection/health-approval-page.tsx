@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router"
 import { useState } from "react"
 import { ArrowRight, CheckCircle2, Circle, ClipboardList } from "lucide-react"
 import { useBusinessSession } from "@/app/business-session"
@@ -84,7 +85,7 @@ function ActionLink({
     <Button
       nativeButton={false}
       role="link"
-      render={<a href={href} />}
+      render={<Link to={href.split("#")[0]} hash={href.split("#")[1]} />}
       className="min-h-11 max-w-full text-left whitespace-normal"
     >
       {children}
@@ -227,12 +228,12 @@ export function HealthApprovalPage() {
               {requirement.issued ? (
                 <span className="text-sm text-muted-foreground">Issued</span>
               ) : (
-                <a
+                <Link
                   className="text-sm font-medium text-primary underline underline-offset-4"
-                  href={requirement.href}
+                  to={requirement.href}
                 >
                   {requirement.action}
-                </a>
+                </Link>
               )}
             </li>
           ))}

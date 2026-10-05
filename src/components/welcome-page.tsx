@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import {
+  Landmark,
   Building2,
   Check,
   ClipboardCheck,
@@ -9,7 +10,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
-type AccountType = "business" | "eho" | "moh"
+type AccountType = "business" | "eho" | "moh" | "lga"
 
 const accountTypes = [
   {
@@ -34,6 +35,13 @@ const accountTypes = [
     description: "Sign in to your review and decision workspace.",
     icon: Stethoscope,
     path: "/moh/sign-in",
+  },
+  {
+    id: "lga",
+    title: "LGA Council",
+    description: "View revenue, health approvals and premises within your LGA.",
+    icon: Landmark,
+    path: "/lga/sign-in",
   },
 ] as const
 
@@ -76,7 +84,7 @@ export function WelcomePage() {
         >
           <fieldset>
             <legend className="sr-only">Account type</legend>
-            <div className="grid gap-4 md:grid-cols-3 md:gap-5">
+            <div className="grid gap-4 sm:grid-cols-2 md:gap-5 lg:grid-cols-4">
               {accountTypes.map(({ id, title, description, icon: Icon }) => (
                 <label key={id} className="group relative cursor-pointer">
                   <input

@@ -1,4 +1,5 @@
-import { render, screen, within } from "@testing-library/react"
+import { render } from "@/test/render-with-router"
+import { screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it } from "vitest"
 import { returningBusinessState } from "@/data/business-seeds"
@@ -50,8 +51,12 @@ describe("business dashboard", () => {
       "/business/settings"
     )
     expect(screen.getByText("Kitchen staff")).toBeVisible()
-    expect(screen.getByText("Branches")).toBeVisible()
-    expect(screen.getByText("Registered business locations")).toBeVisible()
+    expect(screen.getByText("Affiliated premises")).toBeVisible()
+    expect(
+      within(
+        screen.getByText("Affiliated premises").closest('[data-slot="card"]')!
+      ).getByText("1")
+    ).toBeVisible()
     expect(screen.getByText("Certificates issued")).toBeVisible()
     expect(
       within(

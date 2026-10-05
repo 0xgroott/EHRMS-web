@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as BusinessRouteImport } from './routes/business'
 import { Route as EhoRouteImport } from './routes/eho'
+import { Route as LgaRouteImport } from './routes/lga'
 import { Route as MohRouteImport } from './routes/moh'
 import { Route as AppApplicationsRouteImport } from './routes/_app.applications'
 import { Route as AppAuditRouteImport } from './routes/_app.audit'
@@ -35,6 +36,9 @@ import { Route as BusinessVerifyRouteImport } from './routes/business.verify'
 import { Route as EhoIndexRouteImport } from './routes/eho.index'
 import { Route as EhoPortalRouteImport } from './routes/eho._portal'
 import { Route as EhoSignInRouteImport } from './routes/eho.sign-in'
+import { Route as LgaIndexRouteImport } from './routes/lga.index'
+import { Route as LgaPortalRouteImport } from './routes/lga._portal'
+import { Route as LgaSignInRouteImport } from './routes/lga.sign-in'
 import { Route as MohIndexRouteImport } from './routes/moh.index'
 import { Route as MohBusinessesRouteImport } from './routes/moh.businesses'
 import { Route as MohHealthApprovalsRouteImport } from './routes/moh.health-approvals'
@@ -59,6 +63,12 @@ import { Route as EhoPortalMyWorkRouteImport } from './routes/eho._portal.my-wor
 import { Route as EhoPortalPremisesSearchRouteImport } from './routes/eho._portal.premises-search'
 import { Route as EhoPortalProfileRouteImport } from './routes/eho._portal.profile'
 import { Route as EhoPortalSyncDataRouteImport } from './routes/eho._portal.sync-data'
+import { Route as LgaPortalDashboardRouteImport } from './routes/lga._portal.dashboard'
+import { Route as LgaPortalFinanceRouteImport } from './routes/lga._portal.finance'
+import { Route as LgaPortalHealthApprovalsRouteImport } from './routes/lga._portal.health-approvals'
+import { Route as LgaPortalInspectionsRouteImport } from './routes/lga._portal.inspections'
+import { Route as LgaPortalPremisesRouteImport } from './routes/lga._portal.premises'
+import { Route as LgaPortalReportsRouteImport } from './routes/lga._portal.reports'
 import { Route as MohBusinessesBusinessIdRouteImport } from './routes/moh.businesses_.$businessId'
 import { Route as MohHealthApprovalsBusinessIdRouteImport } from './routes/moh.health-approvals_.$businessId'
 import { Route as MohInspectionsCaseIdRouteImport } from './routes/moh.inspections_.$caseId'
@@ -73,6 +83,9 @@ import { Route as BusinessPortalFumigationTrackerRouteImport } from './routes/bu
 import { Route as EhoPortalFumigationJobIdRouteImport } from './routes/eho._portal.fumigation.$jobId'
 import { Route as EhoPortalInspectionsInspectionIdRouteImport } from './routes/eho._portal.inspections.$inspectionId'
 import { Route as EhoPortalPremisesPremisesIdRouteImport } from './routes/eho._portal.premises.$premisesId'
+import { Route as LgaPortalHealthApprovalsCaseIdRouteImport } from './routes/lga._portal.health-approvals_.$caseId'
+import { Route as LgaPortalInspectionsInspectionIdRouteImport } from './routes/lga._portal.inspections_.$inspectionId'
+import { Route as LgaPortalPremisesPremisesIdRouteImport } from './routes/lga._portal.premises_.$premisesId'
 import { Route as MohBusinessesBusinessIdCertificateRouteImport } from './routes/moh.businesses_.$businessId_.certificate'
 import { Route as EhoPortalInspectionsInspectionIdChecklistRouteImport } from './routes/eho._portal.inspections.$inspectionId.checklist'
 import { Route as EhoPortalInspectionsInspectionIdFindingsRouteImport } from './routes/eho._portal.inspections.$inspectionId.findings'
@@ -100,6 +113,11 @@ const BusinessRoute = BusinessRouteImport.update({
 const EhoRoute = EhoRouteImport.update({
   id: '/eho',
   path: '/eho',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LgaRoute = LgaRouteImport.update({
+  id: '/lga',
+  path: '/lga',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MohRoute = MohRouteImport.update({
@@ -209,6 +227,20 @@ const EhoSignInRoute = EhoSignInRouteImport.update({
   id: '/sign-in',
   path: '/sign-in',
   getParentRoute: () => EhoRoute,
+} as any)
+const LgaIndexRoute = LgaIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => LgaRoute,
+} as any)
+const LgaPortalRoute = LgaPortalRouteImport.update({
+  id: '/_portal',
+  getParentRoute: () => LgaRoute,
+} as any)
+const LgaSignInRoute = LgaSignInRouteImport.update({
+  id: '/sign-in',
+  path: '/sign-in',
+  getParentRoute: () => LgaRoute,
 } as any)
 const MohIndexRoute = MohIndexRouteImport.update({
   id: '/',
@@ -337,6 +369,37 @@ const EhoPortalSyncDataRoute = EhoPortalSyncDataRouteImport.update({
   path: '/sync-data',
   getParentRoute: () => EhoPortalRoute,
 } as any)
+const LgaPortalDashboardRoute = LgaPortalDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => LgaPortalRoute,
+} as any)
+const LgaPortalFinanceRoute = LgaPortalFinanceRouteImport.update({
+  id: '/finance',
+  path: '/finance',
+  getParentRoute: () => LgaPortalRoute,
+} as any)
+const LgaPortalHealthApprovalsRoute =
+  LgaPortalHealthApprovalsRouteImport.update({
+    id: '/health-approvals',
+    path: '/health-approvals',
+    getParentRoute: () => LgaPortalRoute,
+  } as any)
+const LgaPortalInspectionsRoute = LgaPortalInspectionsRouteImport.update({
+  id: '/inspections',
+  path: '/inspections',
+  getParentRoute: () => LgaPortalRoute,
+} as any)
+const LgaPortalPremisesRoute = LgaPortalPremisesRouteImport.update({
+  id: '/premises',
+  path: '/premises',
+  getParentRoute: () => LgaPortalRoute,
+} as any)
+const LgaPortalReportsRoute = LgaPortalReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => LgaPortalRoute,
+} as any)
 const MohBusinessesBusinessIdRoute = MohBusinessesBusinessIdRouteImport.update({
   id: '/businesses_/$businessId',
   path: '/businesses/$businessId',
@@ -419,6 +482,24 @@ const EhoPortalPremisesPremisesIdRoute =
     path: '/premises/$premisesId',
     getParentRoute: () => EhoPortalRoute,
   } as any)
+const LgaPortalHealthApprovalsCaseIdRoute =
+  LgaPortalHealthApprovalsCaseIdRouteImport.update({
+    id: '/health-approvals_/$caseId',
+    path: '/health-approvals/$caseId',
+    getParentRoute: () => LgaPortalRoute,
+  } as any)
+const LgaPortalInspectionsInspectionIdRoute =
+  LgaPortalInspectionsInspectionIdRouteImport.update({
+    id: '/inspections_/$inspectionId',
+    path: '/inspections/$inspectionId',
+    getParentRoute: () => LgaPortalRoute,
+  } as any)
+const LgaPortalPremisesPremisesIdRoute =
+  LgaPortalPremisesPremisesIdRouteImport.update({
+    id: '/premises_/$premisesId',
+    path: '/premises/$premisesId',
+    getParentRoute: () => LgaPortalRoute,
+  } as any)
 const MohBusinessesBusinessIdCertificateRoute =
   MohBusinessesBusinessIdCertificateRouteImport.update({
     id: '/businesses_/$businessId_/certificate',
@@ -478,6 +559,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/business': typeof BusinessRouteWithChildren
   '/eho': typeof EhoRouteWithChildren
+  '/lga': typeof LgaRouteWithChildren
   '/moh': typeof MohRouteWithChildren
   '/applications': typeof AppApplicationsRoute
   '/audit': typeof AppAuditRoute
@@ -496,6 +578,7 @@ export interface FileRoutesByFullPath {
   '/business/sign-in': typeof BusinessSignInRoute
   '/business/verify': typeof BusinessVerifyRoute
   '/eho/sign-in': typeof EhoSignInRoute
+  '/lga/sign-in': typeof LgaSignInRoute
   '/moh/businesses': typeof MohBusinessesRoute
   '/moh/health-approvals': typeof MohHealthApprovalsRoute
   '/moh/home': typeof MohHomeRoute
@@ -503,6 +586,7 @@ export interface FileRoutesByFullPath {
   '/moh/sign-in': typeof MohSignInRoute
   '/business/': typeof BusinessIndexRoute
   '/eho/': typeof EhoIndexRoute
+  '/lga/': typeof LgaIndexRoute
   '/moh/': typeof MohIndexRoute
   '/premises/$premisesId': typeof AppPremisesPremisesIdRoute
   '/business/applications': typeof BusinessPortalApplicationsRoute
@@ -521,6 +605,12 @@ export interface FileRoutesByFullPath {
   '/eho/premises-search': typeof EhoPortalPremisesSearchRoute
   '/eho/profile': typeof EhoPortalProfileRoute
   '/eho/sync-data': typeof EhoPortalSyncDataRoute
+  '/lga/dashboard': typeof LgaPortalDashboardRoute
+  '/lga/finance': typeof LgaPortalFinanceRoute
+  '/lga/health-approvals': typeof LgaPortalHealthApprovalsRoute
+  '/lga/inspections': typeof LgaPortalInspectionsRoute
+  '/lga/premises': typeof LgaPortalPremisesRoute
+  '/lga/reports': typeof LgaPortalReportsRoute
   '/moh/businesses/$businessId': typeof MohBusinessesBusinessIdRoute
   '/moh/health-approvals/$businessId': typeof MohHealthApprovalsBusinessIdRoute
   '/moh/inspections/$caseId': typeof MohInspectionsCaseIdRoute
@@ -536,6 +626,9 @@ export interface FileRoutesByFullPath {
   '/eho/fumigation/$jobId': typeof EhoPortalFumigationJobIdRoute
   '/eho/inspections/$inspectionId': typeof EhoPortalInspectionsInspectionIdRouteWithChildren
   '/eho/premises/$premisesId': typeof EhoPortalPremisesPremisesIdRoute
+  '/lga/health-approvals/$caseId': typeof LgaPortalHealthApprovalsCaseIdRoute
+  '/lga/inspections/$inspectionId': typeof LgaPortalInspectionsInspectionIdRoute
+  '/lga/premises/$premisesId': typeof LgaPortalPremisesPremisesIdRoute
   '/moh/businesses/$businessId/certificate': typeof MohBusinessesBusinessIdCertificateRoute
   '/eho/inspections/$inspectionId/checklist': typeof EhoPortalInspectionsInspectionIdChecklistRouteWithChildren
   '/eho/inspections/$inspectionId/findings': typeof EhoPortalInspectionsInspectionIdFindingsRoute
@@ -567,6 +660,8 @@ export interface FileRoutesByTo {
   '/business/verify': typeof BusinessVerifyRoute
   '/eho': typeof EhoIndexRoute
   '/eho/sign-in': typeof EhoSignInRoute
+  '/lga': typeof LgaIndexRoute
+  '/lga/sign-in': typeof LgaSignInRoute
   '/moh/businesses': typeof MohBusinessesRoute
   '/moh/health-approvals': typeof MohHealthApprovalsRoute
   '/moh/home': typeof MohHomeRoute
@@ -590,6 +685,12 @@ export interface FileRoutesByTo {
   '/eho/premises-search': typeof EhoPortalPremisesSearchRoute
   '/eho/profile': typeof EhoPortalProfileRoute
   '/eho/sync-data': typeof EhoPortalSyncDataRoute
+  '/lga/dashboard': typeof LgaPortalDashboardRoute
+  '/lga/finance': typeof LgaPortalFinanceRoute
+  '/lga/health-approvals': typeof LgaPortalHealthApprovalsRoute
+  '/lga/inspections': typeof LgaPortalInspectionsRoute
+  '/lga/premises': typeof LgaPortalPremisesRoute
+  '/lga/reports': typeof LgaPortalReportsRoute
   '/moh/businesses/$businessId': typeof MohBusinessesBusinessIdRoute
   '/moh/health-approvals/$businessId': typeof MohHealthApprovalsBusinessIdRoute
   '/moh/inspections/$caseId': typeof MohInspectionsCaseIdRoute
@@ -605,6 +706,9 @@ export interface FileRoutesByTo {
   '/eho/fumigation/$jobId': typeof EhoPortalFumigationJobIdRoute
   '/eho/inspections/$inspectionId': typeof EhoPortalInspectionsInspectionIdRouteWithChildren
   '/eho/premises/$premisesId': typeof EhoPortalPremisesPremisesIdRoute
+  '/lga/health-approvals/$caseId': typeof LgaPortalHealthApprovalsCaseIdRoute
+  '/lga/inspections/$inspectionId': typeof LgaPortalInspectionsInspectionIdRoute
+  '/lga/premises/$premisesId': typeof LgaPortalPremisesPremisesIdRoute
   '/moh/businesses/$businessId/certificate': typeof MohBusinessesBusinessIdCertificateRoute
   '/eho/inspections/$inspectionId/checklist': typeof EhoPortalInspectionsInspectionIdChecklistRouteWithChildren
   '/eho/inspections/$inspectionId/findings': typeof EhoPortalInspectionsInspectionIdFindingsRoute
@@ -621,6 +725,7 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/business': typeof BusinessRouteWithChildren
   '/eho': typeof EhoRouteWithChildren
+  '/lga': typeof LgaRouteWithChildren
   '/moh': typeof MohRouteWithChildren
   '/_app/applications': typeof AppApplicationsRoute
   '/_app/audit': typeof AppAuditRoute
@@ -641,6 +746,8 @@ export interface FileRoutesById {
   '/business/verify': typeof BusinessVerifyRoute
   '/eho/_portal': typeof EhoPortalRouteWithChildren
   '/eho/sign-in': typeof EhoSignInRoute
+  '/lga/_portal': typeof LgaPortalRouteWithChildren
+  '/lga/sign-in': typeof LgaSignInRoute
   '/moh/businesses': typeof MohBusinessesRoute
   '/moh/health-approvals': typeof MohHealthApprovalsRoute
   '/moh/home': typeof MohHomeRoute
@@ -648,6 +755,7 @@ export interface FileRoutesById {
   '/moh/sign-in': typeof MohSignInRoute
   '/business/': typeof BusinessIndexRoute
   '/eho/': typeof EhoIndexRoute
+  '/lga/': typeof LgaIndexRoute
   '/moh/': typeof MohIndexRoute
   '/_app/premises/$premisesId': typeof AppPremisesPremisesIdRoute
   '/business/_portal/applications': typeof BusinessPortalApplicationsRoute
@@ -666,6 +774,12 @@ export interface FileRoutesById {
   '/eho/_portal/premises-search': typeof EhoPortalPremisesSearchRoute
   '/eho/_portal/profile': typeof EhoPortalProfileRoute
   '/eho/_portal/sync-data': typeof EhoPortalSyncDataRoute
+  '/lga/_portal/dashboard': typeof LgaPortalDashboardRoute
+  '/lga/_portal/finance': typeof LgaPortalFinanceRoute
+  '/lga/_portal/health-approvals': typeof LgaPortalHealthApprovalsRoute
+  '/lga/_portal/inspections': typeof LgaPortalInspectionsRoute
+  '/lga/_portal/premises': typeof LgaPortalPremisesRoute
+  '/lga/_portal/reports': typeof LgaPortalReportsRoute
   '/moh/businesses_/$businessId': typeof MohBusinessesBusinessIdRoute
   '/moh/health-approvals_/$businessId': typeof MohHealthApprovalsBusinessIdRoute
   '/moh/inspections_/$caseId': typeof MohInspectionsCaseIdRoute
@@ -681,6 +795,9 @@ export interface FileRoutesById {
   '/eho/_portal/fumigation/$jobId': typeof EhoPortalFumigationJobIdRoute
   '/eho/_portal/inspections/$inspectionId': typeof EhoPortalInspectionsInspectionIdRouteWithChildren
   '/eho/_portal/premises/$premisesId': typeof EhoPortalPremisesPremisesIdRoute
+  '/lga/_portal/health-approvals_/$caseId': typeof LgaPortalHealthApprovalsCaseIdRoute
+  '/lga/_portal/inspections_/$inspectionId': typeof LgaPortalInspectionsInspectionIdRoute
+  '/lga/_portal/premises_/$premisesId': typeof LgaPortalPremisesPremisesIdRoute
   '/moh/businesses_/$businessId_/certificate': typeof MohBusinessesBusinessIdCertificateRoute
   '/eho/_portal/inspections/$inspectionId/checklist': typeof EhoPortalInspectionsInspectionIdChecklistRouteWithChildren
   '/eho/_portal/inspections/$inspectionId/findings': typeof EhoPortalInspectionsInspectionIdFindingsRoute
@@ -697,6 +814,7 @@ export interface FileRouteTypes {
     | '/'
     | '/business'
     | '/eho'
+    | '/lga'
     | '/moh'
     | '/applications'
     | '/audit'
@@ -715,6 +833,7 @@ export interface FileRouteTypes {
     | '/business/sign-in'
     | '/business/verify'
     | '/eho/sign-in'
+    | '/lga/sign-in'
     | '/moh/businesses'
     | '/moh/health-approvals'
     | '/moh/home'
@@ -722,6 +841,7 @@ export interface FileRouteTypes {
     | '/moh/sign-in'
     | '/business/'
     | '/eho/'
+    | '/lga/'
     | '/moh/'
     | '/premises/$premisesId'
     | '/business/applications'
@@ -740,6 +860,12 @@ export interface FileRouteTypes {
     | '/eho/premises-search'
     | '/eho/profile'
     | '/eho/sync-data'
+    | '/lga/dashboard'
+    | '/lga/finance'
+    | '/lga/health-approvals'
+    | '/lga/inspections'
+    | '/lga/premises'
+    | '/lga/reports'
     | '/moh/businesses/$businessId'
     | '/moh/health-approvals/$businessId'
     | '/moh/inspections/$caseId'
@@ -755,6 +881,9 @@ export interface FileRouteTypes {
     | '/eho/fumigation/$jobId'
     | '/eho/inspections/$inspectionId'
     | '/eho/premises/$premisesId'
+    | '/lga/health-approvals/$caseId'
+    | '/lga/inspections/$inspectionId'
+    | '/lga/premises/$premisesId'
     | '/moh/businesses/$businessId/certificate'
     | '/eho/inspections/$inspectionId/checklist'
     | '/eho/inspections/$inspectionId/findings'
@@ -786,6 +915,8 @@ export interface FileRouteTypes {
     | '/business/verify'
     | '/eho'
     | '/eho/sign-in'
+    | '/lga'
+    | '/lga/sign-in'
     | '/moh/businesses'
     | '/moh/health-approvals'
     | '/moh/home'
@@ -809,6 +940,12 @@ export interface FileRouteTypes {
     | '/eho/premises-search'
     | '/eho/profile'
     | '/eho/sync-data'
+    | '/lga/dashboard'
+    | '/lga/finance'
+    | '/lga/health-approvals'
+    | '/lga/inspections'
+    | '/lga/premises'
+    | '/lga/reports'
     | '/moh/businesses/$businessId'
     | '/moh/health-approvals/$businessId'
     | '/moh/inspections/$caseId'
@@ -824,6 +961,9 @@ export interface FileRouteTypes {
     | '/eho/fumigation/$jobId'
     | '/eho/inspections/$inspectionId'
     | '/eho/premises/$premisesId'
+    | '/lga/health-approvals/$caseId'
+    | '/lga/inspections/$inspectionId'
+    | '/lga/premises/$premisesId'
     | '/moh/businesses/$businessId/certificate'
     | '/eho/inspections/$inspectionId/checklist'
     | '/eho/inspections/$inspectionId/findings'
@@ -839,6 +979,7 @@ export interface FileRouteTypes {
     | '/_app'
     | '/business'
     | '/eho'
+    | '/lga'
     | '/moh'
     | '/_app/applications'
     | '/_app/audit'
@@ -859,6 +1000,8 @@ export interface FileRouteTypes {
     | '/business/verify'
     | '/eho/_portal'
     | '/eho/sign-in'
+    | '/lga/_portal'
+    | '/lga/sign-in'
     | '/moh/businesses'
     | '/moh/health-approvals'
     | '/moh/home'
@@ -866,6 +1009,7 @@ export interface FileRouteTypes {
     | '/moh/sign-in'
     | '/business/'
     | '/eho/'
+    | '/lga/'
     | '/moh/'
     | '/_app/premises/$premisesId'
     | '/business/_portal/applications'
@@ -884,6 +1028,12 @@ export interface FileRouteTypes {
     | '/eho/_portal/premises-search'
     | '/eho/_portal/profile'
     | '/eho/_portal/sync-data'
+    | '/lga/_portal/dashboard'
+    | '/lga/_portal/finance'
+    | '/lga/_portal/health-approvals'
+    | '/lga/_portal/inspections'
+    | '/lga/_portal/premises'
+    | '/lga/_portal/reports'
     | '/moh/businesses_/$businessId'
     | '/moh/health-approvals_/$businessId'
     | '/moh/inspections_/$caseId'
@@ -899,6 +1049,9 @@ export interface FileRouteTypes {
     | '/eho/_portal/fumigation/$jobId'
     | '/eho/_portal/inspections/$inspectionId'
     | '/eho/_portal/premises/$premisesId'
+    | '/lga/_portal/health-approvals_/$caseId'
+    | '/lga/_portal/inspections_/$inspectionId'
+    | '/lga/_portal/premises_/$premisesId'
     | '/moh/businesses_/$businessId_/certificate'
     | '/eho/_portal/inspections/$inspectionId/checklist'
     | '/eho/_portal/inspections/$inspectionId/findings'
@@ -915,6 +1068,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   BusinessRoute: typeof BusinessRouteWithChildren
   EhoRoute: typeof EhoRouteWithChildren
+  LgaRoute: typeof LgaRouteWithChildren
   MohRoute: typeof MohRouteWithChildren
 }
 
@@ -946,6 +1100,13 @@ declare module '@tanstack/react-router' {
       path: '/eho'
       fullPath: '/eho'
       preLoaderRoute: typeof EhoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lga': {
+      id: '/lga'
+      path: '/lga'
+      fullPath: '/lga'
+      preLoaderRoute: typeof LgaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/moh': {
@@ -1101,6 +1262,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/eho/sign-in'
       preLoaderRoute: typeof EhoSignInRouteImport
       parentRoute: typeof EhoRoute
+    }
+    '/lga/': {
+      id: '/lga/'
+      path: '/'
+      fullPath: '/lga/'
+      preLoaderRoute: typeof LgaIndexRouteImport
+      parentRoute: typeof LgaRoute
+    }
+    '/lga/_portal': {
+      id: '/lga/_portal'
+      path: ''
+      fullPath: '/lga'
+      preLoaderRoute: typeof LgaPortalRouteImport
+      parentRoute: typeof LgaRoute
+    }
+    '/lga/sign-in': {
+      id: '/lga/sign-in'
+      path: '/sign-in'
+      fullPath: '/lga/sign-in'
+      preLoaderRoute: typeof LgaSignInRouteImport
+      parentRoute: typeof LgaRoute
     }
     '/moh/': {
       id: '/moh/'
@@ -1270,6 +1452,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EhoPortalSyncDataRouteImport
       parentRoute: typeof EhoPortalRoute
     }
+    '/lga/_portal/dashboard': {
+      id: '/lga/_portal/dashboard'
+      path: '/dashboard'
+      fullPath: '/lga/dashboard'
+      preLoaderRoute: typeof LgaPortalDashboardRouteImport
+      parentRoute: typeof LgaPortalRoute
+    }
+    '/lga/_portal/finance': {
+      id: '/lga/_portal/finance'
+      path: '/finance'
+      fullPath: '/lga/finance'
+      preLoaderRoute: typeof LgaPortalFinanceRouteImport
+      parentRoute: typeof LgaPortalRoute
+    }
+    '/lga/_portal/health-approvals': {
+      id: '/lga/_portal/health-approvals'
+      path: '/health-approvals'
+      fullPath: '/lga/health-approvals'
+      preLoaderRoute: typeof LgaPortalHealthApprovalsRouteImport
+      parentRoute: typeof LgaPortalRoute
+    }
+    '/lga/_portal/inspections': {
+      id: '/lga/_portal/inspections'
+      path: '/inspections'
+      fullPath: '/lga/inspections'
+      preLoaderRoute: typeof LgaPortalInspectionsRouteImport
+      parentRoute: typeof LgaPortalRoute
+    }
+    '/lga/_portal/premises': {
+      id: '/lga/_portal/premises'
+      path: '/premises'
+      fullPath: '/lga/premises'
+      preLoaderRoute: typeof LgaPortalPremisesRouteImport
+      parentRoute: typeof LgaPortalRoute
+    }
+    '/lga/_portal/reports': {
+      id: '/lga/_portal/reports'
+      path: '/reports'
+      fullPath: '/lga/reports'
+      preLoaderRoute: typeof LgaPortalReportsRouteImport
+      parentRoute: typeof LgaPortalRoute
+    }
     '/moh/businesses_/$businessId': {
       id: '/moh/businesses_/$businessId'
       path: '/businesses/$businessId'
@@ -1367,6 +1591,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/eho/premises/$premisesId'
       preLoaderRoute: typeof EhoPortalPremisesPremisesIdRouteImport
       parentRoute: typeof EhoPortalRoute
+    }
+    '/lga/_portal/health-approvals_/$caseId': {
+      id: '/lga/_portal/health-approvals_/$caseId'
+      path: '/health-approvals/$caseId'
+      fullPath: '/lga/health-approvals/$caseId'
+      preLoaderRoute: typeof LgaPortalHealthApprovalsCaseIdRouteImport
+      parentRoute: typeof LgaPortalRoute
+    }
+    '/lga/_portal/inspections_/$inspectionId': {
+      id: '/lga/_portal/inspections_/$inspectionId'
+      path: '/inspections/$inspectionId'
+      fullPath: '/lga/inspections/$inspectionId'
+      preLoaderRoute: typeof LgaPortalInspectionsInspectionIdRouteImport
+      parentRoute: typeof LgaPortalRoute
+    }
+    '/lga/_portal/premises_/$premisesId': {
+      id: '/lga/_portal/premises_/$premisesId'
+      path: '/premises/$premisesId'
+      fullPath: '/lga/premises/$premisesId'
+      preLoaderRoute: typeof LgaPortalPremisesPremisesIdRouteImport
+      parentRoute: typeof LgaPortalRoute
     }
     '/moh/businesses_/$businessId_/certificate': {
       id: '/moh/businesses_/$businessId_/certificate'
@@ -1649,6 +1894,48 @@ const EhoRouteChildren: EhoRouteChildren = {
 
 const EhoRouteWithChildren = EhoRoute._addFileChildren(EhoRouteChildren)
 
+interface LgaPortalRouteChildren {
+  LgaPortalDashboardRoute: typeof LgaPortalDashboardRoute
+  LgaPortalFinanceRoute: typeof LgaPortalFinanceRoute
+  LgaPortalHealthApprovalsRoute: typeof LgaPortalHealthApprovalsRoute
+  LgaPortalInspectionsRoute: typeof LgaPortalInspectionsRoute
+  LgaPortalPremisesRoute: typeof LgaPortalPremisesRoute
+  LgaPortalReportsRoute: typeof LgaPortalReportsRoute
+  LgaPortalHealthApprovalsCaseIdRoute: typeof LgaPortalHealthApprovalsCaseIdRoute
+  LgaPortalInspectionsInspectionIdRoute: typeof LgaPortalInspectionsInspectionIdRoute
+  LgaPortalPremisesPremisesIdRoute: typeof LgaPortalPremisesPremisesIdRoute
+}
+
+const LgaPortalRouteChildren: LgaPortalRouteChildren = {
+  LgaPortalDashboardRoute: LgaPortalDashboardRoute,
+  LgaPortalFinanceRoute: LgaPortalFinanceRoute,
+  LgaPortalHealthApprovalsRoute: LgaPortalHealthApprovalsRoute,
+  LgaPortalInspectionsRoute: LgaPortalInspectionsRoute,
+  LgaPortalPremisesRoute: LgaPortalPremisesRoute,
+  LgaPortalReportsRoute: LgaPortalReportsRoute,
+  LgaPortalHealthApprovalsCaseIdRoute: LgaPortalHealthApprovalsCaseIdRoute,
+  LgaPortalInspectionsInspectionIdRoute: LgaPortalInspectionsInspectionIdRoute,
+  LgaPortalPremisesPremisesIdRoute: LgaPortalPremisesPremisesIdRoute,
+}
+
+const LgaPortalRouteWithChildren = LgaPortalRoute._addFileChildren(
+  LgaPortalRouteChildren,
+)
+
+interface LgaRouteChildren {
+  LgaPortalRoute: typeof LgaPortalRouteWithChildren
+  LgaSignInRoute: typeof LgaSignInRoute
+  LgaIndexRoute: typeof LgaIndexRoute
+}
+
+const LgaRouteChildren: LgaRouteChildren = {
+  LgaPortalRoute: LgaPortalRouteWithChildren,
+  LgaSignInRoute: LgaSignInRoute,
+  LgaIndexRoute: LgaIndexRoute,
+}
+
+const LgaRouteWithChildren = LgaRoute._addFileChildren(LgaRouteChildren)
+
 interface MohRouteChildren {
   MohBusinessesRoute: typeof MohBusinessesRoute
   MohHealthApprovalsRoute: typeof MohHealthApprovalsRoute
@@ -1683,6 +1970,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   BusinessRoute: BusinessRouteWithChildren,
   EhoRoute: EhoRouteWithChildren,
+  LgaRoute: LgaRouteWithChildren,
   MohRoute: MohRouteWithChildren,
 }
 export const routeTree = rootRouteImport
