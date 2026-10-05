@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test"
+import type { Request } from "@playwright/test"
 
 test("EHO opens prior inspection history from a visit and sees saved outcomes", async ({
   page,
@@ -31,8 +32,34 @@ test("EHO opens prior inspection history from a visit and sees saved outcomes", 
   const history = page.getByRole("region", { name: "Inspection history" })
   await expect(history.getByText("EIN-104")).toBeVisible()
   await expect(history.getByText("1 finding recorded")).toBeVisible()
-  await history.getByRole("link", { name: "View EIN-104 result" }).click()
-  await expect(page).toHaveURL(/\/eho\/inspections\/EIN-104\/result$/)
+  const documents: string[] = []
+  const recordDocument = (request: Request) => {
+    if (request.isNavigationRequest() && request.resourceType() === "document")
+      documents.push(request.url())
+  }
+  page.on("request", recordDocument)
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 844 })
+    for (let repeat = 0; repeat < 3; repeat++) {
+      const result = history.getByRole("link", { name: "View EIN-104 result" })
+      await result.focus()
+      await result.press("Enter")
+      await expect(page).toHaveURL(/\/eho\/inspections\/EIN-104\/result$/)
+      await page.goBack()
+      await expect(result).toBeVisible()
+      await history
+        .getByRole("row")
+        .filter({ hasText: "EIN-104" })
+        .getByRole("cell")
+        .nth(1)
+        .click()
+      await expect(page).toHaveURL(/\/eho\/inspections\/EIN-104\/result$/)
+      await page.goBack()
+      await expect(result).toBeVisible()
+    }
+  }
+  expect(documents).toEqual([])
+  page.off("request", recordDocument)
 
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto("/eho/premises/PR-001?source=search&tab=history")
